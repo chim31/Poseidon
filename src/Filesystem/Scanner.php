@@ -18,7 +18,7 @@ final class Scanner
     /** @var array<string, true> */
     private array $excluded;
 
-    public function __construct(private Config $config, private ZipWalker $zips)
+    public function __construct(private Config $config, private ZipWalker $zips, private ?RootGuard $guard = null)
     {
         $this->excluded = array_fill_keys(array_map('strtolower', (array) $config->get('excluded_dirs', [])), true);
     }
@@ -66,6 +66,10 @@ final class Scanner
                 }
                 $path = $dir === '/' ? '/' . $entry : $dir . '/' . $entry;
                 $nativePath = Path::toNative($path);
+                if (is_link($nativePath) && !$this->linkAllowed($path)) {
+                    yield new Notice(UnreadableFileException::LIMIT, Path::display($path), 'Lien symbolique vers l\'extérieur des racines autorisées : ignoré.');
+                    continue;
+                }
                 if (is_dir($nativePath)) {
                     if (!isset($this->excluded[strtolower($entry)])) {
                         $subdirs[] = $path;
@@ -116,6 +120,21 @@ final class Scanner
 
         if ($intoArchives && ZipWalker::isArchive($ext)) {
             yield from $this->zips->walk($source, $filter);
+        }
+    }
+
+    /** Un lien n'est suivi que si sa cible reste dans les racines autorisées. */
+    private function linkAllowed(string $path): bool
+    {
+        if ($this->guard === null || !$this->guard->isRestricted()) {
+            return true;
+        }
+        try {
+            $this->guard->assertAllowed(RootGuard::real($path));
+
+            return true;
+        } catch (\DomainException) {
+            return false;
         }
     }
 

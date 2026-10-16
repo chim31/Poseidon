@@ -32,8 +32,8 @@ final class SearchEngine
     public function __construct(private Config $config, private ?ExtractorRegistry $extractors = null)
     {
         $this->extractors ??= new ExtractorRegistry($config);
-        $this->scanner = new Scanner($config, new ZipWalker($config));
         $this->guard = new RootGuard($config);
+        $this->scanner = new Scanner($config, new ZipWalker($config), $this->guard);
     }
 
     public function extractors(): ExtractorRegistry

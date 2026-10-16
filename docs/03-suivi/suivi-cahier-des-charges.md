@@ -7,7 +7,7 @@
 
 ## Tableau de bord
 
-Avancement global : **77 %** `███████████████░░░░░` — 65 exigences : 50 terminées, 1 en cours, 14 à faire, 0 bloquées.
+Avancement global : **78 %** `███████████████░░░░░` — 65 exigences : 51 terminées, 0 en cours, 14 à faire, 0 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -19,7 +19,7 @@ Avancement global : **77 %** `███████████████░�
 | L6 | Interface web | 7 | 0 | 1 | 88 % |
 | L7 | Robustesse et sécurité | 7 | 0 | 1 | 88 % |
 | L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
-| L9 | Exploitation et documentation | 4 | 1 | 2 | 57 % |
+| L9 | Exploitation et documentation | 5 | 0 | 2 | 71 % |
 
 ## L1 — Socle et parcours
 
@@ -27,11 +27,11 @@ _Poser une racine (locale, Windows, réseau) et parcourir toute l'arborescence c
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L1-01 | **Racine locale, Windows et UNC** — Accepte /home/…, C:\…, \\serveur\partage, file://, smb://, chemins entre guillemets ; normalise slash et anti-slash. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L1-02 | **Parcours récursif en flux** — Parcours itératif (pas de récursion PHP), ordre alphabétique, protection contre les boucles de liens symboliques. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L1-03 | **Dossiers exclus** — .git, node_modules, vendor… configurables. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L1-04 | **Racines autorisées** — Liste blanche (POSEIDON_ROOTS) contrôlée sur les chemins réels : aucun accès hors périmètre, ni par « .. », ni par lien symbolique. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L1-05 | **Partages réseau sous Linux** — Correspondance \\serveur\partage → point de montage (network_mounts), message explicite si non monté. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L1-01 | **Racine locale, Windows et UNC** — Accepte /home/…, C:\…, \\serveur\partage, file://, smb://, chemins entre guillemets ; normalise slash et anti-slash. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L1-02 | **Parcours récursif en flux** — Parcours itératif (pas de récursion PHP), ordre alphabétique, protection contre les boucles de liens symboliques. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L1-03 | **Dossiers exclus** — .git, node_modules, vendor… configurables. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L1-04 | **Racines autorisées** — Liste blanche (POSEIDON_ROOTS) contrôlée sur les chemins réels : aucun accès hors périmètre, ni par « .. », ni par lien symbolique. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L1-05 | **Partages réseau sous Linux** — Correspondance \\serveur\partage → point de montage (network_mounts), message explicite si non monté. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 
 ## L2 — Formats de fichiers
 
@@ -39,15 +39,15 @@ _Lire le texte de tous les formats courants, sans dépendance externe obligatoir
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L2-01 | **Texte, Markdown, code, logs** — Détection d'encodage (UTF-8, UTF-16, Windows-1252), fichiers binaires ignorés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-02 | **PDF** — pdftotext (poppler) si présent, lecteur PHP de secours sinon ; numéro de page par ligne. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-03 | **Word DOCX** — Corps, en-têtes, pieds de page, notes ; sans ext-dom. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-04 | **Excel XLSX et ODS** — Valeurs de cellules feuille par feuille, chaînes partagées, tableau pour le mapping de colonnes. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-05 | **CSV / TSV** — Détection du séparateur, lignes et cellules. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-06 | **ODT, ODP, PPTX** — Paragraphes et diapositives (avec notes). | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-07 | **DOC, XLS, PPT anciens** — antiword si présent, sinon extraction approximative des chaînes (signalée). | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-08 | **RTF** — Mots de contrôle retirés, accents \'xx et \u décodés. | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L2-09 | **Cache du texte extrait** — PDF et Office mis en cache (clé : chemin, taille, date) : 2e recherche quasi instantanée. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L2-01 | **Texte, Markdown, code, logs** — Détection d'encodage (UTF-8, UTF-16, Windows-1252), fichiers binaires ignorés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-02 | **PDF** — pdftotext (poppler) si présent, lecteur PHP de secours sinon ; numéro de page par ligne. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-03 | **Word DOCX** — Corps, en-têtes, pieds de page, notes ; sans ext-dom. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-04 | **Excel XLSX et ODS** — Valeurs de cellules feuille par feuille, chaînes partagées, tableau pour le mapping de colonnes. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-05 | **CSV / TSV** — Détection du séparateur, lignes et cellules. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-06 | **ODT, ODP, PPTX** — Paragraphes et diapositives (avec notes). | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-07 | **DOC, XLS, PPT anciens** — antiword si présent, sinon extraction approximative des chaînes (signalée). | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-08 | **RTF** — Mots de contrôle retirés, accents \'xx et \u décodés. | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L2-09 | **Cache du texte extrait** — PDF et Office mis en cache (clé : chemin, taille, date) : 2e recherche quasi instantanée. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L2-10 | **OCR des PDF scannés** — Tesseract optionnel pour les PDF images. | À faire | Moyenne | chim31 | — | Phase 6 |
 | L2-11 | **Courriels EML / MSG** — Corps et pièces jointes des e-mails. | À faire | Moyenne | chim31 | — | Phase 6 |
 
@@ -57,10 +57,10 @@ _Un fichier dans un ZIP dans un ZIP est un fichier comme un autre._
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L3-01 | **Parcours récursif des ZIP** — ZIP, JAR, WAR, EAR, avec imbrication (profondeur configurable). | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L3-02 | **Chemins chaînés** — Chemin absolu et relatif : archives/2025.zip › clients/nereide.zip › contrat.docx. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L3-03 | **Protection anti-bombe ZIP** — Limites de profondeur, taille par entrée, volume total, ratio, nombre d'entrées ; parties Office et flux PDF bornés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L3-04 | **Téléchargement d'une entrée** — Une entrée d'archive imbriquée se télécharge comme un fichier normal. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
+| L3-01 | **Parcours récursif des ZIP** — ZIP, JAR, WAR, EAR, avec imbrication (profondeur configurable). | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L3-02 | **Chemins chaînés** — Chemin absolu et relatif : archives/2025.zip › clients/nereide.zip › contrat.docx. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L3-03 | **Protection anti-bombe ZIP** — Limites de profondeur, taille par entrée, volume total, ratio, nombre d'entrées ; parties Office et flux PDF bornés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L3-04 | **Téléchargement d'une entrée** — Une entrée d'archive imbriquée se télécharge comme un fichier normal. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L3-05 | **7z, RAR, tar.gz** — Autres formats d'archives (via binaires optionnels). | À faire | Basse | chim31 | — | Phase 6 |
 
 ## L4 — Recherche
@@ -69,12 +69,12 @@ _Trouver exactement, compter par terme, prouver par la ligne._
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L4-01 | **Modes de filtre** — Tous les mots (ET), un des mots (OU), phrase exacte (bloc), expression régulière. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L4-02 | **Découpage de phrase en termes** — La phrase est découpée en mots ; « des guillemets » gardent une expression groupée. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L4-03 | **Occurrences par terme** — Compteur par fichier et par terme, totaux globaux. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L4-04 | **Casse, accents, mot entier** — Insensible à la casse et aux accents par défaut, options inverses. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L4-05 | **Recherche dans les noms** — Contenu, nom de fichier, ou les deux ; filtre de nom façon shell (*.pdf). | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L4-06 | **Lignes-preuves** — Emplacement (ligne, page, §, feuille · ligne) et position des correspondances. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L4-01 | **Modes de filtre** — Tous les mots (ET), un des mots (OU), phrase exacte (bloc), expression régulière. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L4-02 | **Découpage de phrase en termes** — La phrase est découpée en mots ; « des guillemets » gardent une expression groupée. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L4-03 | **Occurrences par terme** — Compteur par fichier et par terme, totaux globaux. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L4-04 | **Casse, accents, mot entier** — Insensible à la casse et aux accents par défaut, options inverses. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L4-05 | **Recherche dans les noms** — Contenu, nom de fichier, ou les deux ; filtre de nom façon shell (*.pdf). | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L4-06 | **Lignes-preuves** — Emplacement (ligne, page, §, feuille · ligne) et position des correspondances. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L4-07 | **Index persistant** — Index plein texte (SQLite FTS5) pour les très gros volumes. | À faire | Haute | chim31 | — | Phase 5 |
 | L4-08 | **Proximité (NEAR) et recherche floue** — Mots à moins de N mots d'écart ; tolérance aux fautes. | À faire | Moyenne | chim31 | — | Phase 7 |
 | L4-09 | **Recherches enregistrées et historique** — Rejouer une recherche, la partager par lien. | À faire | Moyenne | chim31 | — | Phase 7 |
@@ -85,11 +85,11 @@ _De la recherche à la donnée : un SELECT avec mapping sur les fichiers._
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L5-01 | **Extraire les occurrences** — Une ligne par valeur trouvée ; groupes capturés en colonnes (regex). | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L5-02 | **Extraire les lignes** — La ligne complète de chaque correspondance. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L5-03 | **Mapping de colonnes** — Tableurs et CSV : colonnes par lettre ou par en-tête, lignes correspondantes ou toutes. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L5-04 | **Formats de sortie** — CSV (Excel FR), XLSX natif, JSON, TXT, Markdown. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L5-05 | **Sécurité des exports** — Neutralisation des formules (=, +, -, @) dans les CSV. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L5-01 | **Extraire les occurrences** — Une ligne par valeur trouvée ; groupes capturés en colonnes (regex). | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L5-02 | **Extraire les lignes** — La ligne complète de chaque correspondance. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L5-03 | **Mapping de colonnes** — Tableurs et CSV : colonnes par lettre ou par en-tête, lignes correspondantes ou toutes. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L5-04 | **Formats de sortie** — CSV (Excel FR), XLSX natif, JSON, TXT, Markdown. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L5-05 | **Sécurité des exports** — Neutralisation des formules (=, +, -, @) dans les CSV. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L5-06 | **Modèles d'extraction** — Enregistrer un mapping (colonnes, groupes nommés → colonnes) et le rejouer. | À faire | Moyenne | chim31 | — | Phase 7 |
 | L5-07 | **Rapport de recherche** — Export HTML/PDF de la recherche (synthèse + preuves). | À faire | Basse | chim31 | — | Phase 7 |
 
@@ -99,13 +99,13 @@ _Une interface Poseidon soignée, rapide à lire, utilisable au clavier et sur m
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L6-01 | **Univers « Pavillons de signaux »** — Chaque terme hisse son pavillon : chip, colonne, surlignage, mini-drisse. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L6-02 | **Résultats en flux** — Les fichiers apparaissent pendant le parcours ; annulation possible. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L6-03 | **Aperçu et navigation d'occurrence** — Lignes numérotées surlignées, occurrence suivante/précédente (touche N). | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L6-04 | **Onglet Tableau** — Grille des feuilles ; clic sur une colonne = ajout au mapping d'extraction. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web |
-| L6-05 | **Sélecteur de dossier** — Navigation dans les dossiers depuis le navigateur, racines récentes. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web |
-| L6-06 | **Responsive** — Rail et aperçu en panneaux coulissants sous 1080 px, mobile 390 px. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web |
-| L6-07 | **Aucun CDN** — Polices, icônes et scripts servis par l'application. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
+| L6-01 | **Univers « Pavillons de signaux »** — Chaque terme hisse son pavillon : chip, colonne, surlignage, mini-drisse. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-02 | **Résultats en flux** — Les fichiers apparaissent pendant le parcours ; annulation possible. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-03 | **Aperçu et navigation d'occurrence** — Lignes numérotées surlignées, occurrence suivante/précédente (touche N). | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-04 | **Onglet Tableau** — Grille des feuilles ; clic sur une colonne = ajout au mapping d'extraction. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-05 | **Sélecteur de dossier** — Navigation dans les dossiers depuis le navigateur, racines récentes. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-06 | **Responsive** — Rail et aperçu en panneaux coulissants sous 1080 px, mobile 390 px. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L6-07 | **Aucun CDN** — Polices, icônes et scripts servis par l'application. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L6-08 | **Mode sombre** — Thème abysse pour les postes en environnement sombre. | À faire | Basse | chim31 | — | Phase 8 |
 
 ## L7 — Robustesse et sécurité
@@ -114,13 +114,13 @@ _Ne jamais tourner en rond, ne jamais sortir du périmètre, toujours prévenir.
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L7-01 | **Fichiers protégés signalés** — ZIP chiffrés, Office chiffrés, PDF chiffrés : ignorés et signalés par notification + panneau de détail. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L7-02 | **Droits refusés et fichiers corrompus** — Dossiers/fichiers illisibles signalés, le parcours continue. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L7-03 | **Délais maximaux** — pdftotext interrompu au-delà de 30 s ; fichiers trop gros ignorés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L7-04 | **Identifiants signés** — HMAC : impossible de forger un lien pour lire un fichier arbitraire. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L7-05 | **Mot de passe d'accès** — POSEIDON_PASSWORD, session HttpOnly SameSite=Strict, en-tête anti-CSRF. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L7-06 | **En-têtes de sécurité** — CSP stricte (self), nosniff, X-Frame-Options, téléchargements en sandbox. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web |
-| L7-08 | **Protection DNS rebinding** — Sans mot de passe, seuls localhost et les hôtes déclarés (POSEIDON_HOSTS) sont servis ; en-tête X-Poseidon exigé sur l'API. | Terminé | Haute | chim31 | 2026-10-17 | feat/interface-web |
+| L7-01 | **Fichiers protégés signalés** — ZIP chiffrés, Office chiffrés, PDF chiffrés : ignorés et signalés par notification + panneau de détail. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L7-02 | **Droits refusés et fichiers corrompus** — Dossiers/fichiers illisibles signalés, le parcours continue. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L7-03 | **Délais maximaux** — pdftotext interrompu au-delà de 30 s ; fichiers trop gros ignorés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L7-04 | **Identifiants signés** — HMAC : impossible de forger un lien pour lire un fichier arbitraire. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L7-05 | **Mot de passe d'accès** — POSEIDON_PASSWORD, session HttpOnly SameSite=Strict, en-tête anti-CSRF. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L7-06 | **En-têtes de sécurité** — CSP stricte (self), nosniff, X-Frame-Options, téléchargements en sandbox. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L7-08 | **Protection DNS rebinding** — Sans mot de passe, seuls localhost et les hôtes déclarés (POSEIDON_HOSTS) sont servis ; en-tête X-Poseidon exigé sur l'API. | Terminé | Haute | chim31 | 2026-10-17 | feat/interface-web (fusionnée) |
 | L7-07 | **Comptes et rôles** — Plusieurs utilisateurs, racines par rôle, journal d'audit. | À faire | Moyenne | chim31 | — | Phase 8 |
 
 ## L8 — Comparaison (git diff)
@@ -129,9 +129,9 @@ _Comparer deux fichiers trouvés, quel que soit leur format._
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L8-01 | **Diff ligne à ligne** — Algorithme de Myers, blocs avec contexte, format unifié copiable. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L8-02 | **Comparer dans l'interface** — Cocher deux fichiers → vue diff colorée avec numéros de ligne. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L8-03 | **poseidon diff en CLI** — Sortie colorée façon git diff, code retour 1 si différent. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L8-01 | **Diff ligne à ligne** — Algorithme de Myers, blocs avec contexte, format unifié copiable. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L8-02 | **Comparer dans l'interface** — Cocher deux fichiers → vue diff colorée avec numéros de ligne. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L8-03 | **poseidon diff en CLI** — Sortie colorée façon git diff, code retour 1 si différent. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L8-04 | **Diff entre deux recherches** — Instantanés : fichiers apparus, disparus, occurrences en hausse. | À faire | Moyenne | chim31 | — | Phase 9 |
 | L8-05 | **Historique Git** — Dans un dépôt Git : rechercher dans les versions passées, diff entre commits. | À faire | Basse | chim31 | — | Phase 9 |
 
@@ -141,10 +141,10 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 
 | ID | Exigence | Statut | Priorité | Responsable | Date | Référence |
 | --- | --- | --- | --- | --- | --- | --- |
-| L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations |
-| L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main. | En cours | Haute | chim31 | 2026-10-16 | PR GitHub |
+| L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
+| L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |
 | L9-07 | **Intégration continue** — GitHub Actions : tests sur Linux et Windows à chaque PR. | À faire | Moyenne | chim31 | — | Phase 5 |

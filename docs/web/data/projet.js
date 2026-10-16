@@ -21,7 +21,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L1-02",
@@ -31,7 +31,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L1-03",
@@ -41,7 +41,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L1-04",
@@ -51,7 +51,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L1-05",
@@ -61,7 +61,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 }
             ]
         },
@@ -78,7 +78,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-02",
@@ -88,7 +88,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-03",
@@ -98,7 +98,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-04",
@@ -108,7 +108,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-05",
@@ -118,7 +118,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-06",
@@ -128,7 +128,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-07",
@@ -138,7 +138,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Basse",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-08",
@@ -148,7 +148,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Basse",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-09",
@@ -158,7 +158,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L2-10",
@@ -195,7 +195,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L3-02",
@@ -205,7 +205,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L3-03",
@@ -215,7 +215,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L3-04",
@@ -225,7 +225,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L3-05",
@@ -252,7 +252,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-02",
@@ -262,7 +262,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-03",
@@ -272,7 +272,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-04",
@@ -282,7 +282,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-05",
@@ -292,7 +292,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-06",
@@ -302,7 +302,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L4-07",
@@ -349,7 +349,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L5-02",
@@ -359,7 +359,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L5-03",
@@ -369,7 +369,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L5-04",
@@ -379,7 +379,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L5-05",
@@ -389,7 +389,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L5-06",
@@ -426,7 +426,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-02",
@@ -436,7 +436,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-03",
@@ -446,7 +446,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-04",
@@ -456,7 +456,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-05",
@@ -466,7 +466,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-06",
@@ -476,7 +476,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-07",
@@ -486,7 +486,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L6-08",
@@ -513,7 +513,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L7-02",
@@ -523,7 +523,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L7-03",
@@ -533,7 +533,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L7-04",
@@ -543,7 +543,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L7-05",
@@ -553,7 +553,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L7-06",
@@ -563,7 +563,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L7-08",
@@ -573,7 +573,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-17",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L7-07",
@@ -600,7 +600,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L8-02",
@@ -610,7 +610,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L8-03",
@@ -620,7 +620,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L8-04",
@@ -657,7 +657,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L9-02",
@@ -667,7 +667,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/interface-web"
+                    "ref": "feat/interface-web (fusionnée)"
                 },
                 {
                     "id": "L9-03",
@@ -677,7 +677,7 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "feat/moteur-recherche"
+                    "ref": "feat/moteur-recherche (fusionnée)"
                 },
                 {
                     "id": "L9-04",
@@ -687,17 +687,17 @@ window.POSEIDON_PROJET = {
                     "priorite": "Haute",
                     "responsable": "chim31",
                     "date": "2026-10-16",
-                    "ref": "docs/fondations"
+                    "ref": "docs/fondations (fusionnée)"
                 },
                 {
                     "id": "L9-05",
                     "titre": "Validation et fusion",
-                    "description": "Relecture des PR par le porteur, fusion dans main.",
-                    "statut": "En cours",
+                    "description": "Relecture des PR par le porteur, fusion dans main (PR #1 et #4).",
+                    "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
-                    "date": "2026-10-16",
-                    "ref": "PR GitHub"
+                    "date": "2026-10-17",
+                    "ref": "PR #1, #4"
                 },
                 {
                     "id": "L9-06",
@@ -783,9 +783,9 @@ window.POSEIDON_PROJET = {
             "statut": "En cours",
             "livrables": [
                 "Durcissement sécurité (7 corrections)",
-                "Relecture des PR",
-                "Essais sur de vraies arborescences Windows",
-                "Fusion dans main, étiquette v0.1.0"
+                "Relecture et fusion dans main (PR #1, #4) — fait",
+                "Essais sur de vraies arborescences Windows et partages réseau — à faire",
+                "Étiquette v0.1.0"
             ]
         },
         {

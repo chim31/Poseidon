@@ -44,10 +44,14 @@ Sur un UNC, `..` ne remonte jamais au-dessus de `\\serveur\partage`.
 | Racines autorisées | `RootGuard` | Liste blanche ; vérifiée à la recherche **et** à chaque ouverture de fichier |
 | Identifiants signés | `Support\Token`, `Source::id()` | HMAC-SHA256 tronqué (128 bits) avec `var/secret.key` (généré au premier lancement, `0600`, ignoré par Git) |
 | Authentification | `Http\Kernel` | `POSEIDON_PASSWORD`, comparaison `hash_equals`, délai aléatoire, `session_regenerate_id`, cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` en HTTPS) |
-| Anti-CSRF | `Http\Kernel` | `POST` refusé sans en-tête `X-Poseidon: 1` (impossible à poser depuis un formulaire tiers) |
+| Anti-CSRF | `Http\Kernel` | Toute l'API exige l'en-tête `X-Poseidon: 1` (impossible à poser depuis un site tiers sans pré-requête CORS, refusée), sauf les liens de téléchargement à identifiant signé |
+| Anti-DNS-rebinding | `Http\Kernel` | Sans mot de passe : seuls `localhost`, `127.0.0.1`, `::1` et `allowed_hosts` (`POSEIDON_HOSTS`) sont servis, sinon 421 |
 | En-têtes | `Http\Kernel` | CSP `default-src 'self'`, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` ; fichiers servis avec `CSP: sandbox` |
-| Exports | `Export\Writer` | Cellules CSV commençant par `= + - @` préfixées d'une apostrophe |
-| Archives | `ZipWalker` | Profondeur, taille, volume, ratio, nombre d'entrées bornés |
+| Exports | `Export\Writer` | Toute cellule CSV (en-têtes compris) commençant par `= + - @ \| %`, même après des espaces, préfixée d'une apostrophe |
+| Archives | `ZipWalker`, `OfficeArchive` | Profondeur, taille, volume, ratio, nombre d'entrées bornés ; parties XML Office bornées (150 Mo, ratio 200) |
+| PDF (lecteur PHP) | `PdfExtractor` | Décompression bornée : 50 Mo par flux, 200 Mo par document |
+| Tableurs | `SpreadsheetExtractor` | Colonnes ≤ 16 384, lignes ≤ 1 048 576 |
+| Diff | `Search\Diff` | Au-delà de 1 000 différences, repli grossier (mémoire bornée) |
 | Exécution externe | `Support\Process` | `proc_open` avec tableau d'arguments (pas de shell), délai maximal |
 
 ## Gestion des erreurs et avertissements

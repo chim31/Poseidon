@@ -10,7 +10,8 @@ L'interface web consomme cette API ; elle est aussi utilisable par un script (`c
 | Versionnement | aucun préfixe pour la v0.x ; `/api/v1` sera introduit avant la v1.0 |
 | Format | JSON UTF-8, sauf `/api/search` (NDJSON) et les téléchargements |
 | Authentification | si `POSEIDON_PASSWORD` est défini : `POST /api/login`, puis cookie de session `poseidon` |
-| Anti-CSRF | toute requête `POST` doit porter l'en-tête `X-Poseidon: 1` |
+| En-tête obligatoire | toute requête `/api/` doit porter `X-Poseidon: 1` (anti-CSRF et anti-rebinding), sauf `GET /api/file` et `GET /api/text` (liens de téléchargement à identifiant signé) |
+| Hôtes | sans mot de passe, seuls `localhost`, `127.0.0.1`, `::1` et les hôtes de `POSEIDON_HOSTS` sont servis (sinon 421) |
 | Erreurs | `{"error": "message"}` avec le code HTTP ci-dessous ; les fichiers protégés ajoutent `"reason"` |
 | Identifiants de fichiers | jetons signés `id` reçus dans les résultats ; ne pas les fabriquer |
 
@@ -20,6 +21,7 @@ L'interface web consomme cette API ; elle est aussi utilisable par un script (`c
 | 401 | Authentification requise ou mot de passe incorrect |
 | 403 | En-tête `X-Poseidon` manquant, ou chemin hors des racines autorisées |
 | 404 | Route inconnue |
+| 421 | Hôte non autorisé (protection DNS rebinding) |
 | 415 | Fichier sans texte exploitable |
 | 422 | Fichier illisible ou protégé (`reason` : `protected`, `denied`, `corrupt`, `timeout`…) |
 | 500 | Erreur interne (journalisée par PHP) |
@@ -46,7 +48,7 @@ Utilisés par `/api/search`, `/api/preview` et `/api/extract`.
 
 ### `GET /api/info`
 
-Informations publiques. Réponse :
+Informations publiques (en-tête `X-Poseidon: 1` requis). Réponse :
 
 ```json
 { "name": "Poseidon", "version": "0.1.0", "php": "8.4.24", "os": "Linux", "pdfEngine": "pdftotext",

@@ -98,6 +98,7 @@ return [
 | --- | --- | --- |
 | `POSEIDON_ROOTS` | vide (aucune restriction) | Racines autorisées, séparées par `;` |
 | `POSEIDON_PASSWORD` | vide (pas d'authentification) | Mot de passe d'accès à l'interface |
+| `POSEIDON_HOSTS` | vide | Noms d'hôte acceptés en plus de `localhost` quand il n'y a pas de mot de passe (ex. `poste-42;192.168.1.20`) |
 | `POSEIDON_MAX_FILE_SIZE` | 200 Mo | Taille maximale d'un fichier analysé (octets) |
 | `POSEIDON_PDFTOTEXT` | détecté dans le `PATH` | Chemin explicite de `pdftotext` |
 | `POSEIDON_ANTIWORD` | détecté dans le `PATH` | Chemin explicite d'`antiword` |
@@ -170,7 +171,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `56 tests réussis`.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `60 tests réussis`.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
@@ -178,7 +179,7 @@ Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
 Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour un accès réseau :
 
-1. **Toujours** définir `POSEIDON_PASSWORD` et `POSEIDON_ROOTS`.
+1. **Toujours** définir `POSEIDON_PASSWORD` et `POSEIDON_ROOTS`. Sans mot de passe, Poseidon ne répond qu'aux hôtes locaux et à ceux de `POSEIDON_HOSTS` (protection contre le « DNS rebinding »).
 2. Servir `public/` avec Apache ou Nginx + PHP-FPM, en réécrivant toutes les requêtes non statiques vers `public/index.php` :
 
    ```nginx
@@ -223,5 +224,6 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | Texte de PDF mal découpé | Lecteur PHP de secours utilisé | Installer `pdftotext` (poppler) |
 | Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Tous les mots » (voir [anomalies](../03-suivi/anomalies.md)) |
 | L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Attendre la fin de la recherche, ou servir via Apache/Nginx (§ 8) |
+| « Hôte non autorisé » (code 421) | Accès par un nom ou une IP autre que `localhost` sans mot de passe | Définir `POSEIDON_PASSWORD`, ou ajouter l'hôte à `POSEIDON_HOSTS` |
 | « Identifiant de fichier invalide ou expiré » | `var/secret.key` régénéré (nouvelle installation) | Relancer la recherche |
 | Fichier signalé « Protégé » | Mot de passe sur le document ou l'archive | Normal : Poseidon n'ouvre pas les fichiers protégés |

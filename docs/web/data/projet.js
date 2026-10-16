@@ -3,7 +3,7 @@ window.POSEIDON_PROJET = {
     "meta": {
         "projet": "Poseidon",
         "version": "0.1.0",
-        "miseAJour": "2026-10-16",
+        "miseAJour": "2026-10-17",
         "porteur": "chim31",
         "resume": "Recherche et extraction dans les fichiers : la combinaison ls -R, grep -R -i, pipes et cat, en PHP, avec PDF, Word, Excel, OpenDocument et ZIP imbriqués."
     },
@@ -210,7 +210,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L3-03",
                     "titre": "Protection anti-bombe ZIP",
-                    "description": "Limites de profondeur, taille par entrée, volume total, ratio de compression, nombre d'entrées.",
+                    "description": "Limites de profondeur, taille par entrée, volume total, ratio, nombre d'entrées ; parties Office et flux PDF bornés.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -566,6 +566,16 @@ window.POSEIDON_PROJET = {
                     "ref": "feat/interface-web"
                 },
                 {
+                    "id": "L7-08",
+                    "titre": "Protection DNS rebinding",
+                    "description": "Sans mot de passe, seuls localhost et les hôtes déclarés (POSEIDON_HOSTS) sont servis ; en-tête X-Poseidon exigé sur l'API.",
+                    "statut": "Terminé",
+                    "priorite": "Haute",
+                    "responsable": "chim31",
+                    "date": "2026-10-17",
+                    "ref": "feat/interface-web"
+                },
+                {
                     "id": "L7-07",
                     "titre": "Comptes et rôles",
                     "description": "Plusieurs utilisateurs, racines par rôle, journal d'audit.",
@@ -662,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 56 vérifications sur échantillons synthétiques.",
+                    "description": "Suite sans dépendance : 60 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -737,7 +747,7 @@ window.POSEIDON_PROJET = {
                 "Modes ET / OU / phrase / regex",
                 "Extraction CSV/XLSX/JSON/TXT/MD",
                 "Diff Myers",
-                "CLI + 56 tests"
+                "CLI + 60 tests"
             ]
         },
         {
@@ -772,6 +782,7 @@ window.POSEIDON_PROJET = {
             "fin": "2026-10-23",
             "statut": "En cours",
             "livrables": [
+                "Durcissement sécurité (6 corrections)",
                 "Relecture des PR",
                 "Essais sur de vraies arborescences Windows",
                 "Fusion dans main, étiquette v0.1.0"

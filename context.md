@@ -2,7 +2,7 @@
 
 > Source de vérité partagée par tous les intervenants (humains et agents). À lire au début de chaque session, à mettre à jour avant de clôturer toute action.
 
-**Dernière mise à jour :** 2026-10-16 · **Version :** 0.1.0
+**Dernière mise à jour :** 2026-10-17 · **Version :** 0.1.0
 
 ## Sommaire
 
@@ -47,7 +47,7 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 
 | Élément | État |
 | --- | --- |
-| Moteur (parcours, ZIP, extracteurs, recherche, extraction, diff) | Terminé, testé (56 tests) — branche `feat/moteur-recherche` |
+| Moteur (parcours, ZIP, extracteurs, recherche, extraction, diff) | Terminé, testé (60 tests) — branche `feat/moteur-recherche` |
 | Interface web + API + lanceurs | Terminé, revue de design faite — branche `feat/interface-web` |
 | Documentation, cahier des charges, roadmap | Terminé — branche `docs/fondations` |
 | Fusion dans `main` | **En attente de validation du porteur** (PR ouvertes) |
@@ -69,13 +69,14 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Durcissement après revue de sécurité automatique | Protection DNS rebinding (liste d'hôtes, `POSEIDON_HOSTS`), en-tête `X-Poseidon` sur toute l'API, bornes anti-bombe (Office, PDF, tableurs), diff à mémoire bornée, formules CSV neutralisées partout. Voir BUG-012 à BUG-017. |
 | 2026-10-16 | Suivi piloté par `docs/web/data/projet.json` | Une seule source ; `php docs/tools/sync.php` régénère les vues web et Markdown. |
 
 ## 5. Contraintes
 
 - **Aucun CDN** : polices (Archivo, JetBrains Mono, licence OFL), icônes et scripts servis par l'application.
 - **Chemins** : slash et anti-slash, lecteurs Windows, UNC `\\serveur\partage`, `file://`, `smb://`, chemins entre guillemets.
-- **Réseau** : l'interface doit fonctionner dans un navigateur, en local, sur intranet ou sur un serveur distant → mot de passe (`POSEIDON_PASSWORD`), racines autorisées (`POSEIDON_ROOTS`) et HTTPS (proxy inverse) obligatoires hors poste local.
+- **Réseau** : l'interface doit fonctionner dans un navigateur, en local, sur intranet ou sur un serveur distant → mot de passe (`POSEIDON_PASSWORD`), racines autorisées (`POSEIDON_ROOTS`) et HTTPS (proxy inverse) obligatoires hors poste local. Sans mot de passe, seuls `localhost` et les hôtes de `POSEIDON_HOSTS` sont servis.
 - **Prérequis** : PHP ≥ 8.2 avec `zip` et `mbstring`. Optionnels : `pdftotext` (poppler), `antiword`.
 - **Git** : une branche par fonctionnalité, Conventional Commits, **aucune mention de co-auteur** (ni `Co-authored-by`, ni signature d'outil), PR via `gh`, fusion après validation du porteur pour tout changement structurant.
 - **Sécurité** : aucun secret dans le dépôt ; `var/secret.key` est généré localement et ignoré par Git.
@@ -110,4 +111,5 @@ Projet individuel : pas de binôme.
 | --- | --- |
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
-| 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR ouvertes pour validation. |
+| 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Revue de sécurité : 6 corrections (dont DNS rebinding) intégrées aux PR, 60 tests. |

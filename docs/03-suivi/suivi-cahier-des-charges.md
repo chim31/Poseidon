@@ -3,11 +3,11 @@
 > Généré par `php docs/tools/sync.php` depuis [`docs/web/data/projet.json`](../web/data/projet.json) — modifier le JSON, pas ce fichier.
 > Version web : [cahier-des-charges.html](../web/cahier-des-charges.html) · [roadmap.html](../web/roadmap.html)
 
-**Mise à jour :** 2026-10-16 · **Version :** 0.1.0
+**Mise à jour :** 2026-10-17 · **Version :** 0.1.0
 
 ## Tableau de bord
 
-Avancement global : **77 %** `███████████████░░░░░` — 64 exigences : 49 terminées, 1 en cours, 14 à faire, 0 bloquées.
+Avancement global : **77 %** `███████████████░░░░░` — 65 exigences : 50 terminées, 1 en cours, 14 à faire, 0 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -17,7 +17,7 @@ Avancement global : **77 %** `███████████████░�
 | L4 | Recherche | 6 | 0 | 3 | 67 % |
 | L5 | Extraction de données | 5 | 0 | 2 | 71 % |
 | L6 | Interface web | 7 | 0 | 1 | 88 % |
-| L7 | Robustesse et sécurité | 6 | 0 | 1 | 86 % |
+| L7 | Robustesse et sécurité | 7 | 0 | 1 | 88 % |
 | L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
 | L9 | Exploitation et documentation | 4 | 1 | 2 | 57 % |
 
@@ -59,7 +59,7 @@ _Un fichier dans un ZIP dans un ZIP est un fichier comme un autre._
 | --- | --- | --- | --- | --- | --- | --- |
 | L3-01 | **Parcours récursif des ZIP** — ZIP, JAR, WAR, EAR, avec imbrication (profondeur configurable). | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L3-02 | **Chemins chaînés** — Chemin absolu et relatif : archives/2025.zip › clients/nereide.zip › contrat.docx. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L3-03 | **Protection anti-bombe ZIP** — Limites de profondeur, taille par entrée, volume total, ratio de compression, nombre d'entrées. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L3-03 | **Protection anti-bombe ZIP** — Limites de profondeur, taille par entrée, volume total, ratio, nombre d'entrées ; parties Office et flux PDF bornés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L3-04 | **Téléchargement d'une entrée** — Une entrée d'archive imbriquée se télécharge comme un fichier normal. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
 | L3-05 | **7z, RAR, tar.gz** — Autres formats d'archives (via binaires optionnels). | À faire | Basse | chim31 | — | Phase 6 |
 
@@ -120,6 +120,7 @@ _Ne jamais tourner en rond, ne jamais sortir du périmètre, toujours prévenir.
 | L7-04 | **Identifiants signés** — HMAC : impossible de forger un lien pour lire un fichier arbitraire. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
 | L7-05 | **Mot de passe d'accès** — POSEIDON_PASSWORD, session HttpOnly SameSite=Strict, en-tête anti-CSRF. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
 | L7-06 | **En-têtes de sécurité** — CSP stricte (self), nosniff, X-Frame-Options, téléchargements en sandbox. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web |
+| L7-08 | **Protection DNS rebinding** — Sans mot de passe, seuls localhost et les hôtes déclarés (POSEIDON_HOSTS) sont servis ; en-tête X-Poseidon exigé sur l'API. | Terminé | Haute | chim31 | 2026-10-17 | feat/interface-web |
 | L7-07 | **Comptes et rôles** — Plusieurs utilisateurs, racines par rôle, journal d'audit. | À faire | Moyenne | chim31 | — | Phase 8 |
 
 ## L8 — Comparaison (git diff)
@@ -142,7 +143,7 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 56 vérifications sur échantillons synthétiques. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 60 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main. | En cours | Haute | chim31 | 2026-10-16 | PR GitHub |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |

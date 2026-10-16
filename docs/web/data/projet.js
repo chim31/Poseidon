@@ -46,7 +46,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L1-04",
                     "titre": "Racines autorisées",
-                    "description": "Liste blanche (POSEIDON_ROOTS) : aucun accès hors périmètre, y compris par « .. ».",
+                    "description": "Liste blanche (POSEIDON_ROOTS) contrôlée sur les chemins réels : aucun accès hors périmètre, ni par « .. », ni par lien symbolique.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -672,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 60 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés.",
+                    "description": "Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -747,7 +747,7 @@ window.POSEIDON_PROJET = {
                 "Modes ET / OU / phrase / regex",
                 "Extraction CSV/XLSX/JSON/TXT/MD",
                 "Diff Myers",
-                "CLI + 60 tests"
+                "CLI + 62 tests"
             ]
         },
         {
@@ -782,7 +782,7 @@ window.POSEIDON_PROJET = {
             "fin": "2026-10-23",
             "statut": "En cours",
             "livrables": [
-                "Durcissement sécurité (6 corrections)",
+                "Durcissement sécurité (7 corrections)",
                 "Relecture des PR",
                 "Essais sur de vraies arborescences Windows",
                 "Fusion dans main, étiquette v0.1.0"

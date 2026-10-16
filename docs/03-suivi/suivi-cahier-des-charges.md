@@ -30,7 +30,7 @@ _Poser une racine (locale, Windows, réseau) et parcourir toute l'arborescence c
 | L1-01 | **Racine locale, Windows et UNC** — Accepte /home/…, C:\…, \\serveur\partage, file://, smb://, chemins entre guillemets ; normalise slash et anti-slash. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L1-02 | **Parcours récursif en flux** — Parcours itératif (pas de récursion PHP), ordre alphabétique, protection contre les boucles de liens symboliques. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L1-03 | **Dossiers exclus** — .git, node_modules, vendor… configurables. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
-| L1-04 | **Racines autorisées** — Liste blanche (POSEIDON_ROOTS) : aucun accès hors périmètre, y compris par « .. ». | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L1-04 | **Racines autorisées** — Liste blanche (POSEIDON_ROOTS) contrôlée sur les chemins réels : aucun accès hors périmètre, ni par « .. », ni par lien symbolique. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L1-05 | **Partages réseau sous Linux** — Correspondance \\serveur\partage → point de montage (network_mounts), message explicite si non monté. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche |
 
 ## L2 — Formats de fichiers
@@ -143,7 +143,7 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 60 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main. | En cours | Haute | chim31 | 2026-10-16 | PR GitHub |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |

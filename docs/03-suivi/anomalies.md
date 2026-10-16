@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 17 anomalies corrigées (dont 6 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 18 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -25,6 +25,7 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-015 | Bombe de décompression dans un PDF (lecteur PHP) | Flux FlateDecode décompressés sans limite | PDF forgé, sans pdftotext | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `zlib_decode` borné (50 Mo par flux) et budget de 200 Mo par document. | feat/moteur-recherche |
 | BUG-016 | Index de colonne non borné (tableurs) | Une référence `ZZZZ1` ou une répétition ODS géante créait des tableaux démesurés | XLSX/ODS forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Colonnes bornées à 16 384 et lignes à 1 048 576 (limites Excel) ; mapping limité à 1 024 colonnes. | feat/moteur-recherche |
 | BUG-017 | Mémoire du diff non bornée | Deux fichiers très différents faisaient croître la trace de Myers en O(D²) | Comparer deux gros fichiers sans rapport | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Au-delà de 1 000 différences (ou 200 000 lignes), comparaison grossière (bloc supprimé / bloc ajouté). | feat/moteur-recherche |
+| BUG-018 | Sortie du périmètre par lien symbolique | Avec des racines autorisées, un lien symbolique placé dans une racine (vers `/etc`, `C:\Windows`…) était suivi / il doit être ignoré | Lien `racine/fuite → /etc` puis recherche | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Racines autorisées stockées en chemin réel ; contrôle sur `realpath` pour la racine saisie, chaque lien parcouru et chaque fichier servi ; lien hors périmètre signalé et ignoré. | feat/moteur-recherche |
 
 ## Limitations connues
 

@@ -47,7 +47,7 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 
 | Élément | État |
 | --- | --- |
-| Moteur (parcours, ZIP, extracteurs, recherche, extraction, diff) | Terminé, testé (60 tests) — branche `feat/moteur-recherche` |
+| Moteur (parcours, ZIP, extracteurs, recherche, extraction, diff) | Terminé, testé (62 tests) — branche `feat/moteur-recherche` |
 | Interface web + API + lanceurs | Terminé, revue de design faite — branche `feat/interface-web` |
 | Documentation, cahier des charges, roadmap | Terminé — branche `docs/fondations` |
 | Fusion dans `main` | **En attente de validation du porteur** (PR ouvertes) |
@@ -69,7 +69,7 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
-| 2026-10-17 | Durcissement après revue de sécurité automatique | Protection DNS rebinding (liste d'hôtes, `POSEIDON_HOSTS`), en-tête `X-Poseidon` sur toute l'API, bornes anti-bombe (Office, PDF, tableurs), diff à mémoire bornée, formules CSV neutralisées partout. Voir BUG-012 à BUG-017. |
+| 2026-10-17 | Durcissement après revue de sécurité automatique | Protection DNS rebinding (liste d'hôtes, `POSEIDON_HOSTS`), en-tête `X-Poseidon` sur toute l'API, bornes anti-bombe (Office, PDF, tableurs), diff à mémoire bornée, formules CSV neutralisées partout. Racines contrôlées sur chemin réel (liens symboliques). Voir BUG-012 à BUG-018. |
 | 2026-10-16 | Suivi piloté par `docs/web/data/projet.json` | Une seule source ; `php docs/tools/sync.php` régénère les vues web et Markdown. |
 
 ## 5. Contraintes
@@ -112,4 +112,4 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
-| 2026-10-17 | Revue de sécurité : 6 corrections (dont DNS rebinding) intégrées aux PR, 60 tests. |
+| 2026-10-17 | Revue de sécurité : 7 corrections (DNS rebinding, liens symboliques…) intégrées aux PR, 62 tests. |

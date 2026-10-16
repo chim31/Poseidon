@@ -41,7 +41,7 @@ Sur un UNC, `..` ne remonte jamais au-dessus de `\\serveur\partage`.
 
 | Mesure | Où | Détail |
 | --- | --- | --- |
-| Racines autorisées | `RootGuard` | Liste blanche ; vérifiée à la recherche **et** à chaque ouverture de fichier |
+| Racines autorisées | `RootGuard` | Liste blanche en chemins réels ; vérifiée sur `realpath` à la recherche, pour chaque lien symbolique parcouru **et** à chaque ouverture de fichier |
 | Identifiants signés | `Support\Token`, `Source::id()` | HMAC-SHA256 tronqué (128 bits) avec `var/secret.key` (généré au premier lancement, `0600`, ignoré par Git) |
 | Authentification | `Http\Kernel` | `POSEIDON_PASSWORD`, comparaison `hash_equals`, délai aléatoire, `session_regenerate_id`, cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` en HTTPS) |
 | Anti-CSRF | `Http\Kernel` | Toute l'API exige l'en-tête `X-Poseidon: 1` (impossible à poser depuis un site tiers sans pré-requête CORS, refusée), sauf les liens de téléchargement à identifiant signé |

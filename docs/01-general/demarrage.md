@@ -171,7 +171,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `60 tests réussis`.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `62 tests réussis`.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 

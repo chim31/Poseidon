@@ -10,6 +10,9 @@ namespace Poseidon\Search;
  */
 final class Diff
 {
+    /** Nombre maximal de lignes différentes traitées finement (borne la mémoire). */
+    public const MAX_EDITS = 1000;
+
     /**
      * @param list<string> $a
      * @param list<string> $b
@@ -126,12 +129,13 @@ final class Diff
         if ($m === 0) {
             return array_map(static fn (string $l): array => ['-', $l], $a);
         }
-        if ($n * $m > 25_000_000) {
-            // Trop gros pour un diff fin : bloc supprimé / bloc ajouté.
-            return [...array_map(static fn (string $l): array => ['-', $l], $a), ...array_map(static fn (string $l): array => ['+', $l], $b)];
+        // Mémoire de Myers en O(D²) : au-delà de MAX_EDITS différences, comparaison grossière.
+        $crude = static fn (): array => [...array_map(static fn (string $l): array => ['-', $l], $a), ...array_map(static fn (string $l): array => ['+', $l], $b)];
+        if ($n + $m > 200_000) {
+            return $crude();
         }
 
-        $max = $n + $m;
+        $max = min($n + $m, self::MAX_EDITS);
         $v = [1 => 0];
         $trace = [];
         for ($d = 0; $d <= $max; $d++) {
@@ -154,7 +158,7 @@ final class Diff
             }
         }
 
-        return [];
+        return $crude();
     }
 
     /** @return list<array{0: string, 1: string}> */

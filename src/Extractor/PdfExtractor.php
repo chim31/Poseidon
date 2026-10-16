@@ -97,14 +97,19 @@ final class PdfExtractor implements Extractor
 
         $lines = [];
         $page = 0;
+        $budget = 200 * 1024 * 1024; // volume décompressé maximal par document (anti-bombe)
         preg_match_all('#<<(.*?)>>\s*stream\r?\n(.*?)\r?\nendstream#s', $pdf, $streams, PREG_SET_ORDER);
         foreach ($streams as $stream) {
             $dict = $stream[1];
             $data = $stream[2];
             if (str_contains($dict, '/FlateDecode')) {
-                $decoded = @zlib_decode($data);
+                $decoded = @zlib_decode($data, min(50 * 1024 * 1024, $budget));
                 if ($decoded === false) {
                     continue;
+                }
+                $budget -= strlen($decoded);
+                if ($budget <= 0) {
+                    throw new UnreadableFileException('PDF suspect (flux décompressés démesurés) : analyse interrompue.', UnreadableFileException::LIMIT);
                 }
                 $data = $decoded;
             } elseif (preg_match('#/Filter#', $dict)) {

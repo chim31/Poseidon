@@ -16,6 +16,10 @@ final class OfficeArchive
 {
     private const OLE_SIGNATURE = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1";
 
+    /** Taille maximale d'une partie XML décompressée, et ratio de compression toléré (anti-bombe). */
+    private const MAX_PART_SIZE = 150 * 1024 * 1024;
+    private const MAX_RATIO = 200;
+
     private function __construct(private ZipHandle $handle)
     {
     }
@@ -35,6 +39,14 @@ final class OfficeArchive
 
     public function read(string $name): ?string
     {
+        $stat = $this->handle->zip->statName($name);
+        if ($stat === false) {
+            return null;
+        }
+        $size = (int) $stat['size'];
+        if ($size > self::MAX_PART_SIZE || ($size > 1024 * 1024 && intdiv($size, max(1, (int) $stat['comp_size'])) > self::MAX_RATIO)) {
+            throw new UnreadableFileException('Document bureautique suspect (partie interne démesurée) : ignoré.', UnreadableFileException::LIMIT);
+        }
         $data = $this->handle->zip->getFromName($name);
 
         return $data === false ? null : $data;

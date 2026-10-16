@@ -41,7 +41,7 @@ final class Writer
     {
         $fh = fopen('php://temp', 'r+');
         fwrite($fh, "\xEF\xBB\xBF");
-        fputcsv($fh, $columns, ';', '"', '');
+        fputcsv($fh, array_map([self::class, 'neutralizeFormula'], $columns), ';', '"', '');
         foreach ($rows as $row) {
             fputcsv($fh, array_map([self::class, 'neutralizeFormula'], $row), ';', '"', '');
         }
@@ -76,11 +76,15 @@ final class Writer
         return $out;
     }
 
-    /** Empêche l'injection de formules à l'ouverture dans un tableur (=, +, -, @). */
+    /** Empêche l'injection de formules à l'ouverture dans un tableur (=, +, -, @, y compris après des espaces). */
     private static function neutralizeFormula(string $value): string
     {
-        return $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) && !is_numeric($value)
-            ? "'" . $value
-            : $value;
+        if ($value === '' || is_numeric($value)) {
+            return $value;
+        }
+        $first = ltrim($value, " \u{00A0}")[0] ?? '';
+        $risky = in_array($first, ['=', '+', '-', '@', '|', '%'], true) || in_array($value[0], ["\t", "\r", "\n"], true);
+
+        return $risky ? "'" . $value : $value;
     }
 }

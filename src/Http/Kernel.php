@@ -47,6 +47,15 @@ final class Kernel
         $path = '/' . trim((string) parse_url($uri, PHP_URL_PATH), '/');
         $this->securityHeaders();
 
+        // Anti « DNS rebinding » : sans mot de passe, seuls les hôtes locaux ou déclarés sont servis.
+        if (!$this->hostAllowed((string) ($_SERVER['HTTP_HOST'] ?? ''))) {
+            http_response_code(421);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Hôte non autorisé. Accède à Poseidon via 127.0.0.1 ou localhost, ou déclare cet hôte dans POSEIDON_HOSTS (ou protège l'instance avec POSEIDON_PASSWORD).";
+
+            return;
+        }
+
         if ($path === '/projet' || str_starts_with($path, '/projet/')) {
             $this->projectDocs(substr($path, strlen('/projet')));
 
@@ -60,7 +69,10 @@ final class Kernel
 
         $this->startSession();
         try {
-            if ($method === 'POST' && ($_SERVER['HTTP_X_POSEIDON'] ?? '') !== '1') {
+            // En-tête obligatoire sur toute l'API (sauf liens de téléchargement, protégés par identifiant signé) :
+            // un site tiers ne peut pas le poser sans requête préalable CORS, refusée.
+            $direct = $method === 'GET' && in_array($path, ['/api/file', '/api/text'], true);
+            if (!$direct && ($_SERVER['HTTP_X_POSEIDON'] ?? '') !== '1') {
                 throw new HttpError(403, 'Requête refusée (en-tête de sécurité manquant).');
             }
             if ($path === '/api/login' && $method === 'POST') {
@@ -401,6 +413,20 @@ final class Kernel
         session_name('poseidon');
         session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => !empty($_SERVER['HTTPS'])]);
         session_start();
+    }
+
+    private function hostAllowed(string $host): bool
+    {
+        if ($this->passwordRequired() || PHP_SAPI === 'cli') {
+            return true;
+        }
+        $name = strtolower((string) preg_replace('/:\d+$/', '', trim($host)));
+        if (in_array($name, ['localhost', '127.0.0.1', '[::1]', '::1'], true) || str_ends_with($name, '.localhost')) {
+            return true;
+        }
+        $extra = array_filter(array_map(static fn (string $h): string => strtolower(trim($h)), (array) $this->config->get('allowed_hosts', [])));
+
+        return in_array($name, $extra, true);
     }
 
     private function passwordRequired(): bool

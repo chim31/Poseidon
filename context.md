@@ -1,0 +1,113 @@
+# Contexte du projet Poseidon
+
+> Source de vérité partagée par tous les intervenants (humains et agents). À lire au début de chaque session, à mettre à jour avant de clôturer toute action.
+
+**Dernière mise à jour :** 2026-10-16 · **Version :** 0.1.0
+
+## Sommaire
+
+1. [Objectif](#1-objectif)
+2. [Périmètre](#2-périmètre)
+3. [État actuel](#3-état-actuel)
+4. [Décisions techniques et fonctionnelles](#4-décisions-techniques-et-fonctionnelles)
+5. [Contraintes](#5-contraintes)
+6. [Intervenants et responsabilités](#6-intervenants-et-responsabilités)
+7. [Documents du projet](#7-documents-du-projet)
+8. [Historique](#8-historique)
+
+## 1. Objectif
+
+Poseidon est un outil PHP qui se comporte comme la combinaison des commandes Unix `ls -R`, `grep -R -i`, des pipes et de `cat` :
+
+- on choisit un **répertoire racine** (local, lecteur Windows, partage réseau `\\serveur\partage`) ;
+- on donne un **filtre** : un mot, une phrase en bloc, une phrase découpée en plusieurs mots (ET / OU) ou une expression régulière ;
+- Poseidon indique **combien de fichiers** contiennent l'information, **où** (chemins absolu et relatif, y compris dans des ZIP imbriqués), **combien d'occurrences** par terme, et **sur quelles lignes** ;
+- on peut **consulter** le contenu, **télécharger** le fichier, **comparer** deux fichiers (façon `git diff`) ;
+- on peut **extraire** uniquement les mots, motifs ou colonnes désignés vers un nouveau document, comme un `SELECT` avec mapping sur une base de données.
+
+Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PPTX, ODP, ZIP récursif.
+
+## 2. Périmètre
+
+| Inclus | Exclu (pour l'instant) |
+| --- | --- |
+| Recherche récursive locale et réseau | Écriture ou suppression dans la racine |
+| 11 familles de formats + ZIP imbriqués | Ouverture des fichiers protégés par mot de passe |
+| Modes ET / OU / phrase / regex, casse, accents, mot entier | OCR des documents scannés (phase 6) |
+| Extraction CSV / XLSX / JSON / TXT / MD, mapping de colonnes | Accès SMB direct sous Linux sans montage |
+| Comparaison de deux fichiers (diff unifié) | Comptes multiples et rôles (phase 8) |
+| Interface web, CLI, lanceurs `.bat` / `.sh` | Base de données (cache disque uniquement) |
+
+**Documents non créés car non applicables** (règle d'adaptation) :
+
+- `docs/01-general/base-de-donnees.md` : Poseidon n'a pas de base de données. Le seul stockage est un cache de texte extrait sur disque (`var/cache`), décrit dans [socle-transversal.md](docs/02-technique/socle-transversal.md#cache). Un index SQLite FTS5 est prévu en phase 5 ; le document sera créé à ce moment-là.
+- `docs/02-technique/interface/` : l'interface tient en un seul écran ; ses zones sont décrites dans [interface.md](docs/02-technique/interface.md).
+
+## 3. État actuel
+
+| Élément | État |
+| --- | --- |
+| Moteur (parcours, ZIP, extracteurs, recherche, extraction, diff) | Terminé, testé (56 tests) — branche `feat/moteur-recherche` |
+| Interface web + API + lanceurs | Terminé, revue de design faite — branche `feat/interface-web` |
+| Documentation, cahier des charges, roadmap | Terminé — branche `docs/fondations` |
+| Fusion dans `main` | **En attente de validation du porteur** (PR ouvertes) |
+| Prochaine phase | P5 — Performance et fiabilité (index FTS5, CI) |
+
+Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
+
+## 4. Décisions techniques et fonctionnelles
+
+| Date | Décision | Justification |
+| --- | --- | --- |
+| 2026-10-16 | PHP 8.4 natif, sans framework ni Composer | Validé par le porteur. Laravel exige ext-dom/xml, absents de la machine ; zéro dépendance = installation immédiate sous Windows. Laravel reste une option. |
+| 2026-10-16 | Lecture DOCX/XLSX/ODT/PPTX par expressions régulières | Pas d'ext-dom ; les formats Office sont des ZIP de XML simples à lire. |
+| 2026-10-16 | PDF : `pdftotext` si présent, lecteur PHP de secours sinon | Meilleure qualité quand poppler existe, résultat minimal garanti sinon. |
+| 2026-10-16 | Résultats diffusés en flux (NDJSON) | Vitesse ressentie, annulation possible. |
+| 2026-10-16 | Cache disque du texte extrait (PDF, Office) | Deuxième recherche quasi instantanée. |
+| 2026-10-16 | Identifiants de fichiers signés (HMAC) | Empêche de forger un lien vers un fichier arbitraire du serveur. |
+| 2026-10-16 | Fichiers protégés / illisibles : ignorés et signalés | Demande du porteur : le programme ne doit jamais tourner en rond. Alerte en ligne + panneau de détail dans l'interface, avertissements sur stderr en CLI. |
+| 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
+| 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
+| 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-16 | Suivi piloté par `docs/web/data/projet.json` | Une seule source ; `php docs/tools/sync.php` régénère les vues web et Markdown. |
+
+## 5. Contraintes
+
+- **Aucun CDN** : polices (Archivo, JetBrains Mono, licence OFL), icônes et scripts servis par l'application.
+- **Chemins** : slash et anti-slash, lecteurs Windows, UNC `\\serveur\partage`, `file://`, `smb://`, chemins entre guillemets.
+- **Réseau** : l'interface doit fonctionner dans un navigateur, en local, sur intranet ou sur un serveur distant → mot de passe (`POSEIDON_PASSWORD`), racines autorisées (`POSEIDON_ROOTS`) et HTTPS (proxy inverse) obligatoires hors poste local.
+- **Prérequis** : PHP ≥ 8.2 avec `zip` et `mbstring`. Optionnels : `pdftotext` (poppler), `antiword`.
+- **Git** : une branche par fonctionnalité, Conventional Commits, **aucune mention de co-auteur** (ni `Co-authored-by`, ni signature d'outil), PR via `gh`, fusion après validation du porteur pour tout changement structurant.
+- **Sécurité** : aucun secret dans le dépôt ; `var/secret.key` est généré localement et ignoré par Git.
+
+## 6. Intervenants et responsabilités
+
+| Intervenant | Rôle |
+| --- | --- |
+| chim31 | Porteur du projet : besoin, validation des PR, fusion des changements structurants |
+| Agent IA de développement | Conception, code, tests, documentation sur branches dédiées ; fusion autonome limitée à la documentation et aux corrections mineures |
+
+Projet individuel : pas de binôme.
+
+## 7. Documents du projet
+
+| Document | Rôle |
+| --- | --- |
+| [README.md](README.md) | Présentation et démarrage rapide |
+| [PRODUCT.md](PRODUCT.md) | Vérité produit (utilisateurs, principes) |
+| [DESIGN.md](DESIGN.md) | Système visuel « Pavillons de signaux » |
+| [docs/README.md](docs/README.md) | Index de la documentation |
+| [docs/01-general/demarrage.md](docs/01-general/demarrage.md) | Installer et lancer, pas à pas |
+| [docs/01-general/architecture.md](docs/01-general/architecture.md) | Architecture et flux |
+| [docs/01-general/api.md](docs/01-general/api.md) | API HTTP |
+| [docs/web/cahier-des-charges.html](docs/web/cahier-des-charges.html) | Cahier des charges et avancement |
+| [docs/web/roadmap.html](docs/web/roadmap.html) | Roadmap |
+| [docs/03-suivi/anomalies.md](docs/03-suivi/anomalies.md) | Registre des anomalies |
+
+## 8. Historique
+
+| Date | Évolution |
+| --- | --- |
+| 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
+| 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
+| 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR ouvertes pour validation. |

@@ -20,7 +20,7 @@ final class FileLocator
     public function locate(string $id): Source
     {
         [$diskPath, $chain, $root] = Source::decodeId($id);
-        $this->guard->assertAllowed($diskPath);
+        $this->guard->assertAllowed(RootGuard::real($diskPath)); // chemin réel : un lien ne fait pas sortir du périmètre
 
         $native = Path::toNative($diskPath);
         if (!is_file($native)) {

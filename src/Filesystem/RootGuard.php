@@ -21,13 +21,14 @@ final class RootGuard
 
     public function __construct(Config $config)
     {
-        $this->allowed = array_map(
-            fn (string $r): string => $this->map(Path::normalize($r)),
-            array_values(array_filter((array) $config->get('allowed_roots', []), 'is_string'))
-        );
         foreach ((array) $config->get('network_mounts', []) as $share => $mount) {
             $this->mounts[rtrim(Path::normalize((string) $share), '/')] = rtrim(Path::normalize((string) $mount), '/');
         }
+        // Racines stockées sous leur chemin réel : un lien symbolique ne peut pas élargir le périmètre.
+        $this->allowed = array_map(
+            fn (string $r): string => self::real($this->map(Path::normalize($r))),
+            array_values(array_filter((array) $config->get('allowed_roots', []), 'is_string'))
+        );
     }
 
     /** @return list<string> */
@@ -57,18 +58,19 @@ final class RootGuard
                 Path::display($path)
             ));
         }
-        $this->assertAllowed($path);
-
         $native = Path::toNative($path);
         if (!file_exists($native)) {
+            $this->assertAllowed($path);
             throw new \InvalidArgumentException(sprintf('Répertoire introuvable : %s', Path::display($path)));
         }
+        // Vérification sur le chemin réel (liens symboliques résolus), pas sur la saisie.
+        $real = self::real($path);
+        $this->assertAllowed($real);
         if (!is_readable($native)) {
             throw new \InvalidArgumentException(sprintf('Accès refusé au répertoire : %s', Path::display($path)));
         }
-        $real = realpath($native);
 
-        return $real === false ? $path : Path::normalize($real);
+        return $real;
     }
 
     public function assertAllowed(string $path): void
@@ -76,13 +78,21 @@ final class RootGuard
         if ($this->allowed === []) {
             return;
         }
-        $path = Path::normalize($path);
+        $path = self::real(Path::normalize($path));
         foreach ($this->allowed as $root) {
             if ($path === rtrim($root, '/') || Path::isInside($path, $root)) {
                 return;
             }
         }
         throw new \DomainException(sprintf('Chemin hors des racines autorisées : %s', Path::display($path)));
+    }
+
+    /** Chemin réel s'il existe (liens symboliques résolus), sinon le chemin normalisé. */
+    public static function real(string $path): string
+    {
+        $real = @realpath(Path::toNative($path));
+
+        return $real === false ? Path::normalize($path) : Path::normalize($real);
     }
 
     private function map(string $path): string

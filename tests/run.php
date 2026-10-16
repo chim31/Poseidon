@@ -186,6 +186,24 @@ try {
         return false;
     })());
 
+    if (DIRECTORY_SEPARATOR === '/' && function_exists('symlink')) {
+        @mkdir($dir . '/perimetre', 0775, true);
+        file_put_contents($dir . '/perimetre/ok.txt', 'contrat interne');
+        symlink($dir . '/finance', $dir . '/perimetre/fuite');
+        $fenced = new SearchEngine($config->with(['allowed_roots' => [$dir . '/perimetre']]));
+        $res = $fenced->collect(new Query('résilié', Query::ANY), SearchOptions::fromArray(['root' => $dir . '/perimetre']));
+        check('lien symbolique hors périmètre non suivi', $res['matches'] === [] && (bool) array_filter($res['notices'], static fn ($n) => str_contains($n['path'], 'fuite')));
+        check('racine par lien symbolique refusée', (static function () use ($fenced, $dir): bool {
+            try {
+                iterator_to_array($fenced->search(new Query('x'), SearchOptions::fromArray(['root' => $dir . '/perimetre/fuite'])));
+            } catch (DomainException) {
+                return true;
+            }
+
+            return false;
+        })());
+    }
+
     section('Comparaison (diff)');
     $ops = Diff::lines(['a', 'b', 'c', 'd'], ['a', 'B', 'c', 'd', 'e']);
     same('opérations', [[' ', 'a'], ['-', 'b'], ['+', 'B'], [' ', 'c'], [' ', 'd'], ['+', 'e']], $ops);

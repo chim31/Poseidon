@@ -1,0 +1,17 @@
+# Données locales et générées
+/var/cache/*
+!/var/cache/.gitkeep
+/var/secret.key
+/samples/demo/
+/config/poseidon.local.php
+
+# Captures de revue de design (régénérables)
+/.impeccable/review/
+/.impeccable/live/
+
+# Environnement
+/php/
+.DS_Store
+Thumbs.db
+/.impeccable/hook.cache.json
+/.impeccable/questions/

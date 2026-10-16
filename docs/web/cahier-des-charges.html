@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahier des charges — Poseidon</title>
+<meta name="description" content="Cahier des charges de Poseidon : objectifs, périmètre, exigences par lot et avancement.">
+<link rel="icon" href="assets/img/trident.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/docs.css">
+<script src="data/projet.js" defer></script>
+<script src="assets/docs.js" defer></script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true">
+  <symbol id="trident" viewBox="0 0 24 24"><path d="M12 22V5M5 3v4.5a7 7 0 0 0 14 0V3M12 2l-2 3h4zM5 3 3.5 5M19 3l1.5 2M9.5 19h5"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+</svg>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <a class="mark" href="cahier-des-charges.html"><svg class="i"><use href="#trident"/></svg><span>Poseidon</span></a>
+    <nav class="nav" aria-label="Documents du projet">
+      <a href="cahier-des-charges.html" aria-current="page">Cahier des charges</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="../README.md">Documentation</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-in">
+    <div>
+      <h1>Cahier des charges</h1>
+      <p>Poseidon remplace la combinaison <code>ls -R</code>, <code>grep -R -i</code>, pipes et <code>cat</code> par un seul outil : trouver une information dans n'importe quel fichier, même enfoui dans un ZIP, la prouver par la ligne, puis l'extraire vers un nouveau document.</p>
+      <div class="hero-meta"><span>Version <b data-meta="version"></b></span><span>Mise à jour <b data-meta="miseAJour"></b></span><span>Porteur <b data-meta="porteur"></b></span></div>
+    </div>
+    <div class="gauge"><strong data-meta="pct"></strong><span>des exigences terminées</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <nav class="toc" aria-label="Sommaire">
+      <b>Sommaire</b>
+      <a href="#objectif">Objectif</a>
+      <a href="#perimetre">Périmètre</a>
+      <a href="#avancement">Avancement</a>
+      <a href="#exigences">Exigences</a>
+      <a href="#non-fonctionnel">Qualité attendue</a>
+      <a href="#contraintes">Contraintes et décisions</a>
+      <a href="#propositions">Propositions</a>
+    </nav>
+
+    <main>
+      <section class="block prose" id="objectif">
+        <h2>Objectif</h2>
+        <p class="lead">Donner à n'importe qui, sous Windows comme sous Linux, depuis un navigateur ou un terminal, le pouvoir d'un <code>grep -Ri</code> qui lit aussi l'intérieur des PDF, Word, Excel, OpenDocument et des ZIP imbriqués.</p>
+        <p>L'utilisateur pose une racine de recherche (dossier local, lecteur Windows, partage réseau <code>\\serveur\partage</code>) et un filtre. Poseidon répond : combien de fichiers contiennent l'information, où (chemins absolu et relatif, archives comprises), combien de fois pour chaque terme, et sur quelles lignes. Chaque fichier se consulte et se télécharge.</p>
+        <p>Au-delà de la recherche, Poseidon <strong>extrait</strong> : comme un <code>SELECT</code> avec mapping sur une base de données, il ne garde que les mots, motifs ou colonnes désignés et produit un nouveau document (CSV, XLSX, JSON, TXT, Markdown).</p>
+      </section>
+
+      <section class="block" id="perimetre">
+        <h2>Périmètre</h2>
+        <p class="lead">Ce que Poseidon fait, et ce qu'il ne fait pas, volontairement.</p>
+        <div class="split">
+          <div class="panel">
+            <h3>Inclus</h3>
+            <ul>
+              <li>Recherche récursive dans une arborescence locale ou réseau</li>
+              <li>TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PPTX</li>
+              <li>ZIP récursifs (ZIP dans ZIP), JAR, WAR</li>
+              <li>Filtre en bloc, multi-mots (ET / OU), expression régulière</li>
+              <li>Comptage par fichier et par terme, lignes-preuves</li>
+              <li>Aperçu, téléchargement, extraction de données</li>
+              <li>Comparaison de deux fichiers façon <code>git diff</code></li>
+              <li>Signalement des fichiers protégés ou illisibles</li>
+              <li>Interface web, ligne de commande, lanceurs <code>.bat</code></li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Exclus (version actuelle)</h3>
+            <ul>
+              <li>Modification ou suppression de fichiers : Poseidon lit, il n'écrit jamais dans la racine</li>
+              <li>Ouverture des fichiers protégés par mot de passe</li>
+              <li>OCR des documents scannés (prévu en phase 6)</li>
+              <li>Accès SMB direct sous Linux sans montage</li>
+              <li>Base de données : le seul stockage est un cache de texte sur disque</li>
+              <li>Comptes multiples et rôles (prévu en phase 8)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="avancement">
+        <h2>Avancement</h2>
+        <p class="lead">Chaque carré est une exigence. Bleu : terminée, jaune : en cours, blanc : à faire.</p>
+        <div class="dash" id="dash"></div>
+        <div class="statusbar" id="statusbar" role="img"></div>
+        <div class="lots" id="lots"></div>
+        <div class="legend">
+          <span><span class="drisse"><i class="st-done"></i></span>Terminé</span>
+          <span><span class="drisse"><i class="st-doing"></i></span>En cours</span>
+          <span><span class="drisse"><i class="st-todo"></i></span>À faire</span>
+          <span><span class="drisse"><i class="st-blocked"></i></span>Bloqué</span>
+        </div>
+      </section>
+
+      <section class="block" id="exigences">
+        <h2>Exigences</h2>
+        <p class="lead">Le détail par lot, avec la branche ou la phase qui porte chaque exigence.</p>
+        <div class="filters">
+          <div id="filter-chips" class="chips-inline"></div>
+          <label class="search"><span class="sr-only">Filtrer les exigences</span><svg class="i"><use href="#search"/></svg><input id="filter-q" type="search" placeholder="Filtrer : zip, pdf, L4-…"></label>
+        </div>
+        <div id="requirements"></div>
+      </section>
+
+      <section class="block prose" id="non-fonctionnel">
+        <h2>Qualité attendue</h2>
+        <p class="lead">Les exigences non fonctionnelles, mesurables.</p>
+        <table class="decisions">
+          <thead><tr><th>Critère</th><th>Attendu</th></tr></thead>
+          <tbody>
+            <tr><td>Vitesse</td><td>Premiers résultats affichés pendant le parcours. Cible : 10 000 fichiers texte en moins de 10 s à froid ; seconde recherche sur des PDF/Office quasi instantanée grâce au cache.</td></tr>
+            <tr><td>Exactitude</td><td>Chaque compteur est vérifiable : emplacement (ligne, page, §, feuille · ligne) et position de chaque correspondance.</td></tr>
+            <tr><td>Robustesse</td><td>Aucun fichier ne bloque un scan : protégés, corrompus, trop gros ou trop lents sont ignorés et signalés.</td></tr>
+            <tr><td>Sécurité</td><td>Aucun accès hors des racines autorisées ; identifiants de fichiers signés ; mot de passe optionnel ; aucun CDN ni service externe.</td></tr>
+            <tr><td>Portabilité</td><td>PHP 8.2+ avec <code>zip</code> et <code>mbstring</code>, sans Composer ; Windows, Linux, macOS, WSL.</td></tr>
+            <tr><td>Accessibilité</td><td>Utilisable au clavier, contrastes WCAG AA, responsive jusqu'à 390 px.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="block" id="contraintes">
+        <h2>Contraintes et décisions</h2>
+        <p class="lead">Les choix structurants, et pourquoi.</p>
+        <table class="decisions">
+          <thead><tr><th>Décision</th><th>Justification</th></tr></thead>
+          <tbody>
+            <tr><td>PHP 8.4 natif, sans framework</td><td>Laravel n'apporte rien d'indispensable ici et exige des extensions (dom, xml) absentes du poste de développement. Zéro dépendance = installation en une minute, y compris sous Windows. Laravel reste possible plus tard.</td></tr>
+            <tr><td>Lecture DOCX / XLSX sans ext-dom</td><td>Les formats Office sont des ZIP de XML : un analyseur par expressions régulières suffit pour le texte et les cellules, et fonctionne partout.</td></tr>
+            <tr><td>pdftotext si présent, PHP sinon</td><td>poppler donne le meilleur texte ; le lecteur PHP garantit un résultat minimal sans rien installer.</td></tr>
+            <tr><td>Résultats en flux (NDJSON)</td><td>L'utilisateur voit les fichiers arriver ; il peut annuler. La vitesse ressentie compte autant que la vitesse réelle.</td></tr>
+            <tr><td>Cache de texte sur disque</td><td>Les extractions coûteuses (PDF, Office) ne sont faites qu'une fois tant que le fichier ne change pas.</td></tr>
+            <tr><td>Univers « Pavillons de signaux »</td><td>Chaque terme du filtre reçoit un pavillon du code international des signaux, qui le suit partout : lisible en un coup d'œil, et ancré dans l'univers de Poséidon.</td></tr>
+            <tr><td>Une branche par fonctionnalité</td><td>Commits atomiques, PR relues par le porteur avant fusion dans <code>main</code>, aucune mention de co-auteur.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="block" id="propositions">
+        <h2>Propositions d'amélioration</h2>
+        <p class="lead">Ce qui doit être corrigé ou précisé dans l'idée de départ, et ce qui peut rendre Poseidon complet.</p>
+        <div class="props" id="props"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>Poseidon — cahier des charges</span>
+    <span>Source des données : <code>docs/web/data/projet.json</code> · mise à jour : <code>php docs/tools/sync.php</code></span>
+  </div>
+</footer>
+</body>
+</html>

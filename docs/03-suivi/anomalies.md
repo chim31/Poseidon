@@ -1,0 +1,37 @@
+# Registre des anomalies
+
+Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
+
+**Synthèse :** 18 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+
+## Anomalies
+
+| ID | Titre | Description (observé / attendu) | Reproduction | Gravité | Statut | Détection → correction | Par | Correctif appliqué | Référence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| BUG-001 | Plantage dès la première recherche | `Cannot indirectly modify readonly property Source::$innerPath` / la recherche doit aboutir | `poseidon search samples/demo contrat` | Critique | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Cause : `end()` déplace le pointeur interne d'un tableau `readonly`. Remplacé par `$a[array_key_last($a)]`. | feat/moteur-recherche |
+| BUG-002 | Entrée d'archive relue depuis le chemin de l'archive | Après libération des octets, `bytes()` d'une entrée ZIP aurait relu le fichier ZIP lui-même | Rechercher dans un ZIP imbriqué après libération | Majeure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Les entrées portent une closure de chargement (`loader`) ; `releaseBytes()` ne fait plus que vider le tampon. | feat/moteur-recherche |
+| BUG-003 | Groupes RTF imbriqués non retirés | Les tables de polices contenant des sous-groupes restaient dans le texte | RTF avec `{\fonttbl{\f0 Arial;}}` | Mineure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | `(?R)` récursait sur tout le motif ; remplacé par un groupe équilibré `((?:[^{}]++\|\{(?1)\})*)`. | feat/moteur-recherche |
+| BUG-004 | Accents RTF corrompus | Mélange de `\'e9` (Windows-1252) et `\u233` (Unicode) donnait du texte illisible | RTF mixte | Mineure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Chaque `\'xx` est converti directement en UTF-8. | feat/moteur-recherche |
+| BUG-005 | Espaces de mise en forme comptés comme tabulations (DOCX) | L'expression capturait les tabulations brutes du XML indenté | DOCX au XML indenté | Mineure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | `<w:tab/>` est converti en `<w:t>&#9;</w:t>` avant lecture ; seul le contenu de `<w:t>` est lu. | feat/moteur-recherche |
+| BUG-006 | Pavillons sans couleur | `fill="var(--flag-blue)"` non appliqué dans les attributs SVG | Ouvrir l'interface | Majeure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Les variables CSS ne fonctionnent pas dans les attributs de présentation SVG : couleurs hexadécimales. | feat/interface-web |
+| BUG-007 | Notifications de fichiers protégés envahissantes | Trois toasts empilés masquaient l'aperçu et le bouton d'extraction | Recherche sur les échantillons | Majeure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Remplacées par une bande d'alerte en ligne regroupée (sans rien recouvrir) + panneau de détail. | feat/interface-web |
+| BUG-008 | Bouton de fermeture du rail visible sur grand écran | Croix inutile à côté du logo | Ouvrir l'interface en 1440 px | Cosmétique | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Spécificité CSS : `.icon-btn` écrasait `display: none` ; sélecteur `.brand .rail-close`. | feat/interface-web |
+| BUG-009 | Contrastes insuffisants | Placeholder (3,1:1), numéros de ligne (3,0:1), compteurs nuls (2,3:1), numéros du diff et de tableau (2,6:1) | Revue de design | Majeure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Couleurs remontées à ≥ 4,5:1. | feat/interface-web |
+| BUG-010 | Modes de filtre tronqués sur mobile | « Motif ( » coupé à 390 px | Ouvrir en 390 px | Mineure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Grille 2×2 sous 720 px, placeholder raccourci. | feat/interface-web |
+| BUG-011 | Code illisible dans le bandeau du cahier des charges | Texte clair sur fond clair dans `<code>` du bandeau abyssal | Ouvrir `cahier-des-charges.html` | Mineure | Corrigé | 2026-10-16 → 2026-10-16 | chim31 | Style `<code>` dédié au bandeau. | docs/fondations |
+| BUG-012 | DNS rebinding sur l'instance locale | Sans mot de passe, un site malveillant pouvait faire pointer son domaine vers 127.0.0.1 et interroger l'API / l'API doit refuser tout hôte non local | Requête avec `Host: evil.example` | Critique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Liste d'hôtes (`localhost`, `127.0.0.1`, `::1`, `POSEIDON_HOSTS`) exigée sans mot de passe (réponse 421) ; en-tête `X-Poseidon` exigé sur toute l'API sauf téléchargements à identifiant signé. | feat/interface-web |
+| BUG-013 | Injection de formules dans les en-têtes CSV | Les en-têtes (termes de recherche) et les valeurs précédées d'espaces n'étaient pas neutralisés | Exporter en CSV avec le terme `=HYPERLINK(…)` | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Neutralisation de toutes les cellules, en-têtes compris, y compris après des espaces ; nombres négatifs conservés. | feat/moteur-recherche |
+| BUG-014 | Bombe de décompression dans un document Office | Une partie XML compressée à l'extrême pouvait saturer la mémoire | DOCX/XLSX forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Taille (150 Mo) et ratio (200) vérifiés avant lecture de chaque partie. | feat/moteur-recherche |
+| BUG-015 | Bombe de décompression dans un PDF (lecteur PHP) | Flux FlateDecode décompressés sans limite | PDF forgé, sans pdftotext | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `zlib_decode` borné (50 Mo par flux) et budget de 200 Mo par document. | feat/moteur-recherche |
+| BUG-016 | Index de colonne non borné (tableurs) | Une référence `ZZZZ1` ou une répétition ODS géante créait des tableaux démesurés | XLSX/ODS forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Colonnes bornées à 16 384 et lignes à 1 048 576 (limites Excel) ; mapping limité à 1 024 colonnes. | feat/moteur-recherche |
+| BUG-017 | Mémoire du diff non bornée | Deux fichiers très différents faisaient croître la trace de Myers en O(D²) | Comparer deux gros fichiers sans rapport | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Au-delà de 1 000 différences (ou 200 000 lignes), comparaison grossière (bloc supprimé / bloc ajouté). | feat/moteur-recherche |
+| BUG-018 | Sortie du périmètre par lien symbolique | Avec des racines autorisées, un lien symbolique placé dans une racine (vers `/etc`, `C:\Windows`…) était suivi / il doit être ignoré | Lien `racine/fuite → /etc` puis recherche | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Racines autorisées stockées en chemin réel ; contrôle sur `realpath` pour la racine saisie, chaque lien parcouru et chaque fichier servi ; lien hors périmètre signalé et ignoré. | feat/moteur-recherche |
+
+## Limitations connues
+
+| ID | Titre | Description | Gravité | Statut | Contournement | Évolution prévue |
+| --- | --- | --- | --- | --- | --- | --- |
+| LIM-001 | Phrase coupée par un retour à la ligne | En mode « Phrase exacte », une phrase répartie sur deux lignes (PDF mis en page) n'est pas comptée | Mineure | Reporté | Mode « Tous les mots » | Recherche de proximité (phase 7) |
+| LIM-002 | Partages UNC sous Linux/WSL | PHP ne lit pas `\\serveur\partage` directement | Mineure | Reporté | Monter le partage + `network_mounts` | Accès SMB via `smbclient` (à étudier) |
+| LIM-003 | Serveur intégré mono-processus sous Windows | Pendant une longue recherche, l'aperçu attend la fin | Mineure | Reporté | Apache/Nginx + PHP-FPM | Index persistant (phase 5) |
+| LIM-004 | PDF scannés | Aucun texte sans OCR | Majeure | Reporté | OCR externe | OCR Tesseract (phase 6) |

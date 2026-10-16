@@ -14,6 +14,10 @@ use Poseidon\Support\Text;
  */
 final class SpreadsheetExtractor implements Extractor
 {
+    /** Limites d'Excel : au-delà, la valeur est ignorée (fichier malformé ou piégé). */
+    public const MAX_COLUMNS = 16384;
+    public const MAX_ROWS = 1048576;
+
     public function extensions(): array
     {
         return ['xlsx', 'xlsm', 'xltx', 'ods'];
@@ -109,7 +113,10 @@ final class SpreadsheetExtractor implements Extractor
         $auto = 0;
         foreach ($rowMatches as $row) {
             $auto++;
-            $rowNumber = preg_match('#\br="(\d+)"#', $row[1], $r) ? (int) $r[1] : $auto;
+            $rowNumber = preg_match('#\br="(\d{1,7})"#', $row[1], $r) ? (int) $r[1] : $auto;
+            if ($rowNumber > self::MAX_ROWS) {
+                break;
+            }
             $auto = $rowNumber;
             $cells = [];
             $col = -1;
@@ -117,7 +124,10 @@ final class SpreadsheetExtractor implements Extractor
             foreach ($cellMatches as $cell) {
                 $attrs = $cell[1];
                 $inner = $cell[2] ?? '';
-                $col = preg_match('#\br="([A-Z]+)\d+"#', $attrs, $ref) ? Text::columnIndex($ref[1]) : $col + 1;
+                $col = preg_match('#\br="([A-Z]+)\d+"#', $attrs, $ref) ? (strlen($ref[1]) > 3 ? self::MAX_COLUMNS : Text::columnIndex($ref[1])) : $col + 1;
+                if ($col >= self::MAX_COLUMNS) {
+                    continue;
+                }
                 $type = preg_match('#\bt="([^"]+)"#', $attrs, $t) ? $t[1] : 'n';
                 $value = '';
                 if ($type === 'inlineStr') {
@@ -166,17 +176,20 @@ final class SpreadsheetExtractor implements Extractor
                     preg_match_all('#<text:p\b[^>]*>(.*?)</text:p>#s', $cell[2] ?? '', $p);
                     $value = trim(implode(' ', array_map([Text::class, 'stripXml'], $p[1])));
                     if ($value !== '') {
-                        for ($k = 0; $k < min($repeat, 256); $k++) {
+                        for ($k = 0; $k < min($repeat, 256) && $col + $k < self::MAX_COLUMNS; $k++) {
                             $cells[$col + $k] = $value;
                         }
                     }
-                    $col += $repeat;
+                    $col = min(self::MAX_COLUMNS, $col + $repeat);
                 }
                 $rowNumber += 1;
                 if ($cells !== []) {
                     $rows[$rowNumber] = $cells;
                 }
                 $rowNumber += $repeatRows - 1;
+                if ($rowNumber > self::MAX_ROWS) {
+                    break;
+                }
             }
             $tables[] = ['name' => $name, 'rows' => $rows];
         }

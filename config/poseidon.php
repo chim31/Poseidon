@@ -17,6 +17,10 @@ return [
     // Exemple : ['\\\\srv-archives\\juridique' => '/mnt/juridique']
     'network_mounts' => [],
 
+    // Noms d'hôte acceptés en plus de localhost / 127.0.0.1 quand aucun mot de passe n'est défini
+    // (protection contre le « DNS rebinding »). Exemple : POSEIDON_HOSTS="poste-42;192.168.1.20"
+    'allowed_hosts' => array_values(array_filter(explode(';', (string) getenv('POSEIDON_HOSTS')))),
+
     // Mot de passe d'accès à l'interface web. Vide = pas d'authentification.
     'password' => (string) getenv('POSEIDON_PASSWORD'),
 

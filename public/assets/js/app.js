@@ -126,6 +126,7 @@ function searchParams() {
 async function api(path, options = {}) {
   const res = await fetch(path, { ...options, headers: { 'X-Poseidon': '1', ...(options.headers || {}) } });
   if (res.status === 401 && state.info?.authRequired) { showLogin(); throw new Error('Authentification requise.'); }
+  if (res.status === 421) throw new Error('Hôte non autorisé : ouvre Poseidon via 127.0.0.1 ou localhost.');
   if (!res.ok) {
     let message = `Erreur ${res.status}`;
     try { message = (await res.json()).error || message; } catch { /* corps non JSON */ }
@@ -697,7 +698,7 @@ function showLogin() {
 
 async function init() {
   try {
-    state.info = await (await fetch('/api/info')).json();
+    state.info = await (await fetch('/api/info', { headers: { 'X-Poseidon': '1' } })).json();
   } catch {
     toast('error', 'Serveur injoignable', 'Lance Poseidon avec « poseidon serve » ou poseidon.bat.');
     return;

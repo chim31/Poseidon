@@ -156,6 +156,8 @@ try {
     $back = (new Poseidon\Extractor\SpreadsheetExtractor())->extract(new Poseidon\Filesystem\Source($dir . '/out.xlsx', [], $dir, strlen($xlsx), time()));
     same('XLSX écrit puis relu', ['=1+1', '42'], array_values($back->tables[0]['rows'][2] ?? []));
     check('CSV neutralise les formules', str_contains(Writer::write('csv', ['A'], [['=CMD()']]), "'=CMD()"));
+    check('CSV neutralise aussi les en-têtes et les espaces en tête', str_contains(Writer::write('csv', ['=HYPERLINK()'], [['  @SUM(A1)']]), "'=HYPERLINK()") && str_contains(Writer::write('csv', ['A'], [['  @SUM(A1)']]), "'  @SUM(A1)"));
+    check('CSV garde les nombres négatifs', str_contains(Writer::write('csv', ['A'], [['-42']]), "\n-42"));
 
     section('Identifiants signés');
     $id = $r['juridique/CGV_v4.pdf']['file']['id'];
@@ -189,6 +191,14 @@ try {
     same('opérations', [[' ', 'a'], ['-', 'b'], ['+', 'B'], [' ', 'c'], [' ', 'd'], ['+', 'e']], $ops);
     same('en-tête unifié', '@@ -1,4 +1,5 @@', Diff::hunks($ops)[0]['header']);
     same('fichiers identiques', [], Diff::hunks(Diff::lines(['x'], ['x'])));
+    $big = Diff::lines(array_map(static fn ($i) => "a{$i}", range(1, 3000)), array_map(static fn ($i) => "b{$i}", range(1, 3000)));
+    check('diff très différent borné (repli grossier)', count($big) === 6000 && memory_get_peak_usage() < 512 * 1024 * 1024);
+
+    section('Protections contre les fichiers piégés');
+    $sheet = Fixtures::zip(['xl/workbook.xml' => '<workbook><sheets><sheet name="S" r:id="rId1"/></sheets></workbook>', 'xl/_rels/workbook.xml.rels' => '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>', 'xl/worksheets/sheet1.xml' => '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ok</t></is></c><c r="ZZZZ1" t="inlineStr"><is><t>loin</t></is></c></row></sheetData></worksheet>']);
+    file_put_contents($dir . '/piege.xlsx', $sheet);
+    $doc = (new Poseidon\Extractor\SpreadsheetExtractor())->extract(new Poseidon\Filesystem\Source($dir . '/piege.xlsx', [], $dir, strlen($sheet), time()));
+    same('colonne hors limites Excel ignorée', [0 => 'ok'], $doc->tables[0]['rows'][1] ?? null);
 
     section('PDF sans pdftotext (lecteur PHP de secours)');
     $doc = (new Poseidon\Extractor\PdfExtractor($config))->withPhp(Fixtures::pdf(['Bonjour (Poseidon)', 'Ligne deux']));

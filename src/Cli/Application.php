@@ -194,7 +194,7 @@ final class Application
         $public = POSEIDON_ROOT . '/public';
         echo $this->paint('1;36', 'Poseidon') . " écoute sur http://{$host}:{$port}  (Ctrl+C pour arrêter)" . PHP_EOL;
         if ($host !== '127.0.0.1' && $host !== 'localhost' && (string) $this->config->get('password') === '') {
-            fwrite(STDERR, $this->paint('33', 'Attention : interface ouverte sur le réseau sans mot de passe. Définis POSEIDON_PASSWORD.') . PHP_EOL);
+            fwrite(STDERR, $this->paint('33', 'Attention : interface ouverte sur le réseau sans mot de passe. Définis POSEIDON_PASSWORD (recommandé) ; sinon seuls localhost et les hôtes de POSEIDON_HOSTS seront servis.') . PHP_EOL);
         }
         if (DIRECTORY_SEPARATOR === '/') {
             // Plusieurs processus : l'aperçu reste réactif pendant qu'une recherche tourne.

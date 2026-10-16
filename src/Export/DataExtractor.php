@@ -157,7 +157,7 @@ final class DataExtractor
                 foreach ($rows as $cells) {
                     $maxCol = max($maxCol, $cells === [] ? 0 : max(array_keys($cells)) + 1);
                 }
-                for ($c = 0; $c < $maxCol; $c++) {
+                for ($c = 0, $limit = min($maxCol, 1024); $c < $limit; $c++) {
                     $selected[] = [$c, ($header[$c] ?? '') !== '' ? $header[$c] : Text::columnLetter($c)];
                 }
             } else {

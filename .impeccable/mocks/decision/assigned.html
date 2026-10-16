@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--abyss:#0B2340;--abyss2:#123156;--foam:#F6F3EA;--paper:#FBFAF5;--ink:#14202E;--mute:#5B6878;--line:#DCD8CB;--y:#F2C230;--r:#C8302B;--b:#1D5FA8;--hl:#FFE27A}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,sans-serif;color:var(--ink);background:var(--paper);display:grid;grid-template-columns:272px 1fr 420px}
+.rail{background:var(--abyss);color:var(--foam);padding:22px 20px;display:flex;flex-direction:column;gap:22px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-stretch:118%;font-size:22px;letter-spacing:.02em}
+.brand svg{width:26px;height:26px}
+.rail h3{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9FB3CC}
+.field{background:var(--abyss2);border:1px solid #2A4A73;border-radius:6px;padding:9px 10px;font-family:'JetBrains Mono';font-size:12.5px;color:#E7EEF7}
+.chk{display:flex;flex-wrap:wrap;gap:6px}
+.chk span{font-size:12px;padding:4px 8px;border-radius:4px;background:#173A63;color:#DCE6F2}
+.chk span.on{background:var(--foam);color:var(--abyss);font-weight:600}
+.stat{margin-top:auto;border-top:1px solid #23446C;padding-top:14px;font-size:12.5px;color:#B7C6D8;line-height:1.7}
+.stat b{color:var(--foam);font-family:'JetBrains Mono'}
+main{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+.q{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--foam)}
+.qbox{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--abyss);border-radius:8px;padding:8px 10px}
+.flag{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:5px;background:#EEF2F7;font-weight:600;font-size:14px}
+.flag i{width:22px;height:16px;border-radius:2px;display:block}
+.fA i{background:linear-gradient(90deg,#fff 50%,var(--b) 50%)}
+.fB i{background:var(--r)}
+.fC i{background:linear-gradient(180deg,var(--b) 20%,#fff 20% 40%,var(--r) 40% 60%,#fff 60% 80%,var(--b) 80%)}
+.qbox .mode{margin-left:auto;font-size:12px;color:var(--mute);border-left:1px solid var(--line);padding-left:10px}
+.go{background:var(--abyss);color:var(--foam);font-weight:700;border-radius:6px;padding:8px 16px;font-size:14px}
+.sum{display:flex;gap:26px;padding:14px 24px;font-size:13px;color:var(--mute);border-bottom:1px solid var(--line)}
+.sum b{font-size:22px;color:var(--ink);font-weight:700;font-stretch:90%;display:block}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:10px 12px;border-bottom:1px solid #ECE9DF;vertical-align:top}
+td.n{font-family:'JetBrains Mono';text-align:right;width:56px}
+.path{font-family:'JetBrains Mono';font-size:11.5px;color:var(--mute);margin-top:3px}
+.zip{font-size:10.5px;font-weight:700;color:var(--b);background:#E3ECF7;padding:1px 6px;border-radius:3px;margin-left:6px}
+tr.sel{background:#fff;box-shadow:inset 3px 0 0 var(--abyss)}
+tbody tr:not(.sel){opacity:.72}
+.hoist{display:flex;gap:3px}.hoist i{width:12px;height:9px;border-radius:1px;display:block}
+.prev{background:#fff;display:flex;flex-direction:column}
+.ph{padding:18px 20px;border-bottom:1px solid var(--line)}
+.ph h2{font-size:17px;font-weight:700}
+.acts{display:flex;gap:8px;margin-top:12px}
+.acts span{font-size:12.5px;font-weight:600;border:1px solid var(--abyss);border-radius:5px;padding:6px 10px}
+.acts span:first-child{background:var(--abyss);color:var(--foam)}
+.code{font-family:'JetBrains Mono';font-size:12px;line-height:1.75;padding:14px 0}
+.code div{padding:0 20px;white-space:nowrap;overflow:hidden}
+.code em{font-style:normal;color:#9AA6B4;display:inline-block;width:34px}
+mark{background:var(--hl);color:var(--ink);border-radius:2px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--y)}
+mark.r{box-shadow:inset 0 -2px 0 var(--r)}mark.c{box-shadow:inset 0 -2px 0 var(--b)}
+</style></head><body>
+<aside class="rail">
+ <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="#F6F3EA" stroke-width="1.8" stroke-linecap="round"><path d="M12 22V6M5 3v5a7 7 0 0 0 14 0V3M12 2v4M5 3l-1.5 2M19 3l1.5 2"/></svg>POSEIDON</div>
+ <div><h3>Racine</h3><div class="field">\\srv-archives\juridique\2026</div></div>
+ <div><h3>Formats</h3><div class="chk"><span class="on">PDF</span><span class="on">DOCX</span><span class="on">XLSX</span><span class="on">ZIP</span><span>TXT</span><span>MD</span><span>CSV</span></div></div>
+ <div><h3>Options</h3><div class="chk"><span class="on">Insensible à la casse</span><span>Mot entier</span><span class="on">Dans les ZIP</span></div></div>
+ <div class="stat">Fichiers parcourus <b>12 480</b><br>Archives ouvertes <b>214</b><br>Durée <b>1,84 s</b></div>
+</aside>
+<main>
+ <div class="q"><div class="qbox"><span class="flag fA"><i></i>contrat</span><span class="flag fB"><i></i>résiliation</span><span class="flag fC"><i></i>préavis</span><span class="mode">Tous les mots (ET)</span><span class="go">Sonder</span></div></div>
+ <div class="sum"><div><b>37</b>fichiers trouvés</div><div><b>412</b>occurrences</div><div><b>9</b>dans des ZIP</div><div style="margin-left:auto;align-self:end;font-weight:600;color:var(--abyss)">Extraire vers CSV</div></div>
+ <table><thead><tr><th>Fichier</th><th>Termes</th><th style="text-align:right">A</th><th style="text-align:right">B</th><th style="text-align:right">C</th></tr></thead><tbody>
+ <tr class="sel"><td><b>Contrat-cadre_Nereide.docx</b><span class="zip">ZIP › ZIP</span><div class="path">clients/2026.zip › nereide/contrats.zip › Contrat-cadre_Nereide.docx</div></td><td><div class="hoist"><i style="background:linear-gradient(90deg,#fff 50%,#1D5FA8 50%)"></i><i style="background:#C8302B"></i><i style="background:#1D5FA8"></i></div></td><td class="n">24</td><td class="n">6</td><td class="n">4</td></tr>
+ <tr><td><b>Resiliations_T3.xlsx</b><div class="path">finance/suivi/Resiliations_T3.xlsx</div></td><td><div class="hoist"><i style="background:#1D5FA8"></i><i style="background:#C8302B"></i><i style="background:#1D5FA8"></i></div></td><td class="n">18</td><td class="n">41</td><td class="n">12</td></tr>
+ <tr><td><b>CGV_v4.pdf</b><div class="path">commercial/CGV_v4.pdf</div></td><td><div class="hoist"><i style="background:#1D5FA8"></i><i style="background:#C8302B"></i><i style="background:#1D5FA8"></i></div></td><td class="n">11</td><td class="n">3</td><td class="n">7</td></tr>
+ <tr><td><b>notes_reunion.md</b><div class="path">equipes/juridique/notes_reunion.md</div></td><td><div class="hoist"><i style="background:#1D5FA8"></i><i style="background:#C8302B"></i><i style="background:#1D5FA8"></i></div></td><td class="n">5</td><td class="n">2</td><td class="n">1</td></tr>
+ <tr><td><b>Avenant_02.docx</b><span class="zip">ZIP</span><div class="path">archives/2025.zip › Avenant_02.docx</div></td><td><div class="hoist"><i style="background:#1D5FA8"></i><i style="background:#C8302B"></i><i style="background:#1D5FA8"></i></div></td><td class="n">4</td><td class="n">1</td><td class="n">2</td></tr>
+ </tbody></table>
+</main>
+<section class="prev">
+ <div class="ph"><h2>Contrat-cadre_Nereide.docx</h2><div class="path">\\srv-archives\juridique\2026\clients\2026.zip › nereide/contrats.zip › Contrat-cadre_Nereide.docx</div><div class="acts"><span>Télécharger</span><span>Ouvrir le texte</span><span>Copier le chemin</span></div></div>
+ <div class="code">
+ <div><em>112</em>Article 9 — Durée du <mark>contrat</mark></div>
+ <div><em>113</em>Le présent <mark>contrat</mark> est conclu pour trois ans.</div>
+ <div><em>118</em>Toute <mark class="r">résiliation</mark> anticipée suppose un</div>
+ <div><em>119</em><mark class="c">préavis</mark> de quatre-vingt-dix jours notifié</div>
+ <div><em>120</em>par lettre recommandée.</div>
+ <div><em>204</em>Article 14 — <mark class="r">Résiliation</mark> pour faute</div>
+ <div><em>206</em>sans <mark class="c">préavis</mark> ni indemnité, le <mark>contrat</mark></div>
+ </div>
+</section>
+</body></html>

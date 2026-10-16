@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "public/app.html"
+        ],
+        "createdAt": "2026-10-16T17:23:02.679Z",
+        "reason": "agent triage: indeterminate scan progress indicator conveys live state, not decoration"
+      },
+      {
+        "rule": "cream-palette design-system-color design-system-font design-system-font-size design-system-radius flat-type-hierarchy low-contrast tiny-text undersized-ui-text",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-16T23:32:41.460Z",
+        "reason": "agent triage: decision-round sketches (spent hand, not shipped); the shipped build is public/app.html"
+      }
+    ]
+  }
+}

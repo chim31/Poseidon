@@ -669,7 +669,7 @@ mark.current { background: var(--mark-strong); outline: 2px solid var(--primary-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { color-scheme: dark;
     --paper: #0b1726; --foam: #10213a; --surface: #12253d;
-    --ink: #e6edf5; --ink-2: #b8c5d4; --mute: #94a5b8; --mute-2: #9aabbd; --ph: #8b9cb0;
+    --ink: #e6edf5; --ink-2: #b8c5d4; --mute: #9db2cb; --mute-2: #a3b8d0; --ph: #9fb4cd;
     --line: #233f60; --line-soft: #1a3351;
     --hover: #17304d; --segment: #0d1c30; --tint: #183559; --link: #8fbaf0;
     --control: #5d7493; --input-border: #3a587d; --pane-icon: #4d6788; --scroll: #34547a;
@@ -681,7 +681,7 @@ mark.current { background: var(--mark-strong); outline: 2px solid var(--primary-
 }
 :root[data-theme="dark"] { color-scheme: dark;
     --paper: #0b1726; --foam: #10213a; --surface: #12253d;
-    --ink: #e6edf5; --ink-2: #b8c5d4; --mute: #94a5b8; --mute-2: #9aabbd; --ph: #8b9cb0;
+    --ink: #e6edf5; --ink-2: #b8c5d4; --mute: #9db2cb; --mute-2: #a3b8d0; --ph: #9fb4cd;
     --line: #233f60; --line-soft: #1a3351;
     --hover: #17304d; --segment: #0d1c30; --tint: #183559; --link: #8fbaf0;
     --control: #5d7493; --input-border: #3a587d; --pane-icon: #4d6788; --scroll: #34547a;

@@ -34,7 +34,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo [Poseidon] Interface sur http://127.0.0.1:%PORT%  ^(Ctrl+C pour arreter^)
-start "" "http://127.0.0.1:%PORT%"
-"%PHP%" "%~dp0bin\poseidon" serve --port=%PORT%
+rem Le serveur choisit un port libre et ouvre le navigateur une fois pret.
+"%PHP%" "%~dp0bin\poseidon" serve --port=%PORT% --open
+if errorlevel 1 pause
 endlocal

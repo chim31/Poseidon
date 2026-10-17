@@ -114,5 +114,6 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Premier essai Windows : le lanceur ouvrait une autre application occupant le port 8080 → port libre automatique et ouverture du navigateur une fois Poseidon prêt (BUG-019). |
 | 2026-10-17 | PR #2 et #3 fusionnées par erreur dans les branches empilées : contenu regroupé et fusionné dans `main` via la PR #4 ; branches supprimées. |
 | 2026-10-17 | Revue de sécurité : 7 corrections (DNS rebinding, liens symboliques…) intégrées aux PR, 62 tests. |

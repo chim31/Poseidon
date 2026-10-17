@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 18 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 19 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -26,6 +26,7 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-016 | Index de colonne non borné (tableurs) | Une référence `ZZZZ1` ou une répétition ODS géante créait des tableaux démesurés | XLSX/ODS forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Colonnes bornées à 16 384 et lignes à 1 048 576 (limites Excel) ; mapping limité à 1 024 colonnes. | feat/moteur-recherche |
 | BUG-017 | Mémoire du diff non bornée | Deux fichiers très différents faisaient croître la trace de Myers en O(D²) | Comparer deux gros fichiers sans rapport | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Au-delà de 1 000 différences (ou 200 000 lignes), comparaison grossière (bloc supprimé / bloc ajouté). | feat/moteur-recherche |
 | BUG-018 | Sortie du périmètre par lien symbolique | Avec des racines autorisées, un lien symbolique placé dans une racine (vers `/etc`, `C:\Windows`…) était suivi / il doit être ignoré | Lien `racine/fuite → /etc` puis recherche | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Racines autorisées stockées en chemin réel ; contrôle sur `realpath` pour la racine saisie, chaque lien parcouru et chaque fichier servi ; lien hors périmètre signalé et ignoré. | feat/moteur-recherche |
+| BUG-019 | Le lanceur ouvre une autre application | Double-clic sur `poseidon.bat` : le navigateur affiche « Oops! An Error Occurred / 404 » d'une autre application déjà installée sur le port 8080 / l'interface Poseidon doit s'ouvrir | Avoir une application sur le port 8080, double-cliquer sur `poseidon.bat` | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Cause : le lanceur ouvrait le navigateur sur 8080 sans vérifier que Poseidon avait pu y démarrer. `serve` teste le port (connexion + attachement), prend le suivant libre (jusqu'à +20), et `--open` n'ouvre le navigateur qu'après une réponse « Poseidon » de `/api/info`. | fix/port-occupe |
 
 ## Limitations connues
 

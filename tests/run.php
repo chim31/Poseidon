@@ -204,6 +204,79 @@ try {
         })());
     }
 
+    section('Index plein texte (résultats identiques avec et sans index)');
+    if (!Poseidon\Index\Index::available()) {
+        echo "  (pdo_sqlite / FTS5 indisponible : section ignorée)\n";
+    } else {
+        $idxConfig = $config->with(['index_dir' => $dir . '-index']);
+        $idxEngine = new SearchEngine($idxConfig);
+        $indexer = new Poseidon\Index\Indexer($idxConfig, $idxEngine->extractors(), $idxEngine->guard());
+        $build = static function (bool $rebuild = false) use ($indexer, $dir): array {
+            $summary = [];
+            foreach ($indexer->build($dir, $rebuild) as $e) {
+                if ($e['type'] === 'done') {
+                    $summary = $e['summary'];
+                }
+            }
+
+            return $summary;
+        };
+        $first = $build();
+        check('construction de l\'index', $first['files'] >= 18 && $first['indexed'] === $first['files']);
+        $fingerprint = static function (SearchEngine $engine, array $params): array {
+            $res = $engine->collect(Query::fromArray($params), SearchOptions::fromArray(['root' => $GLOBALS['dir']] + $params));
+            $files = [];
+            foreach ($res['matches'] as $m) {
+                $files[$m['file']['relativePath']] = $m['counts'];
+            }
+            ksort($files);
+            $reasons = array_column($res['notices'], 'reason');
+            sort($reasons);
+
+            return ['files' => $files, 'notices' => $reasons, 'index' => $res['summary']['index']];
+        };
+        $GLOBALS['dir'] = $dir;
+        $queries = [
+            ['q' => 'contrat préavis'],
+            ['q' => 'résiliation reconduit', 'mode' => 'any'],
+            ['q' => 'préavis de 60 jours', 'mode' => 'phrase'],
+            ['q' => 'CONTRAT', 'caseSensitive' => '1'],
+            ['q' => 'preavis', 'ignoreAccents' => '0'],
+            ['q' => 'contrat', 'wholeWord' => '1'],
+            ['q' => '[A-Z]{2}\d{6}', 'mode' => 'regex'],
+            ['q' => 'de', 'mode' => 'any'],
+            ['q' => 'contrat', 'extensions' => 'pdf,docx'],
+            ['q' => 'nereide', 'target' => 'both'],
+            ['q' => 'introuvablexyz'],
+        ];
+        $allSame = true;
+        $skippedSome = false;
+        foreach ($queries as $params) {
+            $with = $fingerprint($idxEngine, $params);
+            $without = $fingerprint($idxEngine, $params + ['index' => '0']);
+            if ($with['files'] !== $without['files'] || $with['notices'] !== $without['notices']) {
+                $allSame = false;
+                echo '      écart pour ' . json_encode($params, JSON_UNESCAPED_UNICODE) . "\n";
+            }
+            $skippedSome = $skippedSome || (($with['index']['skippedFiles'] ?? 0) + ($with['index']['skippedArchives'] ?? 0)) > 0;
+        }
+        check('mêmes fichiers, compteurs et avertissements sur 11 requêtes', $allSame);
+        check('fichiers et archives non relus grâce à l\'index', $skippedSome);
+        $regex = $fingerprint($idxEngine, ['q' => '[A-Z]{2}\d{6}', 'mode' => 'regex']);
+        check('regex : index non utilisable, parcours complet', $regex['index']['usable'] === false);
+
+        file_put_contents($dir . '/notes/journal.log', "\nmise à jour : trident levé\n", FILE_APPEND);
+        touch($dir . '/notes/journal.log', time() + 5);
+        file_put_contents($dir . '/notes/nouveau.txt', 'le trident de Poséidon');
+        $found = $fingerprint($idxEngine, ['q' => 'trident']);
+        check('fichier modifié et fichier ajouté trouvés', isset($found['files']['notes/journal.log'], $found['files']['notes/nouveau.txt']));
+        unlink($dir . '/notes/nouveau.txt');
+        $again = $build();
+        check('fichier supprimé retiré de l\'index', $again['removed'] >= 1 && $again['indexed'] <= 2);
+        check('fichier supprimé introuvable', !isset($fingerprint($idxEngine, ['q' => 'trident'])['files']['notes/nouveau.txt']));
+        Fixtures::rmdir($dir . '-index');
+    }
+
     section('Comparaison (diff)');
     $ops = Diff::lines(['a', 'b', 'c', 'd'], ['a', 'B', 'c', 'd', 'e']);
     same('opérations', [[' ', 'a'], ['-', 'b'], ['+', 'B'], [' ', 'c'], [' ', 'd'], ['+', 'e']], $ops);

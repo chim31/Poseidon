@@ -16,7 +16,7 @@ final class PlainTextExtractor implements Extractor
         'txt', 'text', 'md', 'markdown', 'rst', 'log', 'json', 'xml', 'html', 'htm', 'xhtml', 'css', 'scss',
         'js', 'mjs', 'ts', 'tsx', 'jsx', 'vue', 'php', 'py', 'rb', 'java', 'kt', 'c', 'h', 'cpp', 'hpp', 'cs',
         'go', 'rs', 'swift', 'sh', 'bash', 'zsh', 'bat', 'cmd', 'ps1', 'sql', 'yml', 'yaml', 'toml', 'ini',
-        'conf', 'cfg', 'env', 'properties', 'tex', 'srt', 'vtt', 'svg', 'eml', 'nfo', 'gitignore', 'dockerfile',
+        'conf', 'cfg', 'env', 'properties', 'tex', 'srt', 'vtt', 'svg', 'nfo', 'gitignore', 'dockerfile',
     ];
 
     public function extensions(): array

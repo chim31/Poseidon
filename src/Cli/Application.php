@@ -49,6 +49,8 @@ final class Application
                 'templates', 't' => $this->templates($args, $opts),
                 'user', 'users' => $this->user($args, $opts),
                 'audit' => $this->auditLog($opts),
+                'git-log' => $this->gitLog($args),
+                'git-search' => $this->gitSearch($args, $opts),
                 'help', '', '--help', '-h' => $this->help(),
                 default => throw new \InvalidArgumentException("Commande inconnue : {$command}. Tape « poseidon help »."),
             };
@@ -75,8 +77,8 @@ final class Application
         foreach ($engine->search($query, $options) as $event) {
             switch ($event['type']) {
                 case 'match':
+                    $matches[] = $event;
                     if ($json) {
-                        $matches[] = $event;
                         break;
                     }
                     $file = $event['file'];
@@ -97,6 +99,11 @@ final class Application
                     break;
                 case 'done':
                     $s = $event['summary'];
+                    $snapshots = new \Poseidon\History\SnapshotStore($this->config);
+                    $snapshots->save('cli', $query, $options, array_values(array_filter($matches, static fn (array $m): bool => $m['type'] === 'match')), $s);
+                    if (isset($opts['changes']) && !$json) {
+                        $this->printChanges($snapshots->compare('cli', $query, $options));
+                    }
                     if ($json) {
                         echo json_encode(['results' => $matches, 'summary' => $s], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . PHP_EOL;
                     } else {
@@ -314,6 +321,62 @@ final class Application
         } else {
             exec('(xdg-open ' . escapeshellarg($url) . ' || wslview ' . escapeshellarg($url) . ') >/dev/null 2>&1 &');
         }
+    }
+
+    /** @param array<string, mixed>|null $c */
+    private function printChanges(?array $c): void
+    {
+        if ($c === null) {
+            echo $this->paint('2', 'Première recherche de ce type : rien à comparer.') . PHP_EOL;
+
+            return;
+        }
+        echo PHP_EOL . $this->paint('1', sprintf('Depuis la recherche du %s : %d nouveau(x), %d disparu(s), %d modifié(s), %d inchangé(s)', date('d/m/Y H:i', strtotime($c['from']['at'])), count($c['appeared']), count($c['disappeared']), count($c['changed']), $c['unchanged'])) . PHP_EOL;
+        foreach ($c['appeared'] as $f) {
+            echo $this->paint('32', '  + ' . $f['path']) . "  ({$f['total']})" . PHP_EOL;
+        }
+        foreach ($c['disappeared'] as $f) {
+            echo $this->paint('31', '  − ' . $f['path']) . "  ({$f['total']})" . PHP_EOL;
+        }
+        foreach ($c['changed'] as $f) {
+            echo $this->paint('33', '  ~ ' . $f['path']) . "  {$f['before']} → {$f['after']}" . ($f['modified'] ? ' (fichier modifié)' : '') . PHP_EOL;
+        }
+    }
+
+    /** @param list<string> $args */
+    private function gitLog(array $args): int
+    {
+        $file = Path::normalize($args[0] ?? throw new \InvalidArgumentException('Usage : poseidon git-log <fichier>'));
+        $repo = \Poseidon\Git\GitHistory::repository($file) ?? throw new \InvalidArgumentException('Ce fichier n\'est pas dans un dépôt Git.');
+        foreach (\Poseidon\Git\GitHistory::log($repo, (string) Path::relativeTo(Path::normalize((string) realpath($file)), $repo)) as $c) {
+            printf("%s  %s  %-18s %s\n", $this->paint('33', $c['short']), substr($c['date'], 0, 10), mb_substr($c['author'], 0, 18), $c['subject']);
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param list<string>                $args
+     * @param array<string, string|bool> $opts
+     */
+    private function gitSearch(array $args, array $opts): int
+    {
+        if (count($args) < 2) {
+            throw new \InvalidArgumentException('Usage : poseidon git-search <racine> <terme> [--mode=regex]');
+        }
+        $engine = new SearchEngine($this->config);
+        $root = $engine->guard()->resolveRoot($args[0]);
+        $repo = \Poseidon\Git\GitHistory::repository($root) ?? throw new \InvalidArgumentException('Cette racine n\'est pas dans un dépôt Git.');
+        $commits = (new \Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, (string) Path::relativeTo($root, $repo), $this->query($args[1], $opts));
+        foreach ($commits as $c) {
+            printf("%s  %s  %-18s %s\n", $this->paint('33', $c['short']), substr($c['date'], 0, 10), mb_substr($c['author'], 0, 18), $c['subject']);
+            foreach ($c['files'] as $f) {
+                echo '      ' . $this->paint('2', $f['path']) . "  {$f['before']} → {$f['after']}" . PHP_EOL;
+            }
+        }
+        echo PHP_EOL . count($commits) . " commit(s) où le nombre d'occurrences de « {$args[1]} » a changé." . PHP_EOL;
+
+        return $commits === [] ? 1 : 0;
     }
 
     /**
@@ -534,6 +597,8 @@ final class Application
           demo    [dossier]                Générer les échantillons synthétiques de démonstration
           index   <racine> [--rebuild|--status|--delete]  Index plein texte (recherches instantanées)
           report  <racine> <filtre> --out=rapport.html    Rapport HTML (imprimable en PDF)
+          git-log <fichier>                Historique Git d'un fichier
+          git-search <racine> <filtre>     Commits où le filtre a été ajouté ou retiré (texte : git log -S ; documents : texte extrait)
           templates [--delete=nom]         Modèles d'extraction enregistrés
           user    list|add|update|passwd|delete <identifiant> [--role=admin|lecteur] [--roots="…;…"]
           audit   [--tail=50] [--user=nom]  Journal d'audit (qui a cherché, ouvert, extrait quoi)
@@ -553,6 +618,7 @@ final class Application
           --json                           Sortie JSON
           --no-warnings                    Masquer les avertissements (fichiers protégés...)
           --no-index                       Ignorer l'index et tout relire
+          --changes                        Comparer avec la recherche précédente (fichiers apparus, disparus, modifiés)
 
         Options d'extraction
           --out=fichier.(csv|json|txt|md|xlsx)

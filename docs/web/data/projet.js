@@ -317,22 +317,22 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L4-08",
                     "titre": "Proximité (NEAR) et recherche floue",
-                    "description": "Mots à moins de N mots d'écart ; tolérance aux fautes.",
-                    "statut": "À faire",
+                    "description": "Mode proximité (N mots, sur plusieurs lignes) et recherche floue (Damerau-Levenshtein, sans accents).",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 7"
+                    "date": "2026-10-17",
+                    "ref": "feat/extraction-avancee"
                 },
                 {
                     "id": "L4-09",
                     "titre": "Recherches enregistrées et historique",
-                    "description": "Rejouer une recherche, la partager par lien.",
-                    "statut": "À faire",
+                    "description": "Historique et recherches enregistrées (navigateur), lien de partage qui rejoue la recherche.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 7"
+                    "date": "2026-10-17",
+                    "ref": "feat/extraction-avancee"
                 }
             ]
         },
@@ -394,22 +394,22 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L5-06",
                     "titre": "Modèles d'extraction",
-                    "description": "Enregistrer un mapping (colonnes, groupes nommés → colonnes) et le rejouer.",
-                    "statut": "À faire",
+                    "description": "Modèles enregistrés (filtre + options + extraction, sans racine) ; groupes nommés de regex → colonnes.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 7"
+                    "date": "2026-10-17",
+                    "ref": "feat/extraction-avancee"
                 },
                 {
                     "id": "L5-07",
                     "titre": "Rapport de recherche",
-                    "description": "Export HTML/PDF de la recherche (synthèse + preuves).",
-                    "statut": "À faire",
+                    "description": "Rapport HTML autonome (synthèse, fichiers, preuves, ignorés), imprimable en PDF.",
+                    "statut": "Terminé",
                     "priorite": "Basse",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 7"
+                    "date": "2026-10-17",
+                    "ref": "feat/extraction-avancee"
                 }
             ]
         },
@@ -672,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 82 vérifications (Linux), 77 (Windows), dont équivalence avec/sans index.",
+                    "description": "Suite sans dépendance : 98 vérifications (Linux), dont équivalence avec/sans index, conteneurs, proximité, flou, modèles, rapport.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -817,8 +817,8 @@ window.POSEIDON_PROJET = {
             "id": "P7",
             "titre": "Extraction avancée",
             "debut": "2026-10-17",
-            "fin": "2027-01-29",
-            "statut": "En cours",
+            "fin": "2026-10-17",
+            "statut": "Terminé",
             "livrables": [
                 "Modèles d'extraction enregistrés",
                 "Groupes nommés → colonnes",
@@ -829,9 +829,9 @@ window.POSEIDON_PROJET = {
         {
             "id": "P8",
             "titre": "Équipe et déploiement",
-            "debut": "2027-02-01",
+            "debut": "2026-10-17",
             "fin": "2027-02-26",
-            "statut": "À faire",
+            "statut": "En cours",
             "livrables": [
                 "Comptes, rôles, journal d'audit",
                 "Image Docker, guide HTTPS",

@@ -55,7 +55,8 @@ Formats : TXT, MD, CSV, logs, code, PDF (OCR si scanné), DOCX, DOC, ODT, RTF, X
 | Index plein texte, banc d'essai | Terminés — phase P5 (PR #8) |
 | Intégration continue GitHub Actions | Prête mais **bloquée** : compte GitHub verrouillé pour facturation (à régler par le porteur). Tests passés à la main sous Linux (PHP 8.4, 82 tests) et Windows (PHP 8.3, 77 tests) |
 | Formats étendus (courriels .eml/.msg, 7z/RAR/tar/gz, OCR) | Terminés — phase P6 |
-| Phase en cours | P7 — Extraction avancée |
+| Extraction avancée (proximité, flou, groupes nommés, modèles, historique, partage, rapport) | Terminée — phase P7 |
+| Phase en cours | P8 — Équipe et déploiement |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
 
@@ -73,6 +74,8 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Proximité et recherche floue dans le moteur | Un seul point d'entrée (`Query::find`) pour le moteur, l'aperçu, l'extraction et les noms : surlignage, comptage et export restent cohérents. Distance de Damerau (inversion = 1 faute). |
+| 2026-10-17 | Modèles sans racine, historique côté navigateur | Un modèle se rejoue sur n'importe quel dossier ; l'historique est personnel (stockage local), le lien partagé porte la recherche complète. |
 | 2026-10-17 | Courriels et archives exotiques comme conteneurs | Les pièces jointes d'un mail et les entrées d'un 7z sont des fichiers comme les autres (chemins chaînés, imbrication libre). `.msg` lu par un lecteur OLE maison (aucune dépendance) ; 7z/RAR via bsdtar, présent nativement sous Windows. |
 | 2026-10-17 | OCR optionnel (Tesseract) | Activé automatiquement si présent ; borné en pages et en temps ; résultat mis en cache. |
 | 2026-10-17 | Index SQLite FTS5 trigramme sans contenu | Recherches répétées quasi instantanées sans serveur à installer ; l'index ne fait que désigner des candidats, le Matcher vérifie toujours (résultats identiques). |
@@ -121,6 +124,7 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Phase P7 : proximité, flou, groupes nommés → colonnes, modèles d'extraction, historique, lien de partage, rapport HTML ; 3 correctifs de sécurité (BUG-023 à 025) et BUG-022 ; tests Linux 98/98. |
 | 2026-10-17 | Phase P6 : courriels .eml/.msg avec pièces jointes, 7z/RAR/tar/gz, OCR ; tests Linux 82/82, Windows 77/77. |
 | 2026-10-17 | Phase P5 : index plein texte, intégration continue Linux/Windows, banc d'essai (10 000 fichiers : 5,2 s à froid, 0,47 s indexé). |
 | 2026-10-17 | Essai Windows validé après libération du port 8080 ; étiquette v0.1.0 ; démarrage de la phase P5. |

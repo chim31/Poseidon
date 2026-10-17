@@ -377,6 +377,38 @@ try {
     $html = Poseidon\Report\HtmlReport::render($rq, SearchOptions::fromArray(['root' => $dir]), $engine->collect(new Query('contrat'), SearchOptions::fromArray(['root' => $dir])));
     check('rapport HTML autonome (aucun script, contenu échappé, surlignage)', !str_contains($html, '<script') && str_contains($html, '&lt;script&gt;') && str_contains($html, '<mark') && str_contains($html, 'Rapport de recherche'));
 
+    section('Comptes, audit et limitation des connexions');
+    $authConfig = $config->with(['users_file' => $dir . '-auth/users.json', 'audit_file' => $dir . '-auth/audit.log', 'state_dir' => $dir . '-auth/state']);
+    $users = new Poseidon\Auth\UserStore($authConfig);
+    check('aucun compte au départ', !$users->enabled());
+    $users->save('Lea', 'un-mot-de-passe-long', 'lecteur', [$dir . '/notes']);
+    check('compte créé, mot de passe haché', $users->enabled() && !str_contains((string) file_get_contents($dir . '-auth/users.json'), 'un-mot-de-passe-long'));
+    same('connexion valide (identifiant insensible à la casse)', ['login' => 'lea', 'role' => 'lecteur', 'roots' => [Path::normalize($dir . '/notes')]], $users->verify('LEA', 'un-mot-de-passe-long'));
+    same('mauvais mot de passe refusé', null, $users->verify('lea', 'faux'));
+    same('compte inconnu refusé', null, $users->verify('inconnu', 'un-mot-de-passe-long'));
+    check('mot de passe trop court refusé', (static function () use ($users): bool {
+        try {
+            $users->save('bob', 'court');
+        } catch (InvalidArgumentException) {
+            return true;
+        }
+
+        return false;
+    })());
+    $audit = new Poseidon\Auth\AuditLog($authConfig);
+    $audit->log('recherche', 'lea', ['racine' => '/data', 'filtre' => 'contrat']);
+    $audit->log('téléchargement', 'admin', ['fichier' => '/data/a.pdf']);
+    same('journal d\'audit (plus récent d\'abord, filtre par compte)', ['recherche'], array_column($audit->tail(10, 'lea'), 'action'));
+    $throttle = new Poseidon\Auth\Throttle($authConfig);
+    for ($i = 0; $i < 5; $i++) {
+        $throttle->fail('10.0.0.1');
+    }
+    check('5 échecs bloquent l\'adresse, pas les autres', $throttle->blocked('10.0.0.1') && !$throttle->blocked('10.0.0.2'));
+    $throttle->clear('10.0.0.1');
+    check('succès : compteur remis à zéro', !$throttle->blocked('10.0.0.1'));
+    check('compte supprimé', $users->delete('lea') && !$users->enabled());
+    Fixtures::rmdir($dir . '-auth');
+
     section('Protections contre les fichiers piégés');
     $sheet = Fixtures::zip(['xl/workbook.xml' => '<workbook><sheets><sheet name="S" r:id="rId1"/></sheets></workbook>', 'xl/_rels/workbook.xml.rels' => '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>', 'xl/worksheets/sheet1.xml' => '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ok</t></is></c><c r="ZZZZ1" t="inlineStr"><is><t>loin</t></is></c></row></sheetData></worksheet>']);
     file_put_contents($dir . '/piege.xlsx', $sheet);
@@ -386,6 +418,12 @@ try {
     section('PDF sans pdftotext (lecteur PHP de secours)');
     $doc = (new Poseidon\Extractor\PdfExtractor($config))->withPhp(Fixtures::pdf(['Bonjour (Poseidon)', 'Ligne deux']));
     same('texte du PDF', ['Bonjour (Poseidon)', 'Ligne deux'], array_column($doc->lines, 1));
+
+    section('Configuration');
+    $withRoots = Config::load()->with(['allowed_roots' => ['/a', '/b']]);
+    same('une liste vide remplace une liste', [], $withRoots->with(['allowed_roots' => []])->get('allowed_roots'));
+    same('une liste remplace une liste', ['/c'], $withRoots->with(['allowed_roots' => ['/c']])->get('allowed_roots'));
+    same('un sous-tableau se fusionne', [5, 'fra+eng'], [Config::load()->with(['ocr' => ['max_pages' => 5]])->get('ocr.max_pages'), Config::load()->with(['ocr' => ['max_pages' => 5]])->get('ocr.languages')]);
 
     section('Utilitaires');
     same('colonne 27 => AB', 'AB', Text::columnLetter(27));

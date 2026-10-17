@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 33 anomalies corrigées (dont 14 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 34 anomalies corrigées (dont 15 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -41,6 +41,7 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-031 | « nullnull » dans la vue des changements | Groupes vides rendus comme texte « null » / rien ne doit s'afficher | Changements sans fichier disparu ni modifié | Cosmétique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Groupes vides filtrés avant `replaceChildren`. | feat/comparaison-avancee |
 | BUG-032 | Nom d'entrée d'archive lu comme option de bsdtar | Une entrée nommée « --… » dans un 7z/RAR piégé pouvait être passée à bsdtar comme option (certaines exécutent une commande) / un nom reste un nom | Archive contenant une entrée « --use-compress-program=… » | Critique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `--` avant le nom d'entrée dans tous les appels de lecture. Test : entrée « -x.txt » lue normalement. | fix/injection-outils |
 | BUG-033 | Commandes d'un dépôt Git piégé exécutées | Avec `safe.directory=*`, un dépôt d'un autre compte pouvait faire exécuter `core.fsmonitor`, un `textconv` ou un diff externe déclarés dans sa configuration / aucune commande du dépôt ne doit s'exécuter | Dépôt avec `diff.x.textconv` + `.gitattributes` | Critique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `safe.directory=*` retiré (dépôts d'autres comptes : liste `git_trusted_repos`) ; `--no-textconv --no-ext-diff`, `core.fsmonitor=false`, crochets désactivés, configurations système et globale ignorées ; versions lues par `cat-file blob`. Test : fichier témoin jamais créé (créé sans la protection). | fix/injection-outils |
+| BUG-034 | Programme de vérification de signature d'un dépôt piégé exécuté | Avec `log.showSignature=true` et `gpg.program` pointant vers un script, un commit à signature forgée faisait exécuter ce script par `git log` / rien ne doit s'exécuter | Dépôt avec ces réglages et un commit portant un en-tête `gpgsig` | Critique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `--no-show-signature --no-notes` sur tous les `git log` ; `log.showSignature=false`, `gpg.program`, `gpg.ssh.program`, `gpg.x509.program`, `core.sshCommand` forcés vers un programme inexistant ; `log.mailmap=false`. Test : témoin créé sans la protection, jamais avec. | fix/git-signatures |
 
 ## Limitations connues
 

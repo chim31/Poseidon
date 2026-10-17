@@ -32,7 +32,14 @@ final class GitHistory
     /** Options qui désactivent tout ce qu'un dépôt piégé pourrait faire exécuter. */
     private static function hardening(): array
     {
-        $opts = ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=' . (DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null'), '-c', 'diff.external=', '-c', 'core.pager=cat', '-c', 'core.quotepath=false', '-c', 'protocol.allow=never'];
+        $none = 'poseidon-programme-desactive'; // introuvable : jamais exécuté
+        $opts = [
+            '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=' . (DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null'),
+            '-c', 'diff.external=', '-c', 'core.pager=cat', '-c', 'core.quotepath=false', '-c', 'protocol.allow=never',
+            // Vérification de signatures : un dépôt piégé pourrait désigner son propre « gpg ».
+            '-c', 'log.showSignature=false', '-c', 'gpg.program=' . $none, '-c', 'gpg.ssh.program=' . $none, '-c', 'gpg.x509.program=' . $none,
+            '-c', 'log.mailmap=false', '-c', 'core.sshCommand=' . $none,
+        ];
         foreach (self::$trusted as $repo) {
             array_push($opts, '-c', 'safe.directory=' . $repo);
         }
@@ -83,7 +90,7 @@ final class GitHistory
      */
     public static function log(string $repo, string $relPath, int $limit = 50): array
     {
-        $out = self::git($repo, ['log', '--no-textconv', '--no-ext-diff', '--follow', '-n', (string) $limit, '--format=%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--', $relPath]);
+        $out = self::git($repo, ['log', '--no-textconv', '--no-ext-diff', '--no-show-signature', '--no-notes', '--follow', '-n', (string) $limit, '--format=%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--', $relPath]);
 
         return self::parseCommits($out);
     }
@@ -98,7 +105,7 @@ final class GitHistory
         if ($needle === '') {
             throw new \InvalidArgumentException('Terme vide.');
         }
-        $args = ['log', '--no-textconv', '--no-ext-diff', '-n', (string) $limit, '--format=@@%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--name-only', $regex ? '-G' . $needle : '-S' . $needle];
+        $args = ['log', '--no-textconv', '--no-ext-diff', '--no-show-signature', '--no-notes', '-n', (string) $limit, '--format=@@%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--name-only', $regex ? '-G' . $needle : '-S' . $needle];
         if (!$regex) {
             $args[] = '--regexp-ignore-case';
         }
@@ -127,7 +134,7 @@ final class GitHistory
      */
     public static function touched(string $repo, string $pathspec, int $limit = 100): array
     {
-        $raw = self::git($repo, ['log', '--no-textconv', '--no-ext-diff', '-n', (string) $limit, '--format=@@%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--name-only', '--diff-filter=AMR', '--', $pathspec === '' ? '.' : $pathspec]);
+        $raw = self::git($repo, ['log', '--no-textconv', '--no-ext-diff', '--no-show-signature', '--no-notes', '-n', (string) $limit, '--format=@@%H%x1F%h%x1F%an%x1F%aI%x1F%s', '--name-only', '--diff-filter=AMR', '--', $pathspec === '' ? '.' : $pathspec]);
         $commits = [];
         foreach (array_filter(explode('@@', $raw)) as $block) {
             $lines = array_values(array_filter(array_map('trim', explode("\n", $block)), static fn (string $l): bool => $l !== ''));

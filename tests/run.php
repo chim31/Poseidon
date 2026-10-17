@@ -508,6 +508,19 @@ try {
         $git('config', 'core.fsmonitor', 'touch ' . $marker);
         $git('config', 'diff.piege.textconv', 'sh -c "touch ' . $marker . '; cat"');
         file_put_contents($repo . '/.gitattributes', "* diff=piege\n");
+        // Commit à signature forgée + programme de vérification piégé (log.showSignature, gpg.program).
+        $head = Poseidon\Support\Process::run([Poseidon\Git\GitHistory::binary(), '-C', $repo, 'cat-file', 'commit', 'HEAD'])['stdout'];
+        $forgedCommit = (string) preg_replace('/^(committer .*)$/m', "$1\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n Zm9v\n -----END PGP SIGNATURE-----", $head, 1);
+        file_put_contents($repo . '/forge.txt', $forgedCommit);
+        $hash = trim($git('hash-object', '-w', '-t', 'commit', $repo . '/forge.txt')['stdout']);
+        unlink($repo . '/forge.txt');
+        $git('update-ref', 'HEAD', $hash);
+        if (DIRECTORY_SEPARATOR === '/') {
+            file_put_contents($repo . '/faux-gpg.sh', "#!/bin/sh\ntouch '{$marker}'\n");
+            chmod($repo . '/faux-gpg.sh', 0755);
+            $git('config', 'gpg.program', $repo . '/faux-gpg.sh');
+            $git('config', 'log.showSignature', 'true');
+        }
         (new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken'));
         Poseidon\Git\GitHistory::log($repo, 'contrat.docx');
         Poseidon\Git\GitHistory::show($repo, $log[0]['hash'], 'contrat.docx', 10_000_000);

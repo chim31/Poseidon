@@ -48,6 +48,15 @@ return [
     // Délai maximal d'analyse d'un PDF (secondes) : un fichier piégé ne bloque jamais le scan.
     'pdf_timeout' => 30,
 
+    // OCR (Tesseract, optionnel) : PDF scannés et images. Désactivable : 'enabled' => false.
+    'ocr' => [
+        'enabled' => getenv('POSEIDON_OCR') !== '0',
+        'tesseract' => getenv('POSEIDON_TESSERACT') ?: null,
+        'languages' => getenv('POSEIDON_OCR_LANG') ?: 'fra+eng',
+        'max_pages' => 30,
+        'timeout' => 60,
+    ],
+
     // Binaires externes optionnels (détectés automatiquement si null).
     'pdftotext' => getenv('POSEIDON_PDFTOTEXT') ?: null,
     'antiword' => getenv('POSEIDON_ANTIWORD') ?: null,

@@ -131,6 +131,8 @@ final class Kernel
             'os' => PHP_OS_FAMILY,
             'pdfEngine' => $this->engine->extractors()->pdfEngine(),
             'indexAvailable' => \Poseidon\Index\Index::available(),
+            'ocr' => $this->engine->extractors()->ocrAvailable(),
+            'archives7z' => \Poseidon\Archive\Bsdtar::binary() !== null,
             'formats' => [...$this->engine->extractors()->supportedExtensions(), 'zip'],
             'allowedRoots' => array_map([Path::class, 'display'], $this->engine->guard()->allowedRoots()),
             'authRequired' => $this->passwordRequired(),

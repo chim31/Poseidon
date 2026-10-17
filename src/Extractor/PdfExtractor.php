@@ -19,8 +19,11 @@ final class PdfExtractor implements Extractor
 {
     private ?string $binary;
 
-    public function __construct(private Config $config)
+    private Ocr $ocr;
+
+    public function __construct(private Config $config, ?Ocr $ocr = null)
     {
+        $this->ocr = $ocr ?? new Ocr($config);
         $configured = $config->get('pdftotext');
         $this->binary = is_string($configured) && $configured !== '' ? $configured : Process::which('pdftotext');
     }
@@ -37,7 +40,34 @@ final class PdfExtractor implements Extractor
 
     public function extract(Source $source): Document
     {
-        return $this->binary !== null ? $this->withPoppler($source) : $this->withPhp($source->bytes());
+        $document = $this->binary !== null ? $this->withPoppler($source) : $this->withPhp($source->bytes());
+        // PDF scanné : presque pas de texte → OCR si Tesseract est disponible.
+        if ($this->ocr->canReadPdf() && mb_strlen(trim($document->text())) < 20) {
+            $lines = $this->withTempFile($source, fn (string $path): array => $this->ocr->pdf($path));
+            if ($lines !== []) {
+                return new Document($lines, [], ['Texte obtenu par OCR : vérifier les résultats.']);
+            }
+        }
+
+        return $document;
+    }
+
+    /** @template T @param \Closure(string): T $use @return T */
+    private function withTempFile(Source $source, \Closure $use): mixed
+    {
+        if (!$source->inArchive()) {
+            return $use($source->diskPath);
+        }
+        $temp = tempnam(sys_get_temp_dir(), 'poseidon_pdf_');
+        if ($temp === false) {
+            throw new UnreadableFileException('Fichier temporaire impossible pour le PDF.');
+        }
+        file_put_contents($temp, $source->bytes());
+        try {
+            return $use($temp);
+        } finally {
+            @unlink($temp);
+        }
     }
 
     private function withPoppler(Source $source): Document

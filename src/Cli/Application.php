@@ -342,8 +342,12 @@ final class Application
         $roots = $engine->guard()->allowedRoots();
         echo 'Poseidon ' . POSEIDON_VERSION . ' — PHP ' . PHP_VERSION . ' (' . PHP_OS_FAMILY . ')' . PHP_EOL;
         echo 'Moteur PDF       : ' . $engine->extractors()->pdfEngine() . PHP_EOL;
+        echo 'OCR              : ' . ($engine->extractors()->ocrAvailable() ? 'Tesseract' : 'indisponible (installer tesseract-ocr)') . PHP_EOL;
+        echo 'Archives 7z/RAR  : ' . (\Poseidon\Archive\Bsdtar::binary() ?? 'indisponible (installer bsdtar / libarchive)') . PHP_EOL;
+        echo 'Index            : ' . (\Poseidon\Index\Index::available() ? 'SQLite FTS5' : 'indisponible (activer pdo_sqlite)') . PHP_EOL;
         echo 'Racines permises : ' . ($roots === [] ? 'toutes (aucune restriction)' : implode(', ', array_map([Path::class, 'display'], $roots))) . PHP_EOL;
-        echo 'Formats          : ' . implode(', ', $engine->extractors()->supportedExtensions()) . ', zip' . PHP_EOL;
+        echo 'Formats          : ' . implode(', ', $engine->extractors()->supportedExtensions()) . PHP_EOL;
+        echo 'Conteneurs       : zip, jar, eml, msg, gz, tar, tar.gz' . (\Poseidon\Archive\Bsdtar::binary() !== null ? ', 7z, rar, iso, cab, tar.xz, tar.bz2' : '') . PHP_EOL;
 
         return 0;
     }

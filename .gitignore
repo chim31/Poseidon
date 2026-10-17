@@ -2,6 +2,7 @@
 /var/cache/*
 !/var/cache/.gitkeep
 /var/secret.key
+/var/index/
 /samples/demo/
 /config/poseidon.local.php
 

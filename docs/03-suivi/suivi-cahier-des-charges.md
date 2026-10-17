@@ -7,13 +7,13 @@
 
 ## Tableau de bord
 
-Avancement global : **80 %** `████████████████░░░░` — 65 exigences : 52 terminées, 0 en cours, 12 à faire, 1 bloquées.
+Avancement global : **85 %** `█████████████████░░░` — 65 exigences : 55 terminées, 0 en cours, 9 à faire, 1 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
 | L1 | Socle et parcours | 5 | 0 | 0 | 100 % |
-| L2 | Formats de fichiers | 9 | 0 | 2 | 82 % |
-| L3 | Archives ZIP | 4 | 0 | 1 | 80 % |
+| L2 | Formats de fichiers | 11 | 0 | 0 | 100 % |
+| L3 | Archives ZIP | 5 | 0 | 0 | 100 % |
 | L4 | Recherche | 7 | 0 | 2 | 78 % |
 | L5 | Extraction de données | 5 | 0 | 2 | 71 % |
 | L6 | Interface web | 7 | 0 | 1 | 88 % |
@@ -48,8 +48,8 @@ _Lire le texte de tous les formats courants, sans dépendance externe obligatoir
 | L2-07 | **DOC, XLS, PPT anciens** — antiword si présent, sinon extraction approximative des chaînes (signalée). | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L2-08 | **RTF** — Mots de contrôle retirés, accents \'xx et \u décodés. | Terminé | Basse | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L2-09 | **Cache du texte extrait** — PDF et Office mis en cache (clé : chemin, taille, date) : 2e recherche quasi instantanée. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
-| L2-10 | **OCR des PDF scannés** — Tesseract optionnel pour les PDF images. | À faire | Moyenne | chim31 | — | Phase 6 |
-| L2-11 | **Courriels EML / MSG** — Corps et pièces jointes des e-mails. | À faire | Moyenne | chim31 | — | Phase 6 |
+| L2-10 | **OCR des PDF scannés** — Tesseract (optionnel) pour les PDF scannés (rendus par pdftoppm) et les images ; borné en pages et en temps, mis en cache. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/formats-etendus |
+| L2-11 | **Courriels EML / MSG** — .eml (MIME) et .msg (Outlook, lecteur OLE maison) : en-têtes, corps, pièces jointes parcourues comme des entrées d'archive. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/formats-etendus |
 
 ## L3 — Archives ZIP
 
@@ -61,7 +61,7 @@ _Un fichier dans un ZIP dans un ZIP est un fichier comme un autre._
 | L3-02 | **Chemins chaînés** — Chemin absolu et relatif : archives/2025.zip › clients/nereide.zip › contrat.docx. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L3-03 | **Protection anti-bombe ZIP** — Limites de profondeur, taille par entrée, volume total, ratio, nombre d'entrées ; parties Office et flux PDF bornés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L3-04 | **Téléchargement d'une entrée** — Une entrée d'archive imbriquée se télécharge comme un fichier normal. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L3-05 | **7z, RAR, tar.gz** — Autres formats d'archives (via binaires optionnels). | À faire | Basse | chim31 | — | Phase 6 |
+| L3-05 | **7z, RAR, tar.gz** — 7z, RAR, ISO, CAB, tar.* via bsdtar (natif sous Windows 10/11) ; tar et tar.gz en PHP pur à défaut ; .gz simple. | Terminé | Basse | chim31 | 2026-10-17 | feat/formats-etendus |
 
 ## L4 — Recherche
 
@@ -143,7 +143,7 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 69 vérifications (dont équivalence avec/sans index), lancée en CI sous Linux et Windows. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 82 vérifications (Linux), 77 (Windows), dont équivalence avec/sans index. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |

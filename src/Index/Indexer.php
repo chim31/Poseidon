@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Poseidon\Index;
 
-use Poseidon\Archive\ZipWalker;
+use Poseidon\Archive\ArchiveWalker;
 use Poseidon\Config;
 use Poseidon\Extractor\ExtractorRegistry;
 use Poseidon\Filesystem\Notice;
@@ -39,7 +39,7 @@ final class Indexer
         }
         $index = Index::create($this->config, $root);
         $generation = $index->nextGeneration();
-        $scanner = new Scanner($this->config, new ZipWalker($this->config), $this->guard);
+        $scanner = new Scanner($this->config, new ArchiveWalker($this->config), $this->guard);
 
         yield ['type' => 'start', 'root' => Path::display($root)];
 

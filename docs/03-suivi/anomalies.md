@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 19 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 21 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -27,6 +27,8 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-017 | Mémoire du diff non bornée | Deux fichiers très différents faisaient croître la trace de Myers en O(D²) | Comparer deux gros fichiers sans rapport | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Au-delà de 1 000 différences (ou 200 000 lignes), comparaison grossière (bloc supprimé / bloc ajouté). | feat/moteur-recherche |
 | BUG-018 | Sortie du périmètre par lien symbolique | Avec des racines autorisées, un lien symbolique placé dans une racine (vers `/etc`, `C:\Windows`…) était suivi / il doit être ignoré | Lien `racine/fuite → /etc` puis recherche | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Racines autorisées stockées en chemin réel ; contrôle sur `realpath` pour la racine saisie, chaque lien parcouru et chaque fichier servi ; lien hors périmètre signalé et ignoré. | feat/moteur-recherche |
 | BUG-019 | Le lanceur ouvre une autre application | Double-clic sur `poseidon.bat` : le navigateur affiche « Oops! An Error Occurred / 404 » d'une autre application déjà installée sur le port 8080 / l'interface Poseidon doit s'ouvrir | Avoir une application sur le port 8080, double-cliquer sur `poseidon.bat` | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Cause : le lanceur ouvrait le navigateur sur 8080 sans vérifier que Poseidon avait pu y démarrer. `serve` teste le port (connexion + attachement), prend le suivant libre (jusqu'à +20), et `--open` n'ouvre le navigateur qu'après une réponse « Poseidon » de `/api/info`. | fix/port-occupe |
+| BUG-020 | Avertissements dupliqués avec l'index | Un avertissement rejoué depuis l'index était réenregistré, et se multipliait à chaque recherche / il doit apparaître une seule fois | Indexer, puis répéter une recherche sur une racine contenant un ZIP chiffré | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Les avertissements rejoués n'ont plus de clé d'archive ; ceux d'une archive non rouverte sont filtrés par extension comme le parcours normal. Détecté par le test d'équivalence avec/sans index. | feat/index-plein-texte |
+| BUG-021 | tar.gz vide sous Windows sans bsdtar | PharData rend un contenu vide pour les .tar.gz sous Windows (PHP 8.3) / le contenu doit être lu | Test « tar.gz sans bsdtar » sous Windows | Mineure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Décompression par `gzdecode` (bornée) vers un `.tar` temporaire, lu par PharData ; lecture immédiate des entrées. | feat/formats-etendus |
 
 ## Limitations connues
 
@@ -35,4 +37,4 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | LIM-001 | Phrase coupée par un retour à la ligne | En mode « Phrase exacte », une phrase répartie sur deux lignes (PDF mis en page) n'est pas comptée | Mineure | Reporté | Mode « Tous les mots » | Recherche de proximité (phase 7) |
 | LIM-002 | Partages UNC sous Linux/WSL | PHP ne lit pas `\\serveur\partage` directement | Mineure | Reporté | Monter le partage + `network_mounts` | Accès SMB via `smbclient` (à étudier) |
 | LIM-003 | Serveur intégré mono-processus sous Windows | Pendant une longue recherche, l'aperçu attend la fin | Mineure | Reporté | Apache/Nginx + PHP-FPM | Index persistant (phase 5) |
-| LIM-004 | PDF scannés | Aucun texte sans OCR | Majeure | Reporté | OCR externe | OCR Tesseract (phase 6) |
+| LIM-004 | PDF scannés | Aucun texte sans OCR | Majeure | Corrigé (phase 6) | Installer Tesseract | OCR Tesseract intégré |

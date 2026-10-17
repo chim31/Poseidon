@@ -12,13 +12,14 @@ final class Process
 {
     /**
      * @param list<string> $command
-     * @return array{code: int, stdout: string, stderr: string, timedOut: bool}
+     * @param int $maxOutput Taille maximale de la sortie standard (0 = illimitée) : au-delà, le processus est arrêté.
+     * @return array{code: int, stdout: string, stderr: string, timedOut: bool, overflow: bool}
      */
-    public static function run(array $command, int $timeoutSeconds = 30): array
+    public static function run(array $command, int $timeoutSeconds = 30, int $maxOutput = 0): array
     {
         $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         if (!is_resource($proc)) {
-            return ['code' => -1, 'stdout' => '', 'stderr' => 'Lancement impossible.', 'timedOut' => false];
+            return ['code' => -1, 'stdout' => '', 'stderr' => 'Lancement impossible.', 'timedOut' => false, 'overflow' => false];
         }
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
@@ -27,6 +28,7 @@ final class Process
         $stderr = '';
         $deadline = microtime(true) + $timeoutSeconds;
         $timedOut = false;
+        $overflow = false;
 
         while (true) {
             $read = [$pipes[1], $pipes[2]];
@@ -49,6 +51,10 @@ final class Process
                     $stderr .= (string) $chunk;
                 }
             }
+            if ($maxOutput > 0 && strlen($stdout) > $maxOutput) {
+                $overflow = true;
+                break;
+            }
             if (feof($pipes[1]) && feof($pipes[2])) {
                 break;
             }
@@ -56,15 +62,15 @@ final class Process
 
         fclose($pipes[1]);
         fclose($pipes[2]);
-        if ($timedOut) {
+        if ($timedOut || $overflow) {
             proc_terminate($proc, 9);
             proc_close($proc);
 
-            return ['code' => -1, 'stdout' => $stdout, 'stderr' => $stderr, 'timedOut' => true];
+            return ['code' => -1, 'stdout' => $overflow ? '' : $stdout, 'stderr' => $stderr, 'timedOut' => $timedOut, 'overflow' => $overflow];
         }
         $code = proc_close($proc);
 
-        return ['code' => $code, 'stdout' => $stdout, 'stderr' => $stderr, 'timedOut' => false];
+        return ['code' => $code, 'stdout' => $stdout, 'stderr' => $stderr, 'timedOut' => false, 'overflow' => false];
     }
 
     /** Cherche un exécutable dans le PATH (Linux, macOS, Windows). */

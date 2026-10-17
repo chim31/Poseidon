@@ -37,6 +37,8 @@ const FORMAT_GROUPS = {
   csv: ['csv', 'tsv'],
   office: ['odt', 'odp', 'pptx', 'pptm', 'ppt', 'pps'],
   text: ['txt', 'text', 'md', 'markdown', 'rst'],
+  mail: ['eml', 'msg'],
+  image: ['png', 'jpg', 'jpeg', 'tif', 'tiff', 'bmp', 'gif', 'webp'],
   code: ['log', 'json', 'xml', 'html', 'htm', 'css', 'js', 'ts', 'php', 'py', 'java', 'c', 'h', 'cpp', 'cs', 'go', 'rs', 'rb', 'sh', 'bat', 'cmd', 'ps1', 'sql', 'yml', 'yaml', 'ini', 'conf', 'cfg', 'env', 'properties', 'toml'],
 };
 
@@ -790,7 +792,8 @@ async function init() {
     toast('error', 'Serveur injoignable', 'Lance Poseidon avec « poseidon serve » ou poseidon.bat.');
     return;
   }
-  $('stat-pdf').textContent = state.info.pdfEngine === 'pdftotext' ? 'pdftotext' : 'PHP (secours)';
+  $('stat-pdf').textContent = (state.info.pdfEngine === 'pdftotext' ? 'pdftotext' : 'PHP (secours)') + (state.info.ocr ? ' + OCR' : '');
+  document.querySelector('#formats [data-format="image"]').hidden = !state.info.ocr;
   if (state.info.authRequired && !state.info.authenticated) showLogin();
 
   $('root').value = store.get('root', state.info.allowedRoots[0] || '');

@@ -25,6 +25,8 @@ Tout ce qu'il faut pour installer, configurer, lancer, tester et déployer Posei
 | `pdftotext` (poppler-utils) | toute version récente | Non, recommandé | Meilleure lecture des PDF |
 | `antiword` | toute version | Non | Meilleure lecture des `.doc` anciens |
 | Extension `pdo_sqlite` (SQLite ≥ 3.43) | incluse dans PHP | Non, recommandé | Index plein texte (recherches instantanées) |
+| `bsdtar` (libarchive) | toute version récente | Non | Archives 7z, RAR, ISO, CAB, tar.xz — déjà présent sous Windows 10/11 (`tar.exe`) |
+| Tesseract OCR (+ langue `fra`) | 4 ou 5 | Non | PDF scannés et images |
 | Navigateur | Chrome, Edge, Firefox, Safari récents | Pour l'interface | |
 
 Aucun Composer, aucun Node, aucune base de données.
@@ -44,12 +46,12 @@ php -m | grep -Ei "zip|mbstring"     # Windows : php -m | findstr /i "zip mbstri
 2. Dans `C:\php`, copier `php.ini-production` en `php.ini`, puis décommenter (retirer le `;`) les lignes `extension=zip`, `extension=mbstring` et, pour l'index, `extension=pdo_sqlite`.
 3. Ajouter `C:\php` au `PATH` (Paramètres → Système → Informations système → Paramètres avancés → Variables d'environnement), **ou** copier le dossier PHP dans un sous-dossier `php\` à côté de `poseidon.bat` : le lanceur le trouvera tout seul.
 4. Récupérer Poseidon : `git clone git@github.com:chim31/Poseidon.git` ou télécharger le ZIP du dépôt.
-5. Optionnel : installer poppler pour Windows et ajouter son dossier `bin` au `PATH` pour `pdftotext`.
+5. Optionnel : installer poppler pour Windows (`pdftotext`, `pdftoppm`) et Tesseract (installateur UB Mannheim, cocher la langue française), puis ajouter leurs dossiers au `PATH`. Les archives 7z/RAR fonctionnent sans rien installer (`tar.exe` de Windows).
 
 ### Linux / WSL (Debian, Ubuntu, Kali)
 
 ```sh
-sudo apt install php-cli php-zip php-mbstring php-sqlite3 poppler-utils   # sqlite3 et poppler : optionnels
+sudo apt install php-cli php-zip php-mbstring php-sqlite3 poppler-utils libarchive-tools tesseract-ocr tesseract-ocr-fra   # tout sauf les 3 premiers est optionnel
 git clone git@github.com:chim31/Poseidon.git
 cd Poseidon
 ```
@@ -57,7 +59,7 @@ cd Poseidon
 ### macOS
 
 ```sh
-brew install php poppler
+brew install php poppler libarchive tesseract tesseract-lang
 git clone git@github.com:chim31/Poseidon.git && cd Poseidon
 ```
 
@@ -103,6 +105,10 @@ return [
 | `POSEIDON_MAX_FILE_SIZE` | 200 Mo | Taille maximale d'un fichier analysé (octets) |
 | `POSEIDON_PDFTOTEXT` | détecté dans le `PATH` | Chemin explicite de `pdftotext` |
 | `POSEIDON_ANTIWORD` | détecté dans le `PATH` | Chemin explicite d'`antiword` |
+| `POSEIDON_BSDTAR` | détecté (`bsdtar`, `tar` libarchive) | Chemin explicite de bsdtar |
+| `POSEIDON_TESSERACT` | détecté dans le `PATH` | Chemin explicite de Tesseract |
+| `POSEIDON_OCR` | activé si Tesseract est présent | `0` pour désactiver l'OCR |
+| `POSEIDON_OCR_LANG` | `fra+eng` | Langues Tesseract |
 | `POSEIDON_PHP` | `php` | PHP utilisé par les lanceurs `.bat` / `.sh` |
 
 Exemple Linux : `POSEIDON_ROOTS="/srv/docs;/mnt/partage" POSEIDON_PASSWORD="…" ./poseidon.sh`
@@ -175,7 +181,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `69 tests réussis` (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `82 tests réussis` sous Linux, `77` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
@@ -228,7 +234,8 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | `Les extensions PHP "zip" et "mbstring" sont requises` | Extensions désactivées | Décommenter `extension=zip` et `extension=mbstring` dans `php.ini` |
 | « Le partage réseau … n'est pas accessible directement » | Chemin UNC sous Linux/WSL | Monter le partage et le déclarer dans `network_mounts` (§ 6) |
 | « Chemin hors des racines autorisées » | `POSEIDON_ROOTS` restreint l'accès | Ajouter la racine à la liste |
-| PDF trouvés mais texte vide | PDF scanné (image) | OCR prévu en phase 6 ; en attendant, passer le PDF dans un outil d'OCR |
+| PDF trouvés mais texte vide | PDF scanné (image) | Installer Tesseract (+ langue `fra`) et `pdftoppm` : l'OCR s'active seul (`poseidon info` l'indique) |
+| Les 7z/RAR ne sont pas ouverts | `bsdtar` absent (Linux/macOS) | Installer `libarchive-tools` / `libarchive` |
 | Texte de PDF mal découpé | Lecteur PHP de secours utilisé | Installer `pdftotext` (poppler) |
 | Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Tous les mots » (voir [anomalies](../03-suivi/anomalies.md)) |
 | L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Indexer la racine (recherches beaucoup plus courtes), ou servir via Apache/Nginx (§ 8) |

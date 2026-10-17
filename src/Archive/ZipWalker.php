@@ -19,7 +19,7 @@ final class ZipWalker
 {
     private const ARCHIVE_EXTENSIONS = ['zip', 'jar', 'war', 'ear'];
 
-    public function __construct(private Config $config)
+    public function __construct(private Config $config, private ?ArchiveWalker $dispatcher = null)
     {
     }
 
@@ -85,7 +85,7 @@ final class ZipWalker
                 }
                 $ext = Path::extension($name);
                 $wanted = $filter === [] || isset($filter[$ext]);
-                $isArchive = self::isArchive($ext);
+                $isArchive = $this->dispatcher !== null ? ArchiveWalker::isContainer($name) : self::isArchive($ext);
                 if (!$wanted && !$isArchive) {
                     continue;
                 }
@@ -132,7 +132,10 @@ final class ZipWalker
                     yield $entry;
                 }
                 if ($isArchive && ($descend === null || $descend($entry))) {
-                    yield from $this->walkOpened($entry, $filter, $budget, $descend);
+                    // ZIP dans ZIP : même budget ; autre conteneur (7z, courriel…) : l'aiguilleur.
+                    yield from self::isArchive($ext) || $this->dispatcher === null
+                        ? $this->walkOpened($entry, $filter, $budget, $descend)
+                        : $this->dispatcher->walk($entry, $filter, $descend);
                 }
             }
             if ($protectedCount > 20) {

@@ -54,7 +54,8 @@ Informations publiques (en-tête `X-Poseidon: 1` requis). Réponse :
 ```json
 { "name": "Poseidon", "version": "0.1.0", "php": "8.4.24", "os": "Linux", "pdfEngine": "pdftotext",
   "formats": ["txt", "md", "pdf", "docx", "xlsx", "zip"], "allowedRoots": [], "authRequired": false,
-  "authenticated": true, "home": "/home/moi", "demo": "/opt/poseidon/samples/demo" }
+  "authenticated": true, "home": "/home/moi", "demo": "/opt/poseidon/samples/demo",
+  "indexAvailable": true, "ocr": false, "archives7z": true }
 ```
 
 ### `GET /api/browse?path=`

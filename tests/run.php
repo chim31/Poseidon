@@ -204,6 +204,42 @@ try {
         })());
     }
 
+    section('Formats étendus : courriels, archives, OCR');
+    $ext = search($engine, $dir, 'préavis');
+    check('courriel .eml (objet encodé, corps quoted-printable)', ($ext['courriels/relance-neptune.eml']['counts'] ?? null) === [2]);
+    check('pièce jointe PDF d\'un .eml', isset(search($engine, $dir, 'quai')['courriels/relance-neptune.eml › commande-neptune.pdf']));
+    check('message Outlook .msg', isset($ext['courriels/triton.msg']));
+    check('pièce jointe DOCX d\'un .msg', isset($ext['courriels/triton.msg › avenant-triton.docx']));
+    check('archive tar.gz', isset($ext['archives/sauvegarde.tar.gz › notes/escale.md']));
+    Poseidon\Archive\Bsdtar::override(false);
+    check('archive tar.gz sans bsdtar (PharData, PHP pur)', isset(search(new SearchEngine($config->with(['cache_dir' => ''])), $dir . '/archives', 'escale')['sauvegarde.tar.gz › notes/escale.md']));
+    Poseidon\Archive\Bsdtar::override(null);
+    check('fichier .gz simple', isset(search($engine, $dir, 'NR204511')['notes/serveur.log.gz › serveur.log']));
+    if (Poseidon\Archive\Bsdtar::binary() !== null) {
+        check('archive 7z (bsdtar)', isset($ext['archives/historique.7z › vieux/contrat-1998.txt']));
+    }
+    $mail = Poseidon\Mail\MimeMessage::parse((string) file_get_contents($dir . '/courriels/relance-neptune.eml'));
+    same('en-tête RFC 2047 décodé', 'Relance : préavis du contrat Neptune', $mail->headers['subject'] ?? null);
+    same('expéditeur décodé', 'Amphitrite Durand <amphitrite@nereide.example>', $mail->headers['from'] ?? null);
+    $big = str_repeat('grande ligne ', 600);
+    $outlook = Poseidon\Mail\OutlookMessage::parse(Poseidon\Demo\CfbWriter::message('Objet é', 'A', 'B', 'corps', ['gros.txt' => $big]));
+    same('pièce jointe .msg hors mini-flux (> 4 Ko)', $big, $outlook->attachments[0]['data'] ?? null);
+
+    if (DIRECTORY_SEPARATOR === '/' && Poseidon\Support\Process::which('pdftoppm') !== null) {
+        $fake = $dir . '-tesseract.sh';
+        file_put_contents($fake, "#!/bin/sh\necho 'Texte reconnu : un kraken dans les abysses'\n");
+        chmod($fake, 0755);
+        @mkdir($dir . '/scans', 0775, true);
+        file_put_contents($dir . '/scans/scan.pdf', Fixtures::pdf([]));
+        file_put_contents($dir . '/scans/photo.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
+        $ocrEngine = new SearchEngine($config->with(['ocr' => ['tesseract' => $fake], 'cache_dir' => '']));
+        $ocr = search($ocrEngine, $dir . '/scans', 'kraken');
+        check('OCR d\'une image (Tesseract simulé)', isset($ocr['photo.png']));
+        check('OCR d\'un PDF scanné (pdftoppm + Tesseract simulé)', isset($ocr['scan.pdf']) && str_contains($ocr['scan.pdf']['hits'][0]['location'] ?? '', 'OCR'));
+        Fixtures::rmdir($dir . '/scans');
+        @unlink($fake);
+    }
+
     section('Index plein texte (résultats identiques avec et sans index)');
     if (!Poseidon\Index\Index::available()) {
         echo "  (pdo_sqlite / FTS5 indisponible : section ignorée)\n";

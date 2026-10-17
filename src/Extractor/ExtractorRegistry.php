@@ -20,20 +20,25 @@ final class ExtractorRegistry
     private PlainTextExtractor $fallback;
 
     /** Formats dont l'extraction coûte assez cher pour mériter le cache. */
-    private const CACHED = ['pdf', 'docx', 'docm', 'dotx', 'xlsx', 'xlsm', 'xltx', 'ods', 'odt', 'odp', 'pptx', 'pptm', 'doc', 'xls', 'ppt'];
+    private const CACHED = ['png', 'jpg', 'jpeg', 'tif', 'tiff', 'bmp', 'gif', 'webp', 'eml', 'msg', 'pdf', 'docx', 'docm', 'dotx', 'xlsx', 'xlsm', 'xltx', 'ods', 'odt', 'odp', 'pptx', 'pptm', 'doc', 'xls', 'ppt'];
+
+    private Ocr $ocr;
 
     public function __construct(private Config $config)
     {
         $this->fallback = new PlainTextExtractor();
+        $this->ocr = new Ocr($config);
         foreach ([
             $this->fallback,
             new CsvExtractor(),
             new WordExtractor(),
             new SpreadsheetExtractor(),
             new OpenDocumentExtractor(),
-            new PdfExtractor($config),
+            new PdfExtractor($config, $this->ocr),
             new LegacyOfficeExtractor($config),
             new RtfExtractor(),
+            new EmailExtractor(),
+            ...($this->ocr->available() ? [new ImageExtractor($this->ocr)] : []),
         ] as $extractor) {
             foreach ($extractor->extensions() as $ext) {
                 $this->byExtension[$ext] = $extractor;
@@ -50,6 +55,11 @@ final class ExtractorRegistry
     public function supports(string $extension): bool
     {
         return isset($this->byExtension[strtolower($extension)]);
+    }
+
+    public function ocrAvailable(): bool
+    {
+        return $this->ocr->available();
     }
 
     public function pdfEngine(): string
@@ -71,7 +81,7 @@ final class ExtractorRegistry
         $extractor = $this->byExtension[$ext] ?? null;
 
         if ($extractor === null) {
-            if (in_array($ext, ['zip', 'jar', 'war', 'ear', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'mp3', 'mp4', 'avi', 'mov', 'mkv', 'exe', 'dll', 'so', 'bin', 'iso', 'gz', 'tgz', '7z', 'rar', 'woff', 'woff2', 'ttf', 'otf', 'class', 'pyc', 'o', 'a', 'db', 'sqlite'], true)) {
+            if (\Poseidon\Archive\ArchiveWalker::isContainer($source->name()) || in_array($ext, ['zip', 'jar', 'war', 'ear', '7z', 'rar', 'gz', 'tgz', 'tar', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'mp3', 'mp4', 'avi', 'mov', 'mkv', 'exe', 'dll', 'so', 'bin', 'iso', 'gz', 'tgz', '7z', 'rar', 'woff', 'woff2', 'ttf', 'otf', 'class', 'pyc', 'o', 'a', 'db', 'sqlite'], true)) {
                 return null;
             }
             $sample = $source->inArchive() ? $source->bytes() : (string) @file_get_contents($source->diskPath, false, null, 0, 8192);

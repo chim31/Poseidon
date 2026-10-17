@@ -25,7 +25,7 @@ Poseidon est un outil PHP qui se comporte comme la combinaison des commandes Uni
 - on peut **consulter** le contenu, **télécharger** le fichier, **comparer** deux fichiers (façon `git diff`) ;
 - on peut **extraire** uniquement les mots, motifs ou colonnes désignés vers un nouveau document, comme un `SELECT` avec mapping sur une base de données.
 
-Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PPTX, ODP, ZIP récursif.
+Formats : TXT, MD, CSV, logs, code, PDF (OCR si scanné), DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PPTX, ODP, courriels EML/MSG et leurs pièces jointes, images (OCR) ; conteneurs ZIP, 7z, RAR, tar, gz imbriqués.
 
 ## 2. Périmètre
 
@@ -33,7 +33,7 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | --- | --- |
 | Recherche récursive locale et réseau | Écriture ou suppression dans la racine |
 | 11 familles de formats + ZIP imbriqués | Ouverture des fichiers protégés par mot de passe |
-| Modes ET / OU / phrase / regex, casse, accents, mot entier | OCR des documents scannés (phase 6) |
+| Modes ET / OU / phrase / regex, casse, accents, mot entier | OCR sans Tesseract installé |
 | Extraction CSV / XLSX / JSON / TXT / MD, mapping de colonnes | Accès SMB direct sous Linux sans montage |
 | Comparaison de deux fichiers (diff unifié) | Comptes multiples et rôles (phase 8) |
 | Interface web, CLI, lanceurs `.bat` / `.sh` | Base de données serveur (SQLite embarqué pour l'index uniquement) |
@@ -53,8 +53,9 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | Fusion dans `main` | Faite le 2026-10-17 ; branches de fonctionnalité supprimées |
 | Essais sur de vraies arborescences Windows | Validés par le porteur le 2026-10-17 → v0.1.0 |
 | Index plein texte, banc d'essai | Terminés — phase P5 (PR #8) |
-| Intégration continue GitHub Actions | Prête mais **bloquée** : compte GitHub verrouillé pour facturation (à régler par le porteur). Tests passés à la main sous Linux (PHP 8.4) et Windows (PHP 8.3) |
-| Phase en cours | P6 — Formats étendus |
+| Intégration continue GitHub Actions | Prête mais **bloquée** : compte GitHub verrouillé pour facturation (à régler par le porteur). Tests passés à la main sous Linux (PHP 8.4, 82 tests) et Windows (PHP 8.3, 77 tests) |
+| Formats étendus (courriels .eml/.msg, 7z/RAR/tar/gz, OCR) | Terminés — phase P6 |
+| Phase en cours | P7 — Extraction avancée |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
 
@@ -72,6 +73,8 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Courriels et archives exotiques comme conteneurs | Les pièces jointes d'un mail et les entrées d'un 7z sont des fichiers comme les autres (chemins chaînés, imbrication libre). `.msg` lu par un lecteur OLE maison (aucune dépendance) ; 7z/RAR via bsdtar, présent nativement sous Windows. |
+| 2026-10-17 | OCR optionnel (Tesseract) | Activé automatiquement si présent ; borné en pages et en temps ; résultat mis en cache. |
 | 2026-10-17 | Index SQLite FTS5 trigramme sans contenu | Recherches répétées quasi instantanées sans serveur à installer ; l'index ne fait que désigner des candidats, le Matcher vérifie toujours (résultats identiques). |
 | 2026-10-17 | Parallélisation écartée | Pas de fils d'exécution portables en PHP (Windows) ; l'index supprime l'essentiel des lectures. |
 | 2026-10-17 | Durcissement après revue de sécurité automatique | Protection DNS rebinding (liste d'hôtes, `POSEIDON_HOSTS`), en-tête `X-Poseidon` sur toute l'API, bornes anti-bombe (Office, PDF, tableurs), diff à mémoire bornée, formules CSV neutralisées partout. Racines contrôlées sur chemin réel (liens symboliques). Voir BUG-012 à BUG-018. |
@@ -118,6 +121,7 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Phase P6 : courriels .eml/.msg avec pièces jointes, 7z/RAR/tar/gz, OCR ; tests Linux 82/82, Windows 77/77. |
 | 2026-10-17 | Phase P5 : index plein texte, intégration continue Linux/Windows, banc d'essai (10 000 fichiers : 5,2 s à froid, 0,47 s indexé). |
 | 2026-10-17 | Essai Windows validé après libération du port 8080 ; étiquette v0.1.0 ; démarrage de la phase P5. |
 | 2026-10-17 | Premier essai Windows : le lanceur ouvrait une autre application occupant le port 8080 → port libre automatique et ouverture du navigateur une fois Poseidon prêt (BUG-019). |

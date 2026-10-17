@@ -60,7 +60,7 @@ Règles clés : le jaune de surlignage est réservé aux correspondances ; le so
 ### Rail (paramètres)
 
 - **Racine** : saisie libre (Windows, UNC, Linux, `file://`) ; bouton dossier = navigateur de dossiers (`/api/browse`) ; 4 racines récentes mémorisées (`localStorage`).
-- **Formats** : puces groupées (PDF, Word, Excel, CSV, ODT·PPT, TXT·MD, Code·logs) → paramètre `extensions`.
+- **Formats** : puces groupées (PDF, Word, Excel, CSV, ODT·PPT, TXT·MD, Code·logs, Courriels, Images (OCR) si Tesseract est présent) → paramètre `extensions`. Les conteneurs (ZIP, 7z, tar, courriels) sont toujours ouverts : le filtre porte sur leurs entrées.
 - **Options** : ZIP, accents, casse, mot entier, cible (contenu / nom / les deux), filtre de nom. Mémorisées localement.
 - **Index** (si `pdo_sqlite` est disponible) : état de l'index de la racine (fichiers, taille, date), boutons « Indexer ce dossier » / « Mettre à jour l'index » (progression en direct) et suppression.
 - **Statistiques** : fichiers parcourus, durée, fichiers non relus grâce à l'index, moteur PDF.

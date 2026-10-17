@@ -35,6 +35,7 @@ final class SearchEngine
     {
         $this->extractors ??= new ExtractorRegistry($config);
         $this->guard = new RootGuard($config);
+        \Poseidon\Git\GitHistory::trust((array) $config->get('git_trusted_repos', []));
         $this->scanner = new Scanner($config, new ArchiveWalker($config), $this->guard);
     }
 

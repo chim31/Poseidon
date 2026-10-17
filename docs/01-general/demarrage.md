@@ -112,6 +112,7 @@ return [
 | `POSEIDON_TESSERACT` | détecté dans le `PATH` | Chemin explicite de Tesseract |
 | `POSEIDON_OCR` | activé si Tesseract est présent | `0` pour désactiver l'OCR |
 | `POSEIDON_OCR_LANG` | `fra+eng` | Langues Tesseract |
+| `POSEIDON_GIT_TRUSTED` | vide | Dépôts Git d'un autre compte système à lire quand même (séparateur `;`) |
 | `POSEIDON_PHP` | `php` | PHP utilisé par les lanceurs `.bat` / `.sh` |
 
 Exemple Linux : `POSEIDON_ROOTS="/srv/docs;/mnt/partage" POSEIDON_PASSWORD="…" ./poseidon.sh`
@@ -194,7 +195,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `127 tests réussis` sous Linux, `122` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `129 tests réussis` sous Linux, `124` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 

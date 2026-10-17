@@ -71,6 +71,8 @@ docker compose exec poseidon php bin/poseidon index /data
 | Compte système | `poseidon` (non root) |
 | Santé | `HEALTHCHECK` sur `/api/info` |
 
+Historique Git dans le conteneur : les dossiers montés appartiennent à un autre compte que `poseidon`, Git les refuse par sécurité. Pour les dépôts de confiance, ajouter `POSEIDON_GIT_TRUSTED: /data/mon-depot` dans l'environnement du service.
+
 Essai local sans domaine : remplacer `poseidon.exemple.fr` par `localhost` (Caddy émet un certificat local).
 
 ## 4. Nginx + PHP-FPM

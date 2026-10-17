@@ -62,6 +62,10 @@ return [
         'timeout' => 60,
     ],
 
+    // Historique Git : dépôts appartenant à un autre compte système mais jugés sûrs (ex. dossier monté dans Docker).
+    // Les autres sont refusés par Git (protection « safe.directory »). Séparateur « ; ».
+    'git_trusted_repos' => array_values(array_filter(explode(';', (string) getenv('POSEIDON_GIT_TRUSTED')))),
+
     // Binaires externes optionnels (détectés automatiquement si null).
     'pdftotext' => getenv('POSEIDON_PDFTOTEXT') ?: null,
     'antiword' => getenv('POSEIDON_ANTIWORD') ?: null,

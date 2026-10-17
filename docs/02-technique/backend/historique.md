@@ -21,7 +21,9 @@ Deux façons de voir ce qui a changé : entre deux recherches identiques, et dan
 
 ## Historique Git (`Git\GitHistory`, `Git\HistorySearch`)
 
-Lecture seule, sans shell, délais bornés ; `-c safe.directory=*` pour lire un dépôt appartenant à un autre compte (Docker).
+Lecture seule, sans shell, délais bornés.
+
+**Dépôts piégés.** La configuration locale d'un dépôt peut déclarer des commandes que Git exécute (`core.fsmonitor`, `textconv`, diff externe, crochets). Chaque appel les neutralise : `--no-textconv --no-ext-diff`, `-c core.fsmonitor=false`, `-c core.hooksPath=/dev/null`, `-c diff.external=`, `-c protocol.allow=never`, configurations système et globale ignorées (`GIT_CONFIG_NOSYSTEM`, `GIT_CONFIG_GLOBAL`), versions lues par `git cat-file blob`. La protection `safe.directory` de Git est conservée : un dépôt appartenant à un autre compte système n'est lu que s'il est déclaré dans `git_trusted_repos` (`POSEIDON_GIT_TRUSTED`, séparateur `;`) — utile pour un dossier monté dans Docker.
 
 | Fonction | Commande Git | Remarque |
 | --- | --- | --- |

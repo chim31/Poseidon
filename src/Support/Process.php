@@ -12,12 +12,13 @@ final class Process
 {
     /**
      * @param list<string> $command
-     * @param int $maxOutput Taille maximale de la sortie standard (0 = illimitée) : au-delà, le processus est arrêté.
+     * @param int                   $maxOutput Taille maximale de la sortie standard (0 = illimitée) : au-delà, le processus est arrêté.
+     * @param array<string, string> $env       Variables d'environnement ajoutées pour ce processus.
      * @return array{code: int, stdout: string, stderr: string, timedOut: bool, overflow: bool}
      */
-    public static function run(array $command, int $timeoutSeconds = 30, int $maxOutput = 0): array
+    public static function run(array $command, int $timeoutSeconds = 30, int $maxOutput = 0, array $env = []): array
     {
-        $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env === [] ? null : $env + getenv());
         if (!is_resource($proc)) {
             return ['code' => -1, 'stdout' => '', 'stderr' => 'Lancement impossible.', 'timedOut' => false, 'overflow' => false];
         }

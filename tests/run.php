@@ -69,6 +69,20 @@ function search(SearchEngine $engine, string $root, string $q, array $opts = [])
 }
 
 try {
+    section('Syntaxe PHP de tous les fichiers');
+    $bad = [];
+    $files = [dirname(__DIR__) . '/bin/poseidon', dirname(__DIR__) . '/bootstrap.php'];
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__) . '/src', FilesystemIterator::SKIP_DOTS)) as $f) {
+        $files[] = $f->getPathname();
+    }
+    foreach ($files as $f) {
+        exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($f) . ' 2>&1', $o, $code);
+        if ($code !== 0) {
+            $bad[] = $f;
+        }
+    }
+    check(count($files) . ' fichiers PHP sans erreur de syntaxe', $bad === [], implode(', ', $bad));
+
     section('Chemins (slash, anti-slash, UNC, lecteurs)');
     same('anti-slash Windows', 'C:/Users/Moi/Docs', Path::normalize('c:\\Users\\Moi\\Docs\\'));
     same('UNC conservé', '//srv-archives/juridique/2026', Path::normalize('\\\\srv-archives\\juridique\\2026'));
@@ -425,7 +439,9 @@ try {
         $_SERVER['HTTP_HOST'] = $host;
         $_SERVER['HTTP_X_POSEIDON'] = '1';
         ob_start();
+        set_error_handler(static fn (int $no, string $msg): bool => str_contains($msg, 'headers') || str_contains($msg, 'Session') || str_contains($msg, 'session'));
         (new Poseidon\Http\Kernel($cfg))->handle('GET', '/api/info');
+        restore_error_handler();
         $out = (string) ob_get_clean();
         unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_HOST'], $_SERVER['HTTP_X_POSEIDON']);
 
@@ -437,6 +453,60 @@ try {
     check('nom d\'hôte extérieur refusé (DNS rebinding)', str_contains($call($open, '127.0.0.1', 'evil.example:8080'), 'pas encore protégé'));
     check('avec mot de passe : poste du réseau servi', str_contains($call($open->with(['password' => 'secret-partage-long']), '192.168.1.20', 'poseidon.lan'), '"authRequired":true'));
     check('ouverture explicite sans mot de passe (POSEIDON_INSECURE_NO_AUTH)', str_contains($call($open->with(['insecure_no_auth' => true, 'allowed_hosts' => ['poste-42']]), '192.168.1.20', 'poste-42:8080'), '"name":"Poseidon"'));
+
+    section('Comparaison entre deux recherches (instantanés)');
+    $snapConfig = $config->with(['snapshots_dir' => $dir . '-snap']);
+    $snaps = new Poseidon\History\SnapshotStore($snapConfig);
+    $sq = new Query('contrat');
+    $so = SearchOptions::fromArray(['root' => $dir, 'index' => '0']);
+    $first = $engine->collect($sq, $so);
+    $snaps->save('test', $sq, $so, $first['matches'], $first['summary']);
+    same('une seule recherche : rien à comparer', null, $snaps->compare('test', $sq, $so));
+    file_put_contents($dir . '/notes/ajout.txt', 'un contrat de plus');
+    file_put_contents($dir . '/notes/journal.log', "contrat contrat contrat\n", FILE_APPEND);
+    touch($dir . '/notes/journal.log', time() + 60);
+    $second = $engine->collect($sq, $so);
+    $snaps->save('test', $sq, $so, $second['matches'], $second['summary']);
+    $cmp = $snaps->compare('test', $sq, $so);
+    same('fichier apparu', ['notes/ajout.txt'], array_column($cmp['appeared'] ?? [], 'path'));
+    check('fichier modifié avec compteur en hausse', in_array('notes/journal.log', array_column($cmp['changed'] ?? [], 'path'), true) && ($cmp['changed'][0]['after'] ?? 0) > ($cmp['changed'][0]['before'] ?? 0));
+    same('instantanés séparés par compte', null, $snaps->compare('autre', $sq, $so));
+    unlink($dir . '/notes/ajout.txt');
+    Fixtures::rmdir($dir . '-snap');
+
+    section('Historique Git');
+    if (Poseidon\Git\GitHistory::binary() !== null) {
+        $repo = $dir . '-git';
+        @mkdir($repo, 0775, true);
+        $git = static fn (string ...$a) => Poseidon\Support\Process::run([Poseidon\Git\GitHistory::binary(), '-C', $repo, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', ...$a]);
+        $git('init', '-q');
+        file_put_contents($repo . '/contrat.docx', Fixtures::docx(['Article 1', 'Préavis de 30 jours.']));
+        $git('add', '.'); $git('commit', '-q', '-m', 'Version initiale');
+        file_put_contents($repo . '/contrat.docx', Fixtures::docx(['Article 1', 'Préavis de 90 jours.', 'Clause kraken.']));
+        $git('add', '.'); $git('commit', '-q', '-m', 'Préavis allongé');
+        $log = Poseidon\Git\GitHistory::log($repo, 'contrat.docx');
+        same('historique d\'un fichier', ['Préavis allongé', 'Version initiale'], array_column($log, 'subject'));
+        $hist = (new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken'));
+        same('Poseidon trouve le commit qui a ajouté le terme dans le DOCX', ['Préavis allongé'], array_column($hist, 'subject'));
+        same('compteurs avant / après', ['path' => 'contrat.docx', 'before' => 0, 'after' => 1], $hist[0]['files'][0] ?? null);
+        file_put_contents($repo . '/notes.md', "kraken aperçu\n");
+        $git('add', '.'); $git('commit', '-q', '-m', 'Note texte');
+        check('fichier texte trouvé par git log -S', in_array('Note texte', array_column((new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken')), 'subject'), true));
+        $before = Poseidon\Git\GitHistory::show($repo, $log[1]['hash'], 'contrat.docx', 10_000_000);
+        check('version passée relue (DOCX valide)', str_starts_with($before, 'PK'));
+        check('identifiant de commit invalide refusé', (static function (): bool {
+            try {
+                Poseidon\Git\GitHistory::assertRevision('HEAD; rm -rf /');
+            } catch (InvalidArgumentException) {
+                return true;
+            }
+
+            return false;
+        })());
+        Fixtures::rmdir($repo);
+    } else {
+        echo "  (git introuvable : section ignorée)\n";
+    }
 
     section('Configuration');
     $withRoots = Config::load()->with(['allowed_roots' => ['/a', '/b']]);

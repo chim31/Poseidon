@@ -7,19 +7,19 @@
 
 ## Tableau de bord
 
-Avancement global : **78 %** `███████████████░░░░░` — 65 exigences : 51 terminées, 0 en cours, 14 à faire, 0 bloquées.
+Avancement global : **82 %** `████████████████░░░░` — 65 exigences : 53 terminées, 0 en cours, 12 à faire, 0 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
 | L1 | Socle et parcours | 5 | 0 | 0 | 100 % |
 | L2 | Formats de fichiers | 9 | 0 | 2 | 82 % |
 | L3 | Archives ZIP | 4 | 0 | 1 | 80 % |
-| L4 | Recherche | 6 | 0 | 3 | 67 % |
+| L4 | Recherche | 7 | 0 | 2 | 78 % |
 | L5 | Extraction de données | 5 | 0 | 2 | 71 % |
 | L6 | Interface web | 7 | 0 | 1 | 88 % |
 | L7 | Robustesse et sécurité | 7 | 0 | 1 | 88 % |
 | L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
-| L9 | Exploitation et documentation | 5 | 0 | 2 | 71 % |
+| L9 | Exploitation et documentation | 6 | 0 | 1 | 86 % |
 
 ## L1 — Socle et parcours
 
@@ -75,7 +75,7 @@ _Trouver exactement, compter par terme, prouver par la ligne._
 | L4-04 | **Casse, accents, mot entier** — Insensible à la casse et aux accents par défaut, options inverses. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L4-05 | **Recherche dans les noms** — Contenu, nom de fichier, ou les deux ; filtre de nom façon shell (*.pdf). | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L4-06 | **Lignes-preuves** — Emplacement (ligne, page, §, feuille · ligne) et position des correspondances. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
-| L4-07 | **Index persistant** — Index plein texte (SQLite FTS5) pour les très gros volumes. | À faire | Haute | chim31 | — | Phase 5 |
+| L4-07 | **Index persistant** — Index SQLite FTS5 (trigrammes, sans accents) : seuls les candidats sont relus, mise à jour incrémentale ; 0,47 s sur 10 000 fichiers. | Terminé | Haute | chim31 | 2026-10-17 | feat/index-plein-texte |
 | L4-08 | **Proximité (NEAR) et recherche floue** — Mots à moins de N mots d'écart ; tolérance aux fautes. | À faire | Moyenne | chim31 | — | Phase 7 |
 | L4-09 | **Recherches enregistrées et historique** — Rejouer une recherche, la partager par lien. | À faire | Moyenne | chim31 | — | Phase 7 |
 
@@ -143,8 +143,8 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 69 vérifications (dont équivalence avec/sans index), lancée en CI sous Linux et Windows. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |
-| L9-07 | **Intégration continue** — GitHub Actions : tests sur Linux et Windows à chaque PR. | À faire | Moyenne | chim31 | — | Phase 5 |
+| L9-07 | **Intégration continue** — GitHub Actions : tests sur Linux et Windows à chaque PR. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/index-plein-texte |

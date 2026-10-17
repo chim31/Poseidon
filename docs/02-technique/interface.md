@@ -62,7 +62,8 @@ Règles clés : le jaune de surlignage est réservé aux correspondances ; le so
 - **Racine** : saisie libre (Windows, UNC, Linux, `file://`) ; bouton dossier = navigateur de dossiers (`/api/browse`) ; 4 racines récentes mémorisées (`localStorage`).
 - **Formats** : puces groupées (PDF, Word, Excel, CSV, ODT·PPT, TXT·MD, Code·logs) → paramètre `extensions`.
 - **Options** : ZIP, accents, casse, mot entier, cible (contenu / nom / les deux), filtre de nom. Mémorisées localement.
-- **Statistiques** : fichiers parcourus, durée, moteur PDF.
+- **Index** (si `pdo_sqlite` est disponible) : état de l'index de la racine (fichiers, taille, date), boutons « Indexer ce dossier » / « Mettre à jour l'index » (progression en direct) et suppression.
+- **Statistiques** : fichiers parcourus, durée, fichiers non relus grâce à l'index, moteur PDF.
 
 ### Filtre
 

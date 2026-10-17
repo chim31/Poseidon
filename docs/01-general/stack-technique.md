@@ -14,7 +14,9 @@ Langages, outils, versions et raisons de chaque choix.
 | HTML / CSS / JavaScript | natifs, modules ES | Interface | Aucun CDN, aucune compilation | React, Vue, Tailwind (CDN interdit, chaîne de build inutile) |
 | Archivo | variable (wdth 62–125, wght 100–900) | Police d'interface | Largeurs variables pour les titres étirés de l'univers « signaux » ; licence OFL | Inter, système |
 | JetBrains Mono | variable (400–700) | Chemins, chiffres, code | Lisible, chiffres tabulaires ; licence OFL | Consolas |
+| SQLite (`pdo_sqlite`) | ≥ 3.43, optionnel | Index plein texte FTS5 trigramme | Inclus dans PHP, aucun serveur ; recherche de fragments sans accents | Elasticsearch, Meilisearch (serveurs à installer) |
 | Tests | `tests/run.php` maison | | PHPUnit exige ext-dom | PHPUnit |
+| Intégration continue | GitHub Actions | Tests Linux + Windows, PHP 8.2 et 8.4 | Gratuit pour un dépôt GitHub | — |
 | Git + GitHub CLI (`gh`) | | Versionnement, PR | Workflow imposé (branches, PR) | |
 
 ## Compatibilité

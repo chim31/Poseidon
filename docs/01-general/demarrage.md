@@ -24,6 +24,7 @@ Tout ce qu'il faut pour installer, configurer, lancer, tester et déployer Posei
 | Extension `mbstring` | incluse dans PHP | Oui | Texte Unicode, accents |
 | `pdftotext` (poppler-utils) | toute version récente | Non, recommandé | Meilleure lecture des PDF |
 | `antiword` | toute version | Non | Meilleure lecture des `.doc` anciens |
+| Extension `pdo_sqlite` (SQLite ≥ 3.43) | incluse dans PHP | Non, recommandé | Index plein texte (recherches instantanées) |
 | Navigateur | Chrome, Edge, Firefox, Safari récents | Pour l'interface | |
 
 Aucun Composer, aucun Node, aucune base de données.
@@ -40,7 +41,7 @@ php -m | grep -Ei "zip|mbstring"     # Windows : php -m | findstr /i "zip mbstri
 ### Windows
 
 1. Installer PHP : télécharger l'archive « VS16 x64 Thread Safe » sur <https://windows.php.net/download>, la décompresser (par exemple dans `C:\php`).
-2. Dans `C:\php`, copier `php.ini-production` en `php.ini`, puis décommenter (retirer le `;`) les lignes `extension=zip` et `extension=mbstring`.
+2. Dans `C:\php`, copier `php.ini-production` en `php.ini`, puis décommenter (retirer le `;`) les lignes `extension=zip`, `extension=mbstring` et, pour l'index, `extension=pdo_sqlite`.
 3. Ajouter `C:\php` au `PATH` (Paramètres → Système → Informations système → Paramètres avancés → Variables d'environnement), **ou** copier le dossier PHP dans un sous-dossier `php\` à côté de `poseidon.bat` : le lanceur le trouvera tout seul.
 4. Récupérer Poseidon : `git clone git@github.com:chim31/Poseidon.git` ou télécharger le ZIP du dépôt.
 5. Optionnel : installer poppler pour Windows et ajouter son dossier `bin` au `PATH` pour `pdftotext`.
@@ -48,7 +49,7 @@ php -m | grep -Ei "zip|mbstring"     # Windows : php -m | findstr /i "zip mbstri
 ### Linux / WSL (Debian, Ubuntu, Kali)
 
 ```sh
-sudo apt install php-cli php-zip php-mbstring poppler-utils   # poppler-utils : optionnel
+sudo apt install php-cli php-zip php-mbstring php-sqlite3 poppler-utils   # sqlite3 et poppler : optionnels
 git clone git@github.com:chim31/Poseidon.git
 cd Poseidon
 ```
@@ -120,6 +121,7 @@ Exemple Windows : `set POSEIDON_PASSWORD=…` puis `poseidon.bat`.
 | `max_hits_per_file` | 50 | Lignes-preuves conservées par fichier dans les résultats |
 | `pdf_timeout` | 30 s | Délai maximal d'analyse d'un PDF |
 | `cache_dir` | `var/cache` | Cache du texte extrait ; vide = désactivé |
+| `index_dir` | `var/index` | Index plein texte (un fichier SQLite par racine) |
 
 Ne jamais écrire de mot de passe dans un fichier suivi par Git.
 
@@ -139,6 +141,8 @@ php bin/poseidon help
 | Seulement les PDF et DOCX | `... --ext=pdf,docx` |
 | Juste la liste des fichiers (`grep -l`) | `... -l` |
 | Dans les noms de fichiers (`ls -R \| grep`) | `... --target=name` |
+| Indexer une racine (recherches instantanées) | `php bin/poseidon index ./docs` |
+| Ignorer l'index | `... --no-index` |
 | Sortie JSON | `... --json` |
 | Extraire des références vers Excel | `php bin/poseidon extract ./docs "[A-Z]{2}\d{6}" --mode=regex --unique --out=refs.xlsx` |
 | Extraire des colonnes | `php bin/poseidon extract ./finance "résilié" --extract=columns --columns=Client,Montant --out=out.csv` |
@@ -171,7 +175,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `62 tests réussis`.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `69 tests réussis` (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
@@ -209,8 +213,11 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | --- | --- |
 | `php bin/poseidon info` | Version, moteur PDF, racines autorisées, formats |
 | `php bin/poseidon demo` | (Ré)génère `samples/demo` |
+| `php bin/poseidon index <racine> --status` | État de l'index |
+| `php -d memory_limit=1G tests/bench.php 10000` | Banc d'essai ([performances](performances.md)) |
 | `php docs/tools/sync.php` | Régénère le suivi web et Markdown depuis `projet.json` |
 | `rm -rf var/cache/??` | Vide le cache de texte extrait |
+| `rm -rf var/index` | Supprime tous les index |
 
 ## 10. Problèmes fréquents
 
@@ -224,7 +231,8 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | PDF trouvés mais texte vide | PDF scanné (image) | OCR prévu en phase 6 ; en attendant, passer le PDF dans un outil d'OCR |
 | Texte de PDF mal découpé | Lecteur PHP de secours utilisé | Installer `pdftotext` (poppler) |
 | Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Tous les mots » (voir [anomalies](../03-suivi/anomalies.md)) |
-| L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Attendre la fin de la recherche, ou servir via Apache/Nginx (§ 8) |
+| L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Indexer la racine (recherches beaucoup plus courtes), ou servir via Apache/Nginx (§ 8) |
+| Le bloc « Index » n'apparaît pas | `pdo_sqlite` absent ou SQLite < 3.43 | Activer `extension=pdo_sqlite` dans `php.ini` |
 | « Hôte non autorisé » (code 421) | Accès par un nom ou une IP autre que `localhost` sans mot de passe | Définir `POSEIDON_PASSWORD`, ou ajouter l'hôte à `POSEIDON_HOSTS` |
 | « Identifiant de fichier invalide ou expiré » | `var/secret.key` régénéré (nouvelle installation) | Relancer la recherche |
 | Fichier signalé « Protégé » | Mot de passe sur le document ou l'archive | Normal : Poseidon n'ouvre pas les fichiers protégés |

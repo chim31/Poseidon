@@ -307,12 +307,12 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L4-07",
                     "titre": "Index persistant",
-                    "description": "Index plein texte (SQLite FTS5) pour les très gros volumes.",
-                    "statut": "À faire",
+                    "description": "Index SQLite FTS5 (trigrammes, sans accents) : seuls les candidats sont relus, mise à jour incrémentale ; 0,47 s sur 10 000 fichiers.",
+                    "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 5"
+                    "date": "2026-10-17",
+                    "ref": "feat/index-plein-texte"
                 },
                 {
                     "id": "L4-08",
@@ -672,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 62 vérifications sur échantillons synthétiques, dont les protections contre les fichiers piégés.",
+                    "description": "Suite sans dépendance : 69 vérifications (dont équivalence avec/sans index), lancée en CI sous Linux et Windows.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -713,11 +713,11 @@ window.POSEIDON_PROJET = {
                     "id": "L9-07",
                     "titre": "Intégration continue",
                     "description": "GitHub Actions : tests sur Linux et Windows à chaque PR.",
-                    "statut": "À faire",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 5"
+                    "date": "2026-10-17",
+                    "ref": "feat/index-plein-texte"
                 }
             ]
         }
@@ -792,21 +792,21 @@ window.POSEIDON_PROJET = {
             "id": "P5",
             "titre": "Performance et fiabilité",
             "debut": "2026-10-17",
-            "fin": "2026-11-20",
-            "statut": "En cours",
+            "fin": "2026-10-17",
+            "statut": "Terminé",
             "livrables": [
                 "Index plein texte SQLite FTS5",
-                "Parallélisation du parcours",
-                "Intégration continue Linux + Windows",
-                "Mesures sur 100 000 fichiers"
+                "Intégration continue Linux + Windows (PHP 8.2, 8.4)",
+                "Banc d'essai : 10 000 fichiers en 5,2 s à froid, 0,47 s indexé",
+                "Parallélisation écartée (remplacée par l'index)"
             ]
         },
         {
             "id": "P6",
             "titre": "Formats étendus",
-            "debut": "2026-11-23",
+            "debut": "2026-10-17",
             "fin": "2026-12-18",
-            "statut": "À faire",
+            "statut": "En cours",
             "livrables": [
                 "OCR des PDF scannés (Tesseract)",
                 "Courriels EML / MSG",

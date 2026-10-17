@@ -98,6 +98,9 @@ final class Kernel
                 ['GET', '/api/file'] => $this->file(),
                 ['GET', '/api/text'] => $this->text(),
                 ['GET', '/api/diff'] => $this->diff(),
+                ['GET', '/api/index'] => $this->indexStatus(),
+                ['POST', '/api/index'] => $this->indexBuild(),
+                ['POST', '/api/index/delete'] => $this->indexDelete(),
                 ['POST', '/api/extract'] => $this->extract(),
                 default => throw new HttpError(404, 'Route inconnue : ' . $path),
             };
@@ -127,6 +130,7 @@ final class Kernel
             'php' => PHP_VERSION,
             'os' => PHP_OS_FAMILY,
             'pdfEngine' => $this->engine->extractors()->pdfEngine(),
+            'indexAvailable' => \Poseidon\Index\Index::available(),
             'formats' => [...$this->engine->extractors()->supportedExtensions(), 'zip'],
             'allowedRoots' => array_map([Path::class, 'display'], $this->engine->guard()->allowedRoots()),
             'authRequired' => $this->passwordRequired(),
@@ -211,6 +215,52 @@ final class Kernel
     {
         echo json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
         flush();
+    }
+
+    private function indexStatus(): void
+    {
+        $root = $this->engine->guard()->resolveRoot($this->required('root'));
+        $index = \Poseidon\Index\Index::find($this->config, $root);
+        $this->json([
+            'available' => \Poseidon\Index\Index::available(),
+            'exists' => $index !== null,
+            'stats' => $index?->stats(),
+        ]);
+    }
+
+    private function indexBuild(): void
+    {
+        $input = $this->input();
+        $indexer = new \Poseidon\Index\Indexer($this->config, $this->engine->extractors(), $this->engine->guard());
+        $events = $indexer->build((string) ($input['root'] ?? ''), filter_var($input['rebuild'] ?? false, FILTER_VALIDATE_BOOL));
+        $first = $events->current();
+
+        set_time_limit(0);
+        ignore_user_abort(false);
+        header('Content-Type: application/x-ndjson; charset=utf-8');
+        header('Cache-Control: no-store');
+        header('X-Accel-Buffering: no');
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+        $this->emit($first);
+        $events->next();
+        while ($events->valid()) {
+            $event = $events->current();
+            if ($event['type'] !== 'notice') {
+                $this->emit($event);
+            }
+            if (connection_aborted()) {
+                return;
+            }
+            $events->next();
+        }
+    }
+
+    private function indexDelete(): void
+    {
+        $root = $this->engine->guard()->resolveRoot((string) ($this->input()['root'] ?? ''));
+        $this->json(['deleted' => \Poseidon\Index\Index::delete($this->config, $root)]);
     }
 
     private function preview(): void

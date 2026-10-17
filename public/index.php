@@ -16,6 +16,10 @@ if (PHP_SAPI === 'cli-server') {
     }
 }
 
+// Les erreurs PHP sont journalisées, jamais affichées dans les réponses (fuite d'information, JSON cassé).
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 require dirname(__DIR__) . '/bootstrap.php';
 
 (new Poseidon\Http\Kernel(Poseidon\Config::load()))->handle(

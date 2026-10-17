@@ -1,0 +1,30 @@
+# Poseidon derrière Caddy (HTTPS automatique).
+# 1. Remplace poseidon.exemple.fr par ton nom de domaine (ou garde localhost pour un essai).
+# 2. Monte les dossiers à fouiller dans /data (lecture seule).
+# 3. docker compose up -d, puis crée un compte : docker compose exec poseidon php bin/poseidon user add admin --role=admin
+services:
+  poseidon:
+    build: .
+    restart: unless-stopped
+    environment:
+      POSEIDON_ROOTS: /data
+      POSEIDON_HOSTS: poseidon.exemple.fr;localhost
+    volumes:
+      - ./donnees:/data:ro          # dossiers à fouiller
+      - poseidon-var:/app/var       # index, cache, comptes, journal d'audit
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from poseidon.exemple.fr --to poseidon:8080
+    volumes:
+      - caddy-data:/data
+
+volumes:
+  poseidon-var:
+  caddy-data:

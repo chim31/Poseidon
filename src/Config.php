@@ -20,7 +20,7 @@ final class Config
         $values = require $file;
         $local = dirname($file) . '/poseidon.local.php';
         if (is_file($local)) {
-            $values = array_replace_recursive($values, require $local);
+            $values = self::merge($values, require $local);
         }
 
         return new self($values);
@@ -29,7 +29,26 @@ final class Config
     /** @param array<string, mixed> $overrides */
     public function with(array $overrides): self
     {
-        return new self(array_replace_recursive($this->values, $overrides));
+        return new self(self::merge($this->values, $overrides));
+    }
+
+    /**
+     * Fusion de configuration : un tableau associatif se fusionne clé par clé,
+     * une liste (racines, hôtes…) remplace entièrement la précédente, y compris par une liste vide.
+     *
+     * @param array<string, mixed> $base
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private static function merge(array $base, array $overrides): array
+    {
+        foreach ($overrides as $key => $value) {
+            $base[$key] = is_array($value) && !array_is_list($value) && is_array($base[$key] ?? null) && !array_is_list($base[$key])
+                ? self::merge($base[$key], $value)
+                : $value;
+        }
+
+        return $base;
     }
 
     public function get(string $key, mixed $default = null): mixed

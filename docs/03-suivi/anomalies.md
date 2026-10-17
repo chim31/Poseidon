@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 25 anomalies corrigées (dont 10 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 27 anomalies corrigées (dont 11 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -33,6 +33,8 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-023 | Message joint dans un message : profondeur non bornée | Un `.eml` joint (message/rfc822) était réanalysé sans limite de profondeur | `.eml` forgé à imbrications multiples | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Seul l'objet du message joint est lu (64 Ko max) pour le nommer ; son contenu est parcouru comme une pièce jointe, sous la limite de profondeur des conteneurs. | feat/extraction-avancee |
 | BUG-024 | Conteneur OLE forgé : table d'allocation gonflée | Un DIFAT répété ou hors fichier pouvait gonfler la mémoire ; garde de boucle contournable | `.msg` forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Secteurs FAT dédoublonnés et bornés par la taille du fichier ; chaînes suivies avec un ensemble de secteurs visités ; flux bornés à la taille du fichier. | feat/extraction-avancee |
 | BUG-025 | Dossier temporaire prévisible (échantillons) | `poseidon-7z-<pid>` dans le dossier temporaire partagé | — | Mineure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Nom aléatoire, droits 0700, échec signalé. | feat/extraction-avancee |
+| BUG-026 | Une liste de configuration vide ne remplaçait pas la précédente | `Config::with(['allowed_roots' => []])` gardait les racines définies par `POSEIDON_ROOTS` / la liste doit être vidée | Lancer les tests avec `POSEIDON_ROOTS=/data` (conteneur) | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `array_replace_recursive` fusionne les listes indice par indice ; nouvelle fusion : les listes remplacent, les tableaux associatifs fusionnent. | feat/equipe-deploiement |
+| BUG-027 | Avertissement PHP dans les réponses JSON | Sur un serveur, la génération des échantillons (dossier non inscriptible) affichait un avertissement au milieu de `/api/info`, cassant l'interface et le healthcheck / aucune erreur ne doit sortir | Image Docker, compte non root | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `display_errors=0` (erreurs journalisées) ; démo désactivable (`POSEIDON_DEMO=0`), générée seulement si le dossier est inscriptible. | feat/equipe-deploiement |
 
 ## Limitations connues
 

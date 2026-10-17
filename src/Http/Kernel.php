@@ -36,10 +36,19 @@ final class Kernel
 
     private FileLocator $locator;
 
+    private \Poseidon\Auth\UserStore $users;
+
+    private \Poseidon\Auth\AuditLog $audit;
+
+    /** @var array{login: string, role: string, roots: list<string>}|null */
+    private ?array $user = null;
+
     public function __construct(private Config $config)
     {
         $this->engine = new SearchEngine($config);
         $this->locator = $this->engine->locator();
+        $this->users = new \Poseidon\Auth\UserStore($config);
+        $this->audit = new \Poseidon\Auth\AuditLog($config);
     }
 
     public function handle(string $method, string $uri): void
@@ -89,6 +98,7 @@ final class Kernel
                 throw new HttpError(401, 'Authentification requise.');
             }
             session_write_close(); // libère le verrou de session : les requêtes suivantes ne sont pas bloquées
+            $this->applyUserRoots();
 
             match ([$method, $path]) {
                 ['POST', '/api/logout'] => $this->logout(),
@@ -99,11 +109,12 @@ final class Kernel
                 ['GET', '/api/text'] => $this->text(),
                 ['GET', '/api/diff'] => $this->diff(),
                 ['GET', '/api/index'] => $this->indexStatus(),
-                ['POST', '/api/index'] => $this->indexBuild(),
-                ['POST', '/api/index/delete'] => $this->indexDelete(),
+                ['POST', '/api/index'] => $this->requireAdmin() ?? $this->indexBuild(),
+                ['POST', '/api/index/delete'] => $this->requireAdmin() ?? $this->indexDelete(),
                 ['GET', '/api/templates'] => $this->json(['templates' => (new \Poseidon\Export\TemplateStore($this->config))->all()]),
                 ['POST', '/api/templates'] => $this->templateSave(),
-                ['POST', '/api/templates/delete'] => $this->json(['deleted' => (new \Poseidon\Export\TemplateStore($this->config))->delete((string) ($this->input()['name'] ?? ''))]),
+                ['POST', '/api/templates/delete'] => $this->requireAdmin() ?? $this->templateDelete(),
+                ['GET', '/api/audit'] => $this->requireAdmin() ?? $this->json(['entries' => $this->audit->tail(max(1, min(1000, (int) ($_GET['limit'] ?? 300))))]),
                 ['GET', '/api/report'] => $this->report(),
                 ['POST', '/api/extract'] => $this->extract(),
                 default => throw new HttpError(404, 'Route inconnue : ' . $path),
@@ -124,8 +135,18 @@ final class Kernel
     private function info(): array
     {
         $demo = POSEIDON_ROOT . '/samples/demo';
-        if (!is_dir($demo) && $this->authenticated()) {
-            \Poseidon\Demo\Samples::build($demo);
+        $demoReady = false;
+        if ($this->config->get('demo', true) !== false) {
+            $demoReady = is_dir($demo);
+            $parent = is_dir(dirname($demo)) ? dirname($demo) : POSEIDON_ROOT;
+            if (!$demoReady && $this->authenticated() && is_writable($parent)) {
+                try {
+                    \Poseidon\Demo\Samples::build($demo);
+                    $demoReady = true;
+                } catch (\Throwable $e) {
+                    error_log('[poseidon] échantillons de démonstration impossibles : ' . $e->getMessage());
+                }
+            }
         }
 
         return [
@@ -138,11 +159,13 @@ final class Kernel
             'ocr' => $this->engine->extractors()->ocrAvailable(),
             'archives7z' => \Poseidon\Archive\Bsdtar::binary() !== null,
             'formats' => [...$this->engine->extractors()->supportedExtensions(), 'zip'],
-            'allowedRoots' => array_map([Path::class, 'display'], $this->engine->guard()->allowedRoots()),
+            'allowedRoots' => array_map([Path::class, 'display'], $this->authenticated() && ($this->currentUser()['roots'] ?? []) !== [] ? $this->currentUser()['roots'] : $this->engine->guard()->allowedRoots()),
             'authRequired' => $this->passwordRequired(),
+            'authMode' => $this->authMode(),
             'authenticated' => $this->authenticated(),
+            'user' => $this->authenticated() ? array_intersect_key($this->currentUser(), ['login' => 1, 'role' => 1]) : null,
             'home' => Path::display((string) (getenv('HOME') ?: getenv('USERPROFILE') ?: POSEIDON_ROOT)),
-            'demo' => Path::display(POSEIDON_ROOT . '/samples/demo'),
+            'demo' => $demoReady ? Path::display($demo) : null,
         ];
     }
 
@@ -192,6 +215,7 @@ final class Kernel
     {
         $query = Query::fromArray($_GET);
         $options = SearchOptions::fromArray($_GET);
+        $this->audit->log('recherche', $this->currentUser()['login'], ['racine' => $options->root, 'filtre' => $query->input, 'mode' => $query->mode]);
         $events = $this->engine->search($query, $options);
         // Valide la racine avant d'ouvrir le flux : une erreur reste une réponse JSON propre.
         $first = $events->current();
@@ -237,6 +261,7 @@ final class Kernel
     private function indexBuild(): void
     {
         $input = $this->input();
+        $this->audit->log('indexation', $this->currentUser()['login'], ['racine' => (string) ($input['root'] ?? '')]);
         $indexer = new \Poseidon\Index\Indexer($this->config, $this->engine->extractors(), $this->engine->guard());
         $events = $indexer->build((string) ($input['root'] ?? ''), filter_var($input['rebuild'] ?? false, FILTER_VALIDATE_BOOL));
         $first = $events->current();
@@ -267,6 +292,7 @@ final class Kernel
     {
         $input = $this->input();
         $template = (new \Poseidon\Export\TemplateStore($this->config))->save((string) ($input['templateName'] ?? ''), $input, (string) ($input['templateDescription'] ?? ''));
+        $this->audit->log('modèle enregistré', $this->currentUser()['login'], ['modele' => $template['name']]);
         $this->json(['template' => $template]);
     }
 
@@ -275,6 +301,7 @@ final class Kernel
         set_time_limit(0);
         $query = Query::fromArray($_GET);
         $options = SearchOptions::fromArray($_GET);
+        $this->audit->log('rapport', $this->currentUser()['login'], ['racine' => $options->root, 'filtre' => $query->input]);
         $html = \Poseidon\Report\HtmlReport::render($query, $options, $this->engine->collect($query, $options));
         // Rapport autonome : styles en ligne autorisés, aucun script.
         header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'");
@@ -286,12 +313,14 @@ final class Kernel
     private function indexDelete(): void
     {
         $root = $this->engine->guard()->resolveRoot((string) ($this->input()['root'] ?? ''));
+        $this->audit->log('index supprimé', $this->currentUser()['login'], ['racine' => $root]);
         $this->json(['deleted' => \Poseidon\Index\Index::delete($this->config, $root)]);
     }
 
     private function preview(): void
     {
         $source = $this->locator->locate($this->required('id'));
+        $this->audit->log('aperçu', $this->currentUser()['login'], ['fichier' => $source->absolutePath()]);
         $document = $this->engine->extractors()->extract($source);
         if ($document === null) {
             $this->json(['file' => $source->toArray(), 'binary' => true, 'lines' => [], 'tables' => []]);
@@ -340,6 +369,7 @@ final class Kernel
     private function file(): void
     {
         $source = $this->locator->locate($this->required('id'));
+        $this->audit->log('téléchargement', $this->currentUser()['login'], ['fichier' => $source->absolutePath()]);
         $data = $source->bytes();
         $ext = $source->extension();
         $inline = ($_GET['inline'] ?? '') === '1' && in_array($ext, ['pdf', 'txt', 'md', 'log', 'csv', 'png', 'jpg', 'jpeg'], true);
@@ -354,6 +384,7 @@ final class Kernel
     private function text(): void
     {
         $source = $this->locator->locate($this->required('id'));
+        $this->audit->log('texte', $this->currentUser()['login'], ['fichier' => $source->absolutePath()]);
         $document = $this->engine->extractors()->extract($source) ?? throw new HttpError(415, 'Ce fichier ne contient pas de texte exploitable.');
         $out = '';
         foreach ($document->lines as [$location, $line]) {
@@ -368,6 +399,7 @@ final class Kernel
     {
         $a = $this->locator->locate($this->required('a'));
         $b = $this->locator->locate($this->required('b'));
+        $this->audit->log('comparaison', $this->currentUser()['login'], ['a' => $a->absolutePath(), 'b' => $b->absolutePath()]);
         $docA = $this->engine->extractors()->extract($a) ?? throw new HttpError(415, $a->name() . ' ne contient pas de texte.');
         $docB = $this->engine->extractors()->extract($b) ?? throw new HttpError(415, $b->name() . ' ne contient pas de texte.');
         $ops = Diff::lines(array_column($docA->lines, 1), array_column($docB->lines, 1));
@@ -394,6 +426,7 @@ final class Kernel
         $extractor = new DataExtractor($this->engine, $this->engine->extractors(), $this->locator);
         $data = $extractor->run(Query::fromArray($input), SearchOptions::fromArray($input + ['limit' => 50000]), $spec);
         $content = Writer::write($spec->format, $data['columns'], $data['rows']);
+        $this->audit->log('extraction', $this->currentUser()['login'], ['racine' => (string) ($input['root'] ?? ''), 'filtre' => (string) ($input['q'] ?? ''), 'mode' => $spec->mode, 'format' => $spec->format, 'lignes' => count($data['rows'])]);
 
         header('Content-Type: ' . Writer::mime($spec->format));
         header('Content-Length: ' . strlen($content));
@@ -406,27 +439,101 @@ final class Kernel
     private function login(): void
     {
         $input = $this->input();
-        $expected = (string) $this->config->get('password');
-        if ($expected === '') {
+        $mode = $this->authMode();
+        if ($mode === 'none') {
             $this->json(['authenticated' => true]);
 
             return;
         }
-        usleep(random_int(200_000, 400_000)); // ralentit le forçage
-        if (!hash_equals($expected, (string) ($input['password'] ?? ''))) {
-            throw new HttpError(401, 'Mot de passe incorrect.');
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $throttle = new \Poseidon\Auth\Throttle($this->config);
+        if ($throttle->blocked($ip)) {
+            throw new HttpError(429, 'Trop de tentatives : réessaie dans quelques minutes.');
         }
+        usleep(random_int(200_000, 400_000)); // ralentit le forçage
+        $password = (string) ($input['password'] ?? '');
+        if ($mode === 'users') {
+            $login = (string) ($input['login'] ?? '');
+            $user = $this->users->verify($login, $password);
+            if ($user === null) {
+                $throttle->fail($ip);
+                $this->audit->log('connexion refusée', $login === '' ? '?' : strtolower($login));
+                throw new HttpError(401, 'Identifiant ou mot de passe incorrect.');
+            }
+            $name = $user['login'];
+        } else {
+            if (!hash_equals((string) $this->config->get('password'), $password)) {
+                $throttle->fail($ip);
+                $this->audit->log('connexion refusée', 'partagé');
+                throw new HttpError(401, 'Mot de passe incorrect.');
+            }
+            $name = 'partagé';
+        }
+        $throttle->clear($ip);
         session_regenerate_id(true);
-        $_SESSION['poseidon_auth'] = true;
-        $this->json(['authenticated' => true]);
+        $_SESSION['poseidon_user'] = $name;
+        $this->audit->log('connexion', $name);
+        $this->json(['authenticated' => true, 'user' => array_intersect_key($this->currentUser(), ['login' => 1, 'role' => 1])]);
     }
 
     private function logout(): void
     {
+        $this->audit->log('déconnexion', $this->currentUser()['login']);
         @session_start();
         $_SESSION = [];
         session_destroy();
         $this->json(['authenticated' => false]);
+    }
+
+    private function templateDelete(): void
+    {
+        $name = (string) ($this->input()['name'] ?? '');
+        $this->audit->log('modèle supprimé', $this->currentUser()['login'], ['modele' => $name]);
+        $this->json(['deleted' => (new \Poseidon\Export\TemplateStore($this->config))->delete($name)]);
+    }
+
+    /** « none » (poste local), « password » (mot de passe partagé) ou « users » (comptes). */
+    private function authMode(): string
+    {
+        if ($this->users->enabled()) {
+            return 'users';
+        }
+
+        return (string) $this->config->get('password') !== '' ? 'password' : 'none';
+    }
+
+    /** @return array{login: string, role: string, roots: list<string>} */
+    private function currentUser(): array
+    {
+        if ($this->user !== null) {
+            return $this->user;
+        }
+
+        return $this->user = match ($this->authMode()) {
+            'none' => ['login' => 'local', 'role' => 'admin', 'roots' => []],
+            'password' => ['login' => 'partagé', 'role' => 'admin', 'roots' => []],
+            default => $this->users->get((string) ($_SESSION['poseidon_user'] ?? '')) ?? ['login' => '?', 'role' => 'lecteur', 'roots' => []],
+        };
+    }
+
+    /** Un compte limité à certaines racines ne voit qu'elles (recherche, aperçu, téléchargement). */
+    private function applyUserRoots(): void
+    {
+        $roots = $this->currentUser()['roots'];
+        if ($roots !== []) {
+            $this->engine = new SearchEngine($this->config->with(['allowed_roots' => $roots]));
+            $this->locator = $this->engine->locator();
+        }
+    }
+
+    /** @return null Lève 403 si le compte n'est pas administrateur. */
+    private function requireAdmin(): null
+    {
+        if ($this->currentUser()['role'] !== 'admin') {
+            throw new HttpError(403, 'Action réservée aux administrateurs.');
+        }
+
+        return null;
     }
 
     private function page(): void
@@ -493,12 +600,18 @@ final class Kernel
 
     private function passwordRequired(): bool
     {
-        return (string) $this->config->get('password') !== '';
+        return $this->authMode() !== 'none';
     }
 
     private function authenticated(): bool
     {
-        return !$this->passwordRequired() || (($_SESSION['poseidon_auth'] ?? false) === true);
+        if ($this->authMode() === 'none') {
+            return true;
+        }
+        $login = $_SESSION['poseidon_user'] ?? null;
+
+        // Compte supprimé depuis la connexion : la session n'est plus valable.
+        return is_string($login) && ($this->authMode() === 'password' ? $login === 'partagé' : $this->users->get($login) !== null);
     }
 
     /** @return array<string, mixed> */

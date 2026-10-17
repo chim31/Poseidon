@@ -7,7 +7,7 @@
 
 ## Tableau de bord
 
-Avancement global : **91 %** `██████████████████░░` — 65 exigences : 59 terminées, 0 en cours, 5 à faire, 1 bloquées.
+Avancement global : **95 %** `███████████████████░` — 65 exigences : 62 terminées, 0 en cours, 2 à faire, 1 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -16,10 +16,10 @@ Avancement global : **91 %** `████████████████�
 | L3 | Archives ZIP | 5 | 0 | 0 | 100 % |
 | L4 | Recherche | 9 | 0 | 0 | 100 % |
 | L5 | Extraction de données | 7 | 0 | 0 | 100 % |
-| L6 | Interface web | 7 | 0 | 1 | 88 % |
-| L7 | Robustesse et sécurité | 7 | 0 | 1 | 88 % |
+| L6 | Interface web | 8 | 0 | 0 | 100 % |
+| L7 | Robustesse et sécurité | 8 | 0 | 0 | 100 % |
 | L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
-| L9 | Exploitation et documentation | 5 | 0 | 1 | 71 % |
+| L9 | Exploitation et documentation | 6 | 0 | 0 | 86 % |
 
 ## L1 — Socle et parcours
 
@@ -106,7 +106,7 @@ _Une interface Poseidon soignée, rapide à lire, utilisable au clavier et sur m
 | L6-05 | **Sélecteur de dossier** — Navigation dans les dossiers depuis le navigateur, racines récentes. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L6-06 | **Responsive** — Rail et aperçu en panneaux coulissants sous 1080 px, mobile 390 px. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L6-07 | **Aucun CDN** — Polices, icônes et scripts servis par l'application. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L6-08 | **Mode sombre** — Thème abysse pour les postes en environnement sombre. | À faire | Basse | chim31 | — | Phase 8 |
+| L6-08 | **Mode sombre** — Thème « abysses » : automatique (système) ou choisi, mêmes pavillons et surlignage. | Terminé | Basse | chim31 | 2026-10-17 | feat/equipe-deploiement |
 
 ## L7 — Robustesse et sécurité
 
@@ -121,7 +121,7 @@ _Ne jamais tourner en rond, ne jamais sortir du périmètre, toujours prévenir.
 | L7-05 | **Mot de passe d'accès** — POSEIDON_PASSWORD, session HttpOnly SameSite=Strict, en-tête anti-CSRF. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L7-06 | **En-têtes de sécurité** — CSP stricte (self), nosniff, X-Frame-Options, téléchargements en sandbox. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L7-08 | **Protection DNS rebinding** — Sans mot de passe, seuls localhost et les hôtes déclarés (POSEIDON_HOSTS) sont servis ; en-tête X-Poseidon exigé sur l'API. | Terminé | Haute | chim31 | 2026-10-17 | feat/interface-web (fusionnée) |
-| L7-07 | **Comptes et rôles** — Plusieurs utilisateurs, racines par rôle, journal d'audit. | À faire | Moyenne | chim31 | — | Phase 8 |
+| L7-07 | **Comptes et rôles** — Comptes (mots de passe hachés), rôles admin/lecteur, racines par compte, anti-forçage, journal d'audit consultable. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/equipe-deploiement |
 
 ## L8 — Comparaison (git diff)
 
@@ -143,8 +143,8 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 98 vérifications (Linux), dont équivalence avec/sans index, conteneurs, proximité, flou, modèles, rapport. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 111 vérifications (Linux), aussi exécutée sous Windows et dans l'image Docker. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
-| L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |
+| L9-06 | **Image Docker et guide HTTPS** — Image Docker (Debian 13, OCR, 7z, index) + Caddy HTTPS ; guides Nginx, Apache, Windows Server. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/equipe-deploiement |
 | L9-07 | **Intégration continue** — Workflow GitHub Actions prêt (Linux + Windows, PHP 8.2/8.4) ; ne démarre pas tant que le compte GitHub est bloqué pour facturation. Vérifié à la main : Linux PHP 8.4 (69 tests) et Windows PHP 8.3 (66 tests). | Bloqué | Moyenne | chim31 | 2026-10-17 | feat/index-plein-texte |

@@ -81,6 +81,57 @@ final class Samples
         // Document Office chiffré : en réalité un conteneur OLE (signature D0CF11E0).
         file_put_contents($dir . '/juridique/contrats/Contrat_protege.docx', "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" . str_repeat("\0", 504) . 'E' . "\0" . 'ncryptedPackage');
 
+        // Courriels : .eml (MIME, pièce jointe PDF) et .msg (Outlook, pièce jointe DOCX).
+        @mkdir($dir . '/courriels', 0775, true);
+        $pdf = self::pdf(['Bon de commande Neptune', 'Total : 4 200 EUR, livraison au quai 7.']);
+        file_put_contents($dir . '/courriels/relance-neptune.eml', implode("\r\n", [
+            'From: =?UTF-8?B?QW1waGl0cml0ZSBEdXJhbmQ=?= <amphitrite@nereide.example>',
+            'To: juridique@nereide.example',
+            'Subject: =?UTF-8?Q?Relance_:_pr=C3=A9avis_du_contrat_Neptune?=',
+            'Date: Wed, 14 Oct 2026 10:12:00 +0200',
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/mixed; boundary="trident"',
+            '',
+            '--trident',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: quoted-printable',
+            '',
+            'Bonjour,',
+            'Le pr=C3=A9avis du contrat Neptune expire le 30 octobre.',
+            'Merci de valider la r=C3=A9siliation.',
+            '--trident',
+            'Content-Type: application/pdf; name="commande-neptune.pdf"',
+            'Content-Disposition: attachment; filename="commande-neptune.pdf"',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($pdf), 76, "\r\n"),
+            '--trident--',
+            '',
+        ]));
+        file_put_contents($dir . '/courriels/triton.msg', CfbWriter::message(
+            'Résiliation du contrat Triton',
+            'Amphitrite Durand',
+            'juridique@nereide.example',
+            "Bonjour,\r\nci-joint l'avenant : le préavis passe à 60 jours.\r\nCordialement",
+            ['avenant-triton.docx' => self::docx(['Avenant au contrat Triton', 'Le préavis est porté à 60 jours.'])]
+        ));
+
+        // Autres archives : tar.gz (PHP pur), .gz simple, 7z (si bsdtar).
+        $tar = new \PharData($dir . '/archives/sauvegarde.tar');
+        $tar->addFromString('notes/escale.md', "# Escale\n\nLe contrat Poséidon est renouvelé, préavis de 15 jours.\n");
+        $tar->compress(\Phar::GZ);
+        unset($tar);
+        @unlink($dir . '/archives/sauvegarde.tar');
+        file_put_contents($dir . '/notes/serveur.log.gz', gzencode("2026-10-12 ERREUR contrat NR204511 introuvable\n"));
+        $bsdtar = \Poseidon\Archive\Bsdtar::binary();
+        if ($bsdtar !== null) {
+            $tmp = sys_get_temp_dir() . '/poseidon-7z-' . getmypid();
+            @mkdir($tmp . '/vieux', 0775, true);
+            file_put_contents($tmp . '/vieux/contrat-1998.txt', "Contrat de 1998 : préavis de trois mois.\n");
+            \Poseidon\Support\Process::run([$bsdtar, '--format', '7zip', '-cf', $dir . '/archives/historique.7z', '-C', $tmp, 'vieux']);
+            self::rmdir($tmp);
+        }
+
         // Fichier sans droit de lecture (ignoré sous Windows).
         file_put_contents($dir . '/notes/verrouille.txt', 'contrat verrouillé');
         @chmod($dir . '/notes/verrouille.txt', 0000);

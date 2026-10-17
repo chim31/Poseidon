@@ -405,8 +405,8 @@ select.rail-input option { background: var(--abyss); }
 .progress-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
 
 /* Synthèse */
-.summary { display: flex; align-items: center; gap: 16px 24px; padding: 14px 24px 12px; border-bottom: 1px solid var(--line); }
-.figures { display: flex; align-items: flex-end; gap: 10px 26px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.summary { display: flex; align-items: center; gap: 12px 24px; padding: 14px 24px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.figures { display: flex; align-items: flex-end; gap: 10px 26px; flex-wrap: wrap; flex: 1 1 440px; min-width: 0; }
 .figure { display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; color: var(--mute); }
 .figure strong { font-size: 24px; line-height: 1.05; font-weight: 700; font-stretch: 88%; color: var(--ink); font-variant-numeric: tabular-nums; }
 .figure-btn { border: 0; background: none; padding: 0; text-align: left; color: var(--warn); }
@@ -414,7 +414,7 @@ select.rail-input option { background: var(--abyss); }
 .figure-btn span { text-decoration: underline; text-underline-offset: 3px; }
 .term-totals { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding-bottom: 3px; }
 .term-total { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
-.summary-actions { display: flex; gap: 8px; flex: none; }
+.summary-actions { display: flex; gap: 4px 8px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 
 /* Alerte en ligne : fichiers ignorés (ne recouvre jamais le contenu) */
 .alert { display: flex; align-items: center; gap: 12px; padding: 9px 24px; background: var(--warn-bg); color: var(--alert-ink); border-bottom: 1px solid var(--alert-line); font-size: 13.5px; animation: hoist 0.28s var(--ease) both; }
@@ -424,6 +424,32 @@ select.rail-input option { background: var(--abyss); }
 .alert .link-btn { color: var(--alert-ink); flex: none; }
 .alert .icon-btn { width: 28px; height: 28px; color: var(--alert-ink-2); }
 .alert .icon-btn:hover { background: var(--alert-hover); }
+
+.changes-band { display: flex; align-items: center; gap: 12px; padding: 8px 24px; background: var(--tint); color: var(--primary-ink); border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.changes-band > svg { color: var(--link); }
+.changes-band p { flex: 1; min-width: 0; }
+.changes-band .add { color: var(--ok); font-weight: 700; }
+.changes-band .del { color: var(--bad); font-weight: 700; }
+.changes { display: flex; flex-direction: column; min-height: 100%; }
+.changes-body { padding: 8px 24px 32px; display: grid; gap: 20px; }
+.changes-body h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
+.changes-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.changes-body li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px; }
+.changes-body li:hover { background: var(--hover); }
+.changes-body .sign { font-weight: 700; text-align: center; }
+.changes-body .c-add .sign { color: var(--ok); }
+.changes-body .c-del .sign { color: var(--bad); }
+.changes-body .c-mod .sign { color: var(--warn); }
+.changes-body .n { color: var(--ink-2); white-space: nowrap; }
+.changes-body .commit-head { font-family: var(--font); font-size: 14px; font-weight: 650; text-transform: none; letter-spacing: 0; color: var(--ink); margin-bottom: 2px; }
+.changes-body .commit-head b { font-family: var(--mono); color: var(--link); margin-right: 8px; }
+.commits { list-style: none; margin: 0; padding: 8px 0 32px; }
+.commits li button { display: grid; grid-template-columns: 70px 1fr; gap: 2px 10px; width: 100%; text-align: left; border: 0; background: none; padding: 9px 20px; border-bottom: 1px solid var(--line-soft); }
+.commits li button:hover { background: var(--hover); }
+.commits .hash { font-family: var(--mono); font-size: 12px; color: var(--link); grid-row: span 2; padding-top: 2px; }
+.commits .subj { font-weight: 600; font-size: 13.5px; }
+.commits .meta { font-size: 12px; color: var(--mute); }
+.commits .none { padding: 16px 20px; color: var(--mute); font-size: 13px; }
 
 /* Résultats */
 .results { flex: 1; min-height: 0; overflow: auto; position: relative; }
@@ -705,7 +731,7 @@ mark.current { background: var(--mark-strong); outline: 2px solid var(--primary-
   .history { left: 16px; right: 16px; }
   .figures { gap: 10px 18px; }
   .summary-actions .btn { flex: 1; }
-  .progress, .diff-head, .diff-files, .alert { padding-left: 16px; padding-right: 16px; }
+  .progress, .diff-head, .diff-files, .alert, .changes-band, .changes-body { padding-left: 16px; padding-right: 16px; }
   .alert-path { display: none; }
   .alert p { flex-wrap: wrap; white-space: normal; gap: 0 6px; }
   .grid .term-col { display: none; }

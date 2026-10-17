@@ -308,6 +308,9 @@ async function runSearch() {
   state.shown = 300;
   state.alertDismissed = false;
   $('alert').hidden = true;
+  state.changes = null;
+  $('changes-band').hidden = true;
+  $('changes').hidden = true;
   rememberRoot(params.root);
   closeRail();
 
@@ -375,6 +378,10 @@ function handleEvent(event, schedule) {
       state.notices.push(event);
       noticeToast(event);
       schedule();
+      break;
+    case 'changes':
+      state.changes = event.comparison;
+      renderChangesBand();
       break;
     case 'progress':
       $('progress-text').textContent = `${nf.format(event.scanned)} fichiers parcourus · ${event.current}`;
@@ -477,6 +484,7 @@ function renderTable() {
   if (state.results.length === 0) { wrap.hidden = true; return; }
   wrap.hidden = false;
   $('diff').hidden = true;
+  $('changes').hidden = true;
 
   const multi = state.terms.length > 1;
   const head = h('tr', {},
@@ -592,6 +600,7 @@ async function openPreview(r) {
   $('pv-table').replaceChildren();
   $('pv-loading').hidden = false;
   selectTab('text');
+  loadGitLog(f);
 
   const p = state.lastParams;
   try {
@@ -641,8 +650,10 @@ function nextOccurrence(step) {
 function selectTab(which) {
   $('tab-text').setAttribute('aria-selected', String(which === 'text'));
   $('tab-table').setAttribute('aria-selected', String(which === 'table'));
+  $('tab-git').setAttribute('aria-selected', String(which === 'git'));
   $('pv-lines').hidden = which !== 'text';
   $('pv-table').hidden = which !== 'table';
+  $('pv-git').hidden = which !== 'git';
   $('occ-nav').hidden = which !== 'text';
 }
 
@@ -724,6 +735,90 @@ async function runExtract(event) {
   }
 }
 
+/* ------------------------------------------------------------------ Changements depuis la recherche précédente */
+
+function renderChangesBand() {
+  const c = state.changes;
+  const n = c ? c.appeared.length + c.disappeared.length + c.changed.length : 0;
+  $('changes-band').hidden = !c || n === 0;
+  if (!c || n === 0) return;
+  const when = new Date(c.from.at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  $('changes-text').replaceChildren(`Depuis la recherche du ${when} : `,
+    h('span', { class: 'add', text: `+${c.appeared.length}` }), ' nouveau(x) · ',
+    h('span', { class: 'del', text: `−${c.disappeared.length}` }), ' disparu(s) · ',
+    h('b', { text: String(c.changed.length) }), ' modifié(s)');
+}
+
+function showChanges() {
+  const c = state.changes;
+  if (!c) return;
+  const when = (at) => new Date(at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  const group = (title, items, cls, sign, extra) => items.length ? h('div', {}, h('h3', { text: `${title} (${items.length})` }), h('ul', {}, ...items.map((it) => h('li', { class: cls }, h('span', { class: 'sign', text: sign }), h('span', { text: it.path }), h('span', { class: 'n', text: extra(it) }))))) : null;
+  $('changes-title').textContent = 'Changements';
+  $('changes-stats').textContent = `${when(c.from.at)} → ${when(c.to.at)} · ${nf.format(c.unchanged)} inchangé(s)`;
+  $('changes-body').replaceChildren(...[
+    group('Nouveaux fichiers', c.appeared, 'c-add', '+', (it) => `${nf.format(it.total)} occ.`),
+    group('Fichiers disparus', c.disappeared, 'c-del', '−', (it) => `${nf.format(it.total)} occ.`),
+    group('Fichiers modifiés', c.changed, 'c-mod', '~', (it) => `${nf.format(it.before)} → ${nf.format(it.after)} occ.${it.modified ? ' · fichier modifié' : ''}`),
+  ].filter(Boolean));
+  $('table-wrap').hidden = true;
+  $('diff').hidden = true;
+  $('changes').hidden = false;
+}
+
+/* ------------------------------------------------------------------ Historique Git */
+
+async function loadGitLog(f) {
+  $('tab-git').hidden = true;
+  if (!state.info?.git || f.archiveDepth > 0) return;
+  try {
+    const data = await (await api('/api/git/log?' + new URLSearchParams({ id: f.id }))).json();
+    if (state.selectedId !== f.id || !data.available) return;
+    $('tab-git').hidden = data.commits.length === 0;
+    $('pv-git').replaceChildren(...data.commits.map((c) => h('li', {}, h('button', { type: 'button', onclick: () => runGitDiff(f, c) },
+      h('span', { class: 'hash', text: c.short }),
+      h('span', { class: 'subj', text: c.subject }),
+      h('span', { class: 'meta', text: `${c.author} · ${new Date(c.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}` })))));
+  } catch { /* pas d'historique : onglet masqué */ }
+}
+
+async function runGitDiff(f, commit) {
+  $('table-wrap').hidden = true;
+  $('changes').hidden = true;
+  $('diff').hidden = false;
+  $('diff-title').textContent = `Commit ${commit.short} — ${commit.subject}`;
+  $('diff-body').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
+  try {
+    const data = await (await api('/api/git/diff?' + new URLSearchParams({ id: f.id, commit: commit.hash }))).json();
+    renderDiffData(data, `--- ${data.path}@${data.parent ? data.parent.slice(0, 8) : 'vide'}`, `+++ ${data.path}@${commit.short}`);
+  } catch (err) {
+    $('diff-body').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
+  }
+}
+
+async function runGitSearch() {
+  const p = state.lastParams || searchParams();
+  if (!p.root || !p.q) { toast('error', 'Rien à chercher', 'Lance d\'abord une recherche.'); return; }
+  $('table-wrap').hidden = true;
+  $('diff').hidden = true;
+  $('changes').hidden = false;
+  $('changes-title').textContent = 'Historique Git';
+  $('changes-stats').textContent = 'Recherche dans les commits…';
+  $('changes-body').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
+  try {
+    const data = await (await api('/api/git/search?' + new URLSearchParams(p))).json();
+    $('changes-stats').textContent = `${data.repository} · ${nf.format(data.commits.length)} commit(s) où le nombre d'occurrences a changé`;
+    $('changes-body').replaceChildren(...(data.commits.length ? data.commits.map((c) => h('div', {},
+      h('h3', { class: 'commit-head' }, h('b', { text: c.short }), c.subject),
+      h('p', { class: 'n', text: `${c.author} · ${new Date(c.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}` }),
+      h('ul', {}, ...c.files.map((f) => h('li', { class: f.after > f.before ? 'c-add' : 'c-del' }, h('span', { class: 'sign', text: f.after > f.before ? '+' : '−' }), h('span', { text: f.path }), h('span', { class: 'n', text: `${f.before} → ${f.after} occ.` }))))))
+      : [h('p', { class: 'diff-same', text: 'Aucun commit n\'a ajouté ni retiré ce filtre.' })]));
+  } catch (err) {
+    $('changes-body').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
+    $('changes-stats').textContent = '';
+  }
+}
+
 /* ------------------------------------------------------------------ Comparaison */
 
 async function runDiff() {
@@ -734,29 +829,34 @@ async function runDiff() {
   $('diff-body').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
   try {
     const data = await (await api('/api/diff?' + new URLSearchParams({ a, b }))).json();
-    $('diff-stats').replaceChildren(h('span', { class: 'add', text: `+${nf.format(data.added)}` }), ' ', h('span', { class: 'del', text: `−${nf.format(data.removed)}` }));
-    $('diff-files').replaceChildren(h('span', { class: 'del', text: '--- ' + data.a.relativePath }), h('span', { class: 'add', text: '+++ ' + data.b.relativePath }));
-    $('diff-copy').onclick = () => copy(data.unified, 'Diff copié au format unifié.');
-    if (data.identical) { $('diff-body').replaceChildren(h('p', { class: 'diff-same', text: 'Les deux fichiers ont un texte identique.' })); return; }
-    const frag = document.createDocumentFragment();
-    for (const hunk of data.hunks) {
-      frag.append(h('div', { class: 'hunk-head', text: hunk.header }));
-      let [, la, lb] = /-(\d+)(?:,\d+)? \+(\d+)/.exec(hunk.header).map(Number);
-      for (const [type, text] of hunk.lines) {
-        const cls = type === '+' ? 'add' : type === '-' ? 'del' : '';
-        frag.append(h('div', { class: 'dl ' + cls },
-          h('span', { class: 'n', text: type === '+' ? '' : String(la) }),
-          h('span', { class: 'n', text: type === '-' ? '' : String(lb) }),
-          h('span', { class: 's', text: type === ' ' ? '' : type === '-' ? '−' : '+' }),
-          h('span', { class: 't', text })));
-        if (type !== '+') la++;
-        if (type !== '-') lb++;
-      }
-    }
-    $('diff-body').replaceChildren(frag);
+    $('diff-title').textContent = 'Comparaison';
+    renderDiffData(data, '--- ' + data.a.relativePath, '+++ ' + data.b.relativePath);
   } catch (err) {
     $('diff-body').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
   }
+}
+
+function renderDiffData(data, labelA, labelB) {
+  $('diff-stats').replaceChildren(h('span', { class: 'add', text: `+${nf.format(data.added)}` }), ' ', h('span', { class: 'del', text: `−${nf.format(data.removed)}` }));
+  $('diff-files').replaceChildren(h('span', { class: 'del', text: labelA }), h('span', { class: 'add', text: labelB }));
+  $('diff-copy').onclick = () => copy(data.unified, 'Diff copié au format unifié.');
+  if (data.identical) { $('diff-body').replaceChildren(h('p', { class: 'diff-same', text: 'Les deux versions ont un texte identique.' })); return; }
+  const frag = document.createDocumentFragment();
+  for (const hunk of data.hunks) {
+    frag.append(h('div', { class: 'hunk-head', text: hunk.header }));
+    let [, la, lb] = /-(\d+)(?:,\d+)? \+(\d+)/.exec(hunk.header).map(Number);
+    for (const [type, text] of hunk.lines) {
+      const cls = type === '+' ? 'add' : type === '-' ? 'del' : '';
+      frag.append(h('div', { class: 'dl ' + cls },
+        h('span', { class: 'n', text: type === '+' ? '' : String(la) }),
+        h('span', { class: 'n', text: type === '-' ? '' : String(lb) }),
+        h('span', { class: 's', text: type === ' ' ? '' : type === '-' ? '−' : '+' }),
+        h('span', { class: 't', text })));
+      if (type !== '+') la++;
+      if (type !== '-') lb++;
+    }
+  }
+  $('diff-body').replaceChildren(frag);
 }
 
 /* ------------------------------------------------------------------ Avertissements */
@@ -1000,6 +1100,7 @@ async function init() {
   document.querySelector('#formats [data-format="image"]').hidden = !state.info.ocr;
   applyTheme(store.get('theme', 'auto'));
   $('try-demo').hidden = !state.info.demo;
+  $('git-btn').hidden = !state.info.git;
   if (state.info.authRequired && !state.info.authenticated) showLogin();
   else renderSession(state.info.user);
 
@@ -1033,6 +1134,11 @@ async function init() {
   $('history-btn').addEventListener('click', () => toggleHistory());
   document.addEventListener('click', (e) => { if (!$('history').hidden && !e.target.closest('#history, #history-btn')) toggleHistory(false); });
   $('share-btn').addEventListener('click', () => copy(shareLink(), 'Lien de la recherche copié : il la rejoue à l\'ouverture.'));
+  $('changes-open').addEventListener('click', showChanges);
+  $('changes-close').addEventListener('click', () => { $('changes-band').hidden = true; });
+  $('changes-back').addEventListener('click', () => { $('changes').hidden = true; renderTable(); });
+  $('tab-git').addEventListener('click', () => selectTab('git'));
+  $('git-btn').addEventListener('click', runGitSearch);
   $('report-btn').addEventListener('click', () => {
     const p = state.lastParams || searchParams();
     if (!p.root || !p.q) { toast('error', 'Rien à rapporter', 'Lance d\'abord une recherche.'); return; }

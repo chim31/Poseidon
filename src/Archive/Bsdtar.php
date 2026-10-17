@@ -59,7 +59,8 @@ final class Bsdtar
     public static function read(string $archive, string $entry, int $maxSize): string
     {
         $bin = self::binary() ?? throw new UnreadableFileException('bsdtar indisponible pour ce format d\'archive.', UnreadableFileException::UNSUPPORTED);
-        $result = Process::run([$bin, '-xOf', $archive, $entry], 120, $maxSize);
+        // « -- » : le nom d'entrée n'est jamais lu comme une option (« -… » ou « --… » dans une archive piégée).
+        $result = Process::run([$bin, '-xOf', $archive, '--', $entry], 120, $maxSize);
         if ($result['overflow']) {
             throw new UnreadableFileException('Entrée trop volumineuse : ignorée.', UnreadableFileException::TOO_LARGE);
         }

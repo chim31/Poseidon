@@ -77,6 +77,7 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Outils externes durcis | `--` avant tout nom venant d'un fichier (bsdtar) ; Git sans `safe.directory=*`, configuration exécutable du dépôt neutralisée (BUG-032, BUG-033). |
 | 2026-10-17 | Historique Git sur le texte extrait | Un commit sur un DOCX ou un PDF se lit comme un diff de texte ; la recherche dans l'historique extrait les documents que `git log -S` ne voit pas. |
 | 2026-10-17 | Instantanés par compte et par recherche | Comparer deux recherches identiques sans rien stocker de plus que la liste des fichiers et leurs compteurs. |
 | 2026-10-17 | Comptes locaux en fichier JSON (pas de base) | Suffisant pour une équipe ; mots de passe hachés, rôles admin/lecteur, racines par compte ; LDAP/SSO hors périmètre. |

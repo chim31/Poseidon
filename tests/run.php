@@ -232,6 +232,15 @@ try {
     if (Poseidon\Archive\Bsdtar::binary() !== null) {
         check('archive 7z (bsdtar)', isset($ext['archives/historique.7z › vieux/contrat-1998.txt']));
     }
+    if (Poseidon\Archive\Bsdtar::binary() !== null) {
+        $tmp7 = $dir . '-dash';
+        @mkdir($tmp7, 0700, true);
+        file_put_contents($tmp7 . '/-x.txt', 'kraken caché derrière un tiret');
+        Poseidon\Support\Process::run([Poseidon\Archive\Bsdtar::binary(), '--format', '7zip', '-cf', $dir . '/archives/tiret.7z', '-C', $tmp7, '--', '-x.txt']);
+        Fixtures::rmdir($tmp7);
+        check('entrée d\'archive nommée « -x.txt » lue comme un nom, jamais comme une option', isset(search($engine, $dir . '/archives', 'kraken')['tiret.7z › -x.txt']));
+        unlink($dir . '/archives/tiret.7z');
+    }
     $loc = $engine->locator();
     $readable = true;
     foreach (['archives/sauvegarde.tar.gz › notes/escale.md', 'courriels/triton.msg › avenant-triton.docx', 'archives/2025.zip › clients/nereide.zip › contrats/Avenant_02.docx'] + (Poseidon\Archive\Bsdtar::binary() !== null ? [3 => 'archives/historique.7z › vieux/contrat-1998.txt'] : []) as $path) {
@@ -494,6 +503,15 @@ try {
         check('fichier texte trouvé par git log -S', in_array('Note texte', array_column((new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken')), 'subject'), true));
         $before = Poseidon\Git\GitHistory::show($repo, $log[1]['hash'], 'contrat.docx', 10_000_000);
         check('version passée relue (DOCX valide)', str_starts_with($before, 'PK'));
+        // Dépôt piégé : commandes déclarées dans sa configuration locale → ne doivent jamais s'exécuter.
+        $marker = $repo . '/PIEGE-EXECUTE';
+        $git('config', 'core.fsmonitor', 'touch ' . $marker);
+        $git('config', 'diff.piege.textconv', 'sh -c "touch ' . $marker . '; cat"');
+        file_put_contents($repo . '/.gitattributes', "* diff=piege\n");
+        (new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken'));
+        Poseidon\Git\GitHistory::log($repo, 'contrat.docx');
+        Poseidon\Git\GitHistory::show($repo, $log[0]['hash'], 'contrat.docx', 10_000_000);
+        check('dépôt piégé : aucune commande de sa configuration n\'est exécutée', !file_exists($marker));
         check('identifiant de commit invalide refusé', (static function (): bool {
             try {
                 Poseidon\Git\GitHistory::assertRevision('HEAD; rm -rf /');

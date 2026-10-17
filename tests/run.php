@@ -224,6 +224,19 @@ try {
     $big = str_repeat('grande ligne ', 600);
     $outlook = Poseidon\Mail\OutlookMessage::parse(Poseidon\Demo\CfbWriter::message('Objet é', 'A', 'B', 'corps', ['gros.txt' => $big]));
     same('pièce jointe .msg hors mini-flux (> 4 Ko)', $big, $outlook->attachments[0]['data'] ?? null);
+    $forged = Poseidon\Demo\CfbWriter::message('x', 'a', 'b', 'c');
+    $forged = substr_replace($forged, pack('V', 1), 512 + 4, 4); // secteur du répertoire qui pointe sur lui-même
+    check('conteneur OLE forgé (chaîne cyclique) refusé sans boucler', (static function () use ($forged): bool {
+        try {
+            Poseidon\Mail\OutlookMessage::parse($forged);
+        } catch (Poseidon\Filesystem\UnreadableFileException) {
+            return true;
+        }
+
+        return false;
+    })());
+    $nested = "Subject: externe\r\nContent-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\ncorps\r\n--b\r\nContent-Type: message/rfc822\r\n\r\nSubject: =?UTF-8?Q?interne_=C3=A9?=\r\n\r\ntexte interne\r\n--b--\r\n";
+    same('message joint nommé par son objet (sans analyse récursive)', 'interne é.eml', Poseidon\Mail\MimeMessage::parse($nested)->attachments[0]['name'] ?? null);
 
     if (DIRECTORY_SEPARATOR === '/' && Poseidon\Support\Process::which('pdftoppm') !== null) {
         $fake = $dir . '-tesseract.sh';

@@ -125,8 +125,10 @@ final class Samples
         file_put_contents($dir . '/notes/serveur.log.gz', gzencode("2026-10-12 ERREUR contrat NR204511 introuvable\n"));
         $bsdtar = \Poseidon\Archive\Bsdtar::binary();
         if ($bsdtar !== null) {
-            $tmp = sys_get_temp_dir() . '/poseidon-7z-' . getmypid();
-            @mkdir($tmp . '/vieux', 0775, true);
+            $tmp = sys_get_temp_dir() . '/poseidon-7z-' . bin2hex(random_bytes(8));
+            if (!mkdir($tmp . '/vieux', 0700, true)) {
+                throw new \RuntimeException('Dossier temporaire impossible : ' . $tmp);
+            }
             file_put_contents($tmp . '/vieux/contrat-1998.txt', "Contrat de 1998 : préavis de trois mois.\n");
             \Poseidon\Support\Process::run([$bsdtar, '--format', '7zip', '-cf', $dir . '/archives/historique.7z', '-C', $tmp, 'vieux']);
             self::rmdir($tmp);

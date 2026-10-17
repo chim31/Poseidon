@@ -80,7 +80,7 @@ final class Cfb
             return $this->readMini($entry['start'], $entry['size']);
         }
 
-        return substr($this->chainData($entry['start']), 0, $entry['size']);
+        return substr($this->chainData($entry['start']), 0, min($entry['size'], strlen($this->data)));
     }
 
     private function load(): void
@@ -115,6 +115,9 @@ final class Cfb
             }
             $next = self::u32($block, $perSector * 4);
         }
+        // Secteurs FAT uniques et existants : un DIFAT forgé ne peut pas gonfler la table.
+        $total = intdiv(strlen($this->data), $this->sectorSize) - 1;
+        $difat = array_values(array_unique(array_filter($difat, static fn (int $n): bool => $n < $total)));
         foreach ($difat as $sector) {
             $block = $this->sector($sector);
             for ($i = 0; $i < $this->sectorSize; $i += 4) {
@@ -183,13 +186,16 @@ final class Cfb
     private function chainData(int $start): string
     {
         $out = '';
-        $guard = 0;
-        $limit = count($this->fat) + 1;
+        $visited = [];
         for ($n = $start; $n < self::END && $n !== self::FREE; $n = $this->fat[$n] ?? self::END) {
-            if (++$guard > $limit) {
+            if (isset($visited[$n])) {
                 throw new UnreadableFileException('Conteneur OLE corrompu (chaîne cyclique).', UnreadableFileException::CORRUPT);
             }
+            $visited[$n] = true;
             $out .= $this->sector($n);
+            if (strlen($out) > strlen($this->data)) {
+                throw new UnreadableFileException('Conteneur OLE corrompu (flux plus grand que le fichier).', UnreadableFileException::CORRUPT);
+            }
         }
 
         return $out;
@@ -198,11 +204,13 @@ final class Cfb
     private function readMini(int $start, int $size): string
     {
         $out = '';
-        $guard = 0;
+        $visited = [];
+        $size = min($size, strlen($this->miniStream));
         for ($n = $start; $n < self::END && strlen($out) < $size; $n = $this->miniFat[$n] ?? self::END) {
-            if (++$guard > count($this->miniFat) + 1) {
+            if (isset($visited[$n])) {
                 break;
             }
+            $visited[$n] = true;
             $out .= substr($this->miniStream, $n * $this->miniSectorSize, $this->miniSectorSize);
         }
 

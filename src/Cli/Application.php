@@ -245,8 +245,8 @@ final class Application
         $url = "http://{$browse}:{$port}/";
         echo $this->paint('1;36', 'Poseidon') . " écoute sur {$url}  (Ctrl+C pour arrêter)" . PHP_EOL;
         flush();
-        if ($host !== '127.0.0.1' && $host !== 'localhost' && (string) $this->config->get('password') === '') {
-            fwrite(STDERR, $this->paint('33', 'Attention : interface ouverte sur le réseau sans mot de passe. Définis POSEIDON_PASSWORD (recommandé) ; sinon seuls localhost et les hôtes de POSEIDON_HOSTS seront servis.') . PHP_EOL);
+        if ($host !== '127.0.0.1' && $host !== 'localhost' && (string) $this->config->get('password') === '' && !(new \Poseidon\Auth\UserStore($this->config))->enabled()) {
+            fwrite(STDERR, $this->paint('33', 'Attention : interface ouverte sur le réseau sans mot de passe. Crée un compte (poseidon user add) ou définis POSEIDON_PASSWORD : d\'ici là, seule cette machine peut l\'utiliser.') . PHP_EOL);
         }
         if (DIRECTORY_SEPARATOR === '/') {
             // Plusieurs processus : l'aperçu reste réactif pendant qu'une recherche tourne.

@@ -1,14 +1,17 @@
 # Poseidon derrière Caddy (HTTPS automatique).
 # 1. Remplace poseidon.exemple.fr par ton nom de domaine (ou garde localhost pour un essai).
 # 2. Monte les dossiers à fouiller dans /data (lecture seule).
-# 3. docker compose up -d, puis crée un compte : docker compose exec poseidon php bin/poseidon user add admin --role=admin
+# 3. Définis un mot de passe provisoire (obligatoire : sans lui, le service refuse de démarrer) :
+#      POSEIDON_PASSWORD='un-mot-de-passe-long' docker compose up -d --build
+# 4. Crée les comptes : docker compose exec poseidon php bin/poseidon user add admin --role=admin
+#    Dès qu'un compte existe, la connexion se fait par identifiant (le mot de passe partagé n'est plus utilisé).
 services:
   poseidon:
     build: .
     restart: unless-stopped
     environment:
       POSEIDON_ROOTS: /data
-      POSEIDON_HOSTS: poseidon.exemple.fr;localhost
+      POSEIDON_PASSWORD: ${POSEIDON_PASSWORD:?Définis POSEIDON_PASSWORD avant de démarrer Poseidon}
     volumes:
       - ./donnees:/data:ro          # dossiers à fouiller
       - poseidon-var:/app/var       # index, cache, comptes, journal d'audit

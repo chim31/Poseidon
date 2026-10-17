@@ -419,6 +419,25 @@ try {
     $doc = (new Poseidon\Extractor\PdfExtractor($config))->withPhp(Fixtures::pdf(['Bonjour (Poseidon)', 'Ligne deux']));
     same('texte du PDF', ['Bonjour (Poseidon)', 'Ligne deux'], array_column($doc->lines, 1));
 
+    section('Accès réseau sans authentification');
+    $call = static function (Config $cfg, string $remote, string $host): string {
+        $_SERVER['REMOTE_ADDR'] = $remote;
+        $_SERVER['HTTP_HOST'] = $host;
+        $_SERVER['HTTP_X_POSEIDON'] = '1';
+        ob_start();
+        (new Poseidon\Http\Kernel($cfg))->handle('GET', '/api/info');
+        $out = (string) ob_get_clean();
+        unset($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_HOST'], $_SERVER['HTTP_X_POSEIDON']);
+
+        return $out;
+    };
+    $open = $config->with(['users_file' => $dir . '-none/users.json', 'password' => '', 'demo' => false]);
+    check('poste local accepté', str_contains($call($open, '127.0.0.1', 'localhost:8080'), '"name":"Poseidon"'));
+    check('poste du réseau refusé, même avec « Host: localhost »', str_contains($call($open, '192.168.1.20', 'localhost:8080'), 'pas encore protégé'));
+    check('nom d\'hôte extérieur refusé (DNS rebinding)', str_contains($call($open, '127.0.0.1', 'evil.example:8080'), 'pas encore protégé'));
+    check('avec mot de passe : poste du réseau servi', str_contains($call($open->with(['password' => 'secret-partage-long']), '192.168.1.20', 'poseidon.lan'), '"authRequired":true'));
+    check('ouverture explicite sans mot de passe (POSEIDON_INSECURE_NO_AUTH)', str_contains($call($open->with(['insecure_no_auth' => true, 'allowed_hosts' => ['poste-42']]), '192.168.1.20', 'poste-42:8080'), '"name":"Poseidon"'));
+
     section('Configuration');
     $withRoots = Config::load()->with(['allowed_roots' => ['/a', '/b']]);
     same('une liste vide remplace une liste', [], $withRoots->with(['allowed_roots' => []])->get('allowed_roots'));

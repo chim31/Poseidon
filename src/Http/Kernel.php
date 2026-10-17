@@ -58,9 +58,10 @@ final class Kernel
 
         // Anti « DNS rebinding » : sans mot de passe, seuls les hôtes locaux ou déclarés sont servis.
         if (!$this->hostAllowed((string) ($_SERVER['HTTP_HOST'] ?? ''))) {
-            http_response_code(421);
+            http_response_code(503);
             header('Content-Type: text/plain; charset=utf-8');
-            echo "Hôte non autorisé. Accède à Poseidon via 127.0.0.1 ou localhost, ou déclare cet hôte dans POSEIDON_HOSTS (ou protège l'instance avec POSEIDON_PASSWORD).";
+            echo "Poseidon n'est pas encore protégé : sans compte ni mot de passe, il ne répond qu'à la machine locale (http://127.0.0.1).\n"
+                . "Pour l'ouvrir au réseau : crée un compte (php bin/poseidon user add admin --role=admin) ou définis POSEIDON_PASSWORD.";
 
             return;
         }
@@ -584,18 +585,30 @@ final class Kernel
         session_start();
     }
 
+    /**
+     * Sans authentification, seule la machine elle-même peut utiliser Poseidon : adresse source locale
+     * (un poste du réseau pourrait sinon envoyer « Host: localhost ») et hôte local (anti DNS rebinding).
+     * L'ouverture au réseau sans mot de passe exige un choix explicite (POSEIDON_INSECURE_NO_AUTH=1).
+     */
     private function hostAllowed(string $host): bool
     {
-        if ($this->passwordRequired() || PHP_SAPI === 'cli') {
+        if ($this->passwordRequired() || PHP_SAPI === 'cli' && !isset($_SERVER['REMOTE_ADDR'])) {
             return true;
         }
         $name = strtolower((string) preg_replace('/:\d+$/', '', trim($host)));
-        if (in_array($name, ['localhost', '127.0.0.1', '[::1]', '::1'], true) || str_ends_with($name, '.localhost')) {
+        $localName = in_array($name, ['localhost', '127.0.0.1', '[::1]', '::1'], true) || str_ends_with($name, '.localhost');
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $localClient = $remote === '127.0.0.1' || $remote === '::1' || str_starts_with($remote, '127.') || $remote === '::ffff:127.0.0.1';
+        if ($localName && $localClient) {
             return true;
         }
-        $extra = array_filter(array_map(static fn (string $h): string => strtolower(trim($h)), (array) $this->config->get('allowed_hosts', [])));
+        if ($this->config->get('insecure_no_auth', false) === true) {
+            $extra = array_filter(array_map(static fn (string $h): string => strtolower(trim($h)), (array) $this->config->get('allowed_hosts', [])));
 
-        return in_array($name, $extra, true);
+            return $localName || in_array($name, $extra, true);
+        }
+
+        return false;
     }
 
     private function passwordRequired(): bool

@@ -1,9 +1,8 @@
-# Données locales et générées
+# Données locales et générées (comptes, journal d'audit, index, cache, modèles, clé)
+/var/*
+!/var/cache/
 /var/cache/*
 !/var/cache/.gitkeep
-/var/secret.key
-/var/index/
-/var/templates/
 /samples/demo/
 /config/poseidon.local.php
 

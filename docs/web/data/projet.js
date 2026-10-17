@@ -491,12 +491,12 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L6-08",
                     "titre": "Mode sombre",
-                    "description": "Thème abysse pour les postes en environnement sombre.",
-                    "statut": "À faire",
+                    "description": "Thème « abysses » : automatique (système) ou choisi, mêmes pavillons et surlignage.",
+                    "statut": "Terminé",
                     "priorite": "Basse",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 8"
+                    "date": "2026-10-17",
+                    "ref": "feat/equipe-deploiement"
                 }
             ]
         },
@@ -578,12 +578,12 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L7-07",
                     "titre": "Comptes et rôles",
-                    "description": "Plusieurs utilisateurs, racines par rôle, journal d'audit.",
-                    "statut": "À faire",
+                    "description": "Comptes (mots de passe hachés), rôles admin/lecteur, racines par compte, anti-forçage, journal d'audit consultable.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 8"
+                    "date": "2026-10-17",
+                    "ref": "feat/equipe-deploiement"
                 }
             ]
         },
@@ -672,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 98 vérifications (Linux), dont équivalence avec/sans index, conteneurs, proximité, flou, modèles, rapport.",
+                    "description": "Suite sans dépendance : 111 vérifications (Linux), aussi exécutée sous Windows et dans l'image Docker.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -702,12 +702,12 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-06",
                     "titre": "Image Docker et guide HTTPS",
-                    "description": "Déploiement serveur derrière Nginx/Caddy.",
-                    "statut": "À faire",
+                    "description": "Image Docker (Debian 13, OCR, 7z, index) + Caddy HTTPS ; guides Nginx, Apache, Windows Server.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 8"
+                    "date": "2026-10-17",
+                    "ref": "feat/equipe-deploiement"
                 },
                 {
                     "id": "L9-07",
@@ -830,8 +830,8 @@ window.POSEIDON_PROJET = {
             "id": "P8",
             "titre": "Équipe et déploiement",
             "debut": "2026-10-17",
-            "fin": "2027-02-26",
-            "statut": "En cours",
+            "fin": "2026-10-17",
+            "statut": "Terminé",
             "livrables": [
                 "Comptes, rôles, journal d'audit",
                 "Image Docker, guide HTTPS",
@@ -841,9 +841,9 @@ window.POSEIDON_PROJET = {
         {
             "id": "P9",
             "titre": "Comparaison avancée → v1.0",
-            "debut": "2027-03-01",
+            "debut": "2026-10-17",
             "fin": "2027-03-26",
-            "statut": "À faire",
+            "statut": "En cours",
             "livrables": [
                 "Diff entre deux recherches",
                 "Historique Git",

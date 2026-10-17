@@ -10,6 +10,7 @@ Index de toute la documentation. Commence par le [guide de démarrage](01-genera
 | [stack-technique.md](01-general/stack-technique.md) | Langages, versions, outils, alternatives écartées |
 | [api.md](01-general/api.md) | API HTTP : conventions et chaque route |
 | [demarrage.md](01-general/demarrage.md) | Installer, configurer, lancer, tester, déployer, dépanner |
+| [deploiement.md](01-general/deploiement.md) | Comptes et rôles, Docker + HTTPS, Nginx, Apache, Windows Server, sauvegardes |
 | [performances.md](01-general/performances.md) | Banc d'essai, mesures, conseils pour les gros volumes |
 
 [base-de-donnees.md](01-general/base-de-donnees.md) décrit l'index SQLite, seul stockage structuré de Poseidon.

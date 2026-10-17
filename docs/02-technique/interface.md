@@ -63,6 +63,8 @@ Règles clés : le jaune de surlignage est réservé aux correspondances ; le so
 - **Formats** : puces groupées (PDF, Word, Excel, CSV, ODT·PPT, TXT·MD, Code·logs, Courriels, Images (OCR) si Tesseract est présent) → paramètre `extensions`. Les conteneurs (ZIP, 7z, tar, courriels) sont toujours ouverts : le filtre porte sur leurs entrées.
 - **Options** : ZIP, accents, casse, mot entier, fautes de frappe (recherche floue), cible (contenu / nom / les deux), filtre de nom. Mémorisées localement.
 - **Index** (si `pdo_sqlite` est disponible) : état de l'index de la racine (fichiers, taille, date), boutons « Indexer ce dossier » / « Mettre à jour l'index » (progression en direct) et suppression.
+- **Apparence** : Auto (système) / Clair / Sombre (thème « abysses »), mémorisé dans le navigateur.
+- **Session** (si authentification) : compte et rôle, lien « Audit » (admin) qui ouvre le journal dans le volet droit, « Déconnexion ». Les boutons d'index sont masqués pour un lecteur.
 - **Statistiques** : fichiers parcourus, durée, fichiers non relus grâce à l'index, moteur PDF.
 
 ### Filtre
@@ -104,7 +106,8 @@ Remplace le tableau : statistiques `+n −m`, fichiers comparés, blocs `@@`, nu
 | Fichier binaire | Note « télécharge-le pour l'ouvrir » |
 | Erreur | Notification (toast) rouge avec le message du serveur |
 | Extraction | Notification de succès (nombre de lignes) ou d'extraction vide |
-| Authentification | Écran de connexion abyssal |
+| Authentification | Écran de connexion abyssal (identifiant + mot de passe en mode comptes, mot de passe seul en mode partagé) |
+| Thème sombre | Mêmes jetons redéfinis (`prefers-color-scheme` ou choix explicite) ; pavillons et surlignage inchangés |
 
 ## 6. Responsive
 

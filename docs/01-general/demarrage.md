@@ -101,6 +101,7 @@ return [
 | --- | --- | --- |
 | `POSEIDON_ROOTS` | vide (aucune restriction) | Racines autorisées, séparées par `;` |
 | `POSEIDON_PASSWORD` | vide (pas d'authentification) | Mot de passe d'accès à l'interface |
+| `POSEIDON_DEMO` | activé | `0` : pas d'échantillons de démonstration (serveurs) |
 | `POSEIDON_HOSTS` | vide | Noms d'hôte acceptés en plus de `localhost` quand il n'y a pas de mot de passe (ex. `poste-42;192.168.1.20`) |
 | `POSEIDON_MAX_FILE_SIZE` | 200 Mo | Taille maximale d'un fichier analysé (octets) |
 | `POSEIDON_PDFTOTEXT` | détecté dans le `PATH` | Chemin explicite de `pdftotext` |
@@ -188,11 +189,13 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `98 tests réussis` sous Linux, `93` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `111 tests réussis` sous Linux, `106` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
 ## 8. Déploiement sur un serveur
+
+Guide complet (comptes, Docker + HTTPS, Nginx, Apache, Windows Server, sauvegardes) : **[deploiement.md](deploiement.md)**. L'essentiel :
 
 Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour un accès réseau :
 
@@ -226,6 +229,8 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | --- | --- |
 | `php bin/poseidon info` | Version, moteur PDF, racines autorisées, formats |
 | `php bin/poseidon demo` | (Ré)génère `samples/demo` |
+| `php bin/poseidon user add <id> --role=admin` | Crée un compte (voir [deploiement.md](deploiement.md)) |
+| `php bin/poseidon audit --tail=50` | Journal d'audit |
 | `php bin/poseidon index <racine> --status` | État de l'index |
 | `php -d memory_limit=1G tests/bench.php 10000` | Banc d'essai ([performances](performances.md)) |
 | `php docs/tools/sync.php` | Régénère le suivi web et Markdown depuis `projet.json` |

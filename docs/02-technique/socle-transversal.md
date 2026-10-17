@@ -43,7 +43,11 @@ Sur un UNC, `..` ne remonte jamais au-dessus de `\\serveur\partage`.
 | --- | --- | --- |
 | Racines autorisées | `RootGuard` | Liste blanche en chemins réels ; vérifiée sur `realpath` à la recherche, pour chaque lien symbolique parcouru **et** à chaque ouverture de fichier |
 | Identifiants signés | `Support\Token`, `Source::id()` | HMAC-SHA256 tronqué (128 bits) avec `var/secret.key` (généré au premier lancement, `0600`, ignoré par Git) |
-| Authentification | `Http\Kernel` | `POSEIDON_PASSWORD`, comparaison `hash_equals`, délai aléatoire, `session_regenerate_id`, cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` en HTTPS) |
+| Authentification | `Http\Kernel`, `Auth\UserStore` | Comptes (mots de passe `password_hash`, rehachage automatique) ou `POSEIDON_PASSWORD` (`hash_equals`) ; délai aléatoire ; `session_regenerate_id` ; cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` en HTTPS) ; compte supprimé = session invalide |
+| Rôles et périmètre | `Http\Kernel` | `admin` / `lecteur` ; racines propres à un compte (moteur reconstruit avec ces racines à chaque requête) |
+| Anti-forçage | `Auth\Throttle` | 5 échecs en 10 minutes par IP → 429 |
+| Audit | `Auth\AuditLog` | `var/log/audit.log` (JSON par ligne), rotation à 10 Mo ; toutes les actions sensibles |
+| Erreurs PHP | `public/index.php` | `display_errors=0` : journalisées, jamais renvoyées au navigateur |
 | Anti-CSRF | `Http\Kernel` | Toute l'API exige l'en-tête `X-Poseidon: 1` (impossible à poser depuis un site tiers sans pré-requête CORS, refusée), sauf les liens de téléchargement à identifiant signé |
 | Anti-DNS-rebinding | `Http\Kernel` | Sans mot de passe : seuls `localhost`, `127.0.0.1`, `::1` et `allowed_hosts` (`POSEIDON_HOSTS`) sont servis, sinon 421 |
 | En-têtes | `Http\Kernel` | CSP `default-src 'self'`, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` ; fichiers servis avec `CSP: sandbox` |
@@ -78,7 +82,8 @@ Sur un UNC, `..` ne remonte jamais au-dessus de `\\serveur\partage`.
 
 ## Journalisation
 
-Pas de journal applicatif à ce stade : les erreurs internes passent par `error_log()` (sortie du serveur PHP). Un journal d'audit (qui a cherché quoi) est prévu avec les comptes (phase 8).
+- Erreurs internes : `error_log()` (sortie du serveur PHP ou journal PHP-FPM), jamais affichées au navigateur.
+- Audit : `Auth\AuditLog`, une ligne JSON par action (`time`, `user`, `ip`, `action` + détails : racine, filtre, fichier…). Consultation : `poseidon audit --tail=100 [--user=…]`, ou panneau « Audit » de l'interface (admin). Désactivable : `'audit' => false`.
 
 ## Internationalisation
 

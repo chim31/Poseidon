@@ -75,7 +75,7 @@ const state = {
 function splitTerms(input, mode) {
   const value = input.trim();
   if (!value) return [];
-  if (mode === 'phrase' || mode === 'regex') return [value];
+  if (mode === 'phrase' || mode === 'regex') return [value];  // proximité : découpage comme « tous les mots »
   const terms = [];
   const re = /"([^"]+)"|«\s*([^»]+?)\s*»|(\S+)/gu;
   let m;
@@ -116,11 +116,162 @@ function searchParams() {
     caseSensitive: $('opt-case').checked ? '1' : '0',
     wholeWord: $('opt-word').checked ? '1' : '0',
     ignoreAccents: $('opt-accents').checked ? '1' : '0',
+    fuzzy: $('opt-fuzzy').checked ? '1' : '0',
+    distance: $('distance').value || '5',
     archives: $('opt-archives').checked ? '1' : '0',
     target: $('opt-target').value,
     name: $('opt-name').value.trim(),
     extensions: selectedExtensions().join(','),
   };
+}
+
+/** Remplit le formulaire à partir de paramètres (historique, lien partagé, modèle). */
+function applyParams(p) {
+  if (p.root !== undefined && p.root !== '') $('root').value = p.root;
+  if (p.q !== undefined) $('q').value = p.q;
+  const mode = document.querySelector(`input[name="mode"][value="${p.mode || 'all'}"]`);
+  if (mode) mode.checked = true;
+  const bool = (v, d) => (v === undefined ? d : v === true || v === '1' || v === 'true');
+  $('opt-case').checked = bool(p.caseSensitive, false);
+  $('opt-word').checked = bool(p.wholeWord, false);
+  $('opt-accents').checked = bool(p.ignoreAccents, true);
+  $('opt-fuzzy').checked = bool(p.fuzzy, false);
+  $('opt-archives').checked = bool(p.archives, true);
+  if (p.target) $('opt-target').value = p.target;
+  if (p.name !== undefined) $('opt-name').value = p.name;
+  if (p.distance !== undefined) $('distance').value = p.distance;
+  applyExtensions(String(p.extensions || ''));
+  syncModeFields();
+  renderHoist();
+}
+
+function applyExtensions(list) {
+  const exts = list.split(/[\s,;]+/).filter(Boolean);
+  const chips = [...$('formats').querySelectorAll('.chip')];
+  chips.forEach((c) => {
+    const group = FORMAT_GROUPS[c.dataset.format];
+    c.setAttribute('aria-pressed', String(c.dataset.format === 'all' ? exts.length === 0 : !!group && exts.length > 0 && group.some((e) => exts.includes(e))));
+  });
+}
+
+function syncModeFields() {
+  $('distance-field').hidden = currentMode() !== 'near';
+}
+
+/* ------------------------------------------------------------------ Historique et partage */
+
+const HISTORY_KEYS = ['root', 'q', 'mode', 'caseSensitive', 'wholeWord', 'ignoreAccents', 'fuzzy', 'distance', 'archives', 'target', 'name', 'extensions'];
+const pick = (p) => Object.fromEntries(HISTORY_KEYS.filter((k) => p[k] !== undefined).map((k) => [k, p[k]]));
+const sameSearch = (a, b) => HISTORY_KEYS.every((k) => String(a[k] ?? '') === String(b[k] ?? ''));
+
+function recordHistory(params, matched) {
+  const entry = { ...pick(params), at: Date.now(), matched };
+  const recent = [entry, ...store.get('history', []).filter((h) => !sameSearch(h, entry))].slice(0, 15);
+  store.set('history', recent);
+}
+
+function togglePin(params) {
+  const pinned = store.get('pinned', []);
+  const exists = pinned.some((h) => sameSearch(h, params));
+  store.set('pinned', exists ? pinned.filter((h) => !sameSearch(h, params)) : [{ ...pick(params), at: Date.now() }, ...pinned].slice(0, 30));
+  renderHistory();
+}
+
+function historyItem(entry, pinned) {
+  const isPinned = pinned.some((p) => sameSearch(p, entry));
+  const modeLabel = { all: 'tous les mots', any: 'un des mots', phrase: 'phrase', regex: 'regex', near: `proximité ${entry.distance || 5}` }[entry.mode || 'all'];
+  return h('div', { class: 'history-item' },
+    h('button', { type: 'button', onclick: () => { applyParams(entry); toggleHistory(false); runSearch(); } },
+      h('span', { class: 'hq', text: entry.q }),
+      h('span', { class: 'hr', text: `${entry.root} · ${modeLabel}${entry.matched !== undefined ? ` · ${nf.format(entry.matched)} fichier(s)` : ''}` })),
+    h('button', { class: 'icon-btn pin', type: 'button', 'aria-pressed': String(isPinned), title: isPinned ? 'Retirer des recherches enregistrées' : 'Enregistrer cette recherche', onclick: () => togglePin(entry) }, icon('star')));
+}
+
+function renderHistory() {
+  const pinned = store.get('pinned', []);
+  const recent = store.get('history', []);
+  $('history-pinned').replaceChildren(h('h3', { text: 'Recherches enregistrées' }), ...(pinned.length ? pinned.map((x) => historyItem(x, pinned)) : [h('p', { class: 'history-empty', text: 'Clique sur l\'étoile d\'une recherche récente pour la garder ici.' })]));
+  $('history-recent').replaceChildren(h('h3', { text: 'Récentes' }), ...(recent.length ? recent.map((x) => historyItem(x, pinned)) : [h('p', { class: 'history-empty', text: 'Aucune recherche pour l\'instant.' })]));
+}
+
+function toggleHistory(force) {
+  const open = force ?? $('history').hidden;
+  $('history').hidden = !open;
+  $('history-btn').setAttribute('aria-expanded', String(open));
+  if (open) renderHistory();
+}
+
+function shareLink() {
+  const params = state.lastParams || searchParams();
+  return `${location.origin}${location.pathname}#${new URLSearchParams(pick(params))}`;
+}
+
+/* ------------------------------------------------------------------ Modèles d'extraction */
+
+let templates = [];
+async function loadTemplates() {
+  try {
+    templates = (await (await api('/api/templates')).json()).templates;
+  } catch { templates = []; }
+  const select = $('template-select');
+  const current = select.value;
+  select.replaceChildren(h('option', { value: '', text: 'Aucun modèle' }), ...templates.map((t) => h('option', { value: t.name, text: t.name })));
+  select.value = templates.some((t) => t.name === current) ? current : '';
+  $('template-delete').hidden = !select.value;
+}
+
+function applyTemplate(name) {
+  const t = templates.find((x) => x.name === name);
+  $('template-delete').hidden = !t;
+  if (!t) return;
+  applyParams({ ...t.query, ...t.options });
+  const x = t.extraction || {};
+  const radio = (n, v) => { const el = document.querySelector(`input[name="${n}"][value="${v}"]`); if (el) el.checked = true; };
+  radio('extract', x.extract || 'matches');
+  radio('format', x.format || 'csv');
+  $('ex-columns').value = x.columns || '';
+  $('ex-header').value = x.headerRow ?? 1;
+  const b = (v, d) => (v === undefined ? d : v === true || v === '1' || v === 'true');
+  $('ex-allrows').checked = b(x.allRows, false);
+  $('ex-source').checked = b(x.withSource, true);
+  $('ex-unique').checked = b(x.unique, false);
+  syncExtractForm();
+  toast('ok', 'Modèle chargé', `« ${t.name} » : choisis la racine puis « Sonder » ou « Créer le document ».`, { icon: 'check' });
+}
+
+async function saveTemplate() {
+  const name = $('template-name').value.trim();
+  if (!name) { $('template-name').focus(); return; }
+  const body = {
+    ...searchParams(),
+    extract: document.querySelector('input[name="extract"]:checked').value,
+    format: document.querySelector('input[name="format"]:checked').value,
+    columns: $('ex-columns').value, headerRow: $('ex-header').value,
+    allRows: $('ex-allrows').checked, withSource: $('ex-source').checked, unique: $('ex-unique').checked,
+    templateName: name,
+  };
+  try {
+    await api('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    $('template-name').value = '';
+    await loadTemplates();
+    $('template-select').value = name;
+    $('template-delete').hidden = false;
+    toast('ok', 'Modèle enregistré', `« ${name} » est rejouable sur n'importe quel dossier.`, { icon: 'check' });
+  } catch (err) {
+    toast('error', 'Enregistrement impossible', err.message);
+  }
+}
+
+async function deleteTemplate() {
+  const name = $('template-select').value;
+  if (!name) return;
+  try {
+    await api('/api/templates/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    toast('ok', 'Modèle supprimé', `« ${name} »`, { icon: 'check' });
+  } catch (err) {
+    toast('error', 'Suppression impossible', err.message);
+  }
+  loadTemplates();
 }
 
 /* ------------------------------------------------------------------ API */
@@ -231,6 +382,7 @@ function handleEvent(event, schedule) {
       break;
     case 'done':
       state.summary = event.summary;
+      if (state.lastParams) recordHistory(state.lastParams, event.summary.matched);
       $('stat-scanned').textContent = nf.format(event.summary.scanned);
       $('stat-duration').textContent = formatMs(event.summary.durationMs);
       $('stat-skipped-row').hidden = !event.summary.index;
@@ -351,7 +503,7 @@ function resultRow(r, multi) {
     h('div', { class: 'file-name' },
       h('span', { class: 'badge badge-ext', text: f.extension || '—' }),
       f.name,
-      f.archiveDepth > 0 ? h('span', { class: 'badge badge-zip', title: 'Dans une archive' }, f.archiveDepth > 1 ? `ZIP ×${f.archiveDepth}` : 'ZIP') : null,
+      f.archiveDepth > 0 ? h('span', { class: 'badge badge-zip', title: 'Dans un conteneur (archive ou courriel)' }, containerLabel(f)) : null,
       r.nameMatch ? h('span', { class: 'badge badge-name', text: 'nom' }) : null,
     ),
     h('div', { class: 'file-path', text: f.relativePath }),
@@ -377,6 +529,14 @@ function resultRow(r, multi) {
   ...state.terms.map((_, i) => h('td', { class: 'num term-col' + (r.counts[i] ? '' : ' zero'), text: nf.format(r.counts[i] || 0) })),
   multi ? h('td', { class: 'num total', text: nf.format(r.total) }) : null);
   return tr;
+}
+
+/** Type du conteneur direct (ZIP, 7Z, GZ, EML…) et profondeur d'imbrication. */
+function containerLabel(f) {
+  const parts = f.relativePath.split(' › ');
+  const container = parts[parts.length - 2] || '';
+  const kind = (container.split('.').pop() || 'archive').toUpperCase();
+  return f.archiveDepth > 1 ? `${kind} ×${f.archiveDepth}` : kind;
 }
 
 /** Texte avec correspondances surlignées ; chaque <mark> porte la couleur de son pavillon. */
@@ -434,7 +594,7 @@ async function openPreview(r) {
 
   const p = state.lastParams;
   try {
-    const res = await api('/api/preview?' + new URLSearchParams({ id: f.id, q: p.q, mode: p.mode, caseSensitive: p.caseSensitive, wholeWord: p.wholeWord, ignoreAccents: p.ignoreAccents }));
+    const res = await api('/api/preview?' + new URLSearchParams({ id: f.id, q: p.q, mode: p.mode, caseSensitive: p.caseSensitive, wholeWord: p.wholeWord, ignoreAccents: p.ignoreAccents, fuzzy: p.fuzzy, distance: p.distance }));
     const data = await res.json();
     if (state.selectedId !== f.id) return;
     state.preview = data;
@@ -802,6 +962,7 @@ async function init() {
   if (saved) {
     $('opt-archives').checked = saved.archives; $('opt-accents').checked = saved.accents;
     $('opt-case').checked = saved.case; $('opt-word').checked = saved.word; $('opt-target').value = saved.target || 'content';
+    $('opt-fuzzy').checked = !!saved.fuzzy;
   }
 
   $('login-form').addEventListener('submit', async (e) => {
@@ -817,14 +978,25 @@ async function init() {
 
   $('query-form').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
   $('q').addEventListener('input', renderHoist);
-  document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', renderHoist));
+  document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => { syncModeFields(); renderHoist(); }));
+  $('history-btn').addEventListener('click', () => toggleHistory());
+  document.addEventListener('click', (e) => { if (!$('history').hidden && !e.target.closest('#history, #history-btn')) toggleHistory(false); });
+  $('share-btn').addEventListener('click', () => copy(shareLink(), 'Lien de la recherche copié : il la rejoue à l\'ouverture.'));
+  $('report-btn').addEventListener('click', () => {
+    const p = state.lastParams || searchParams();
+    if (!p.root || !p.q) { toast('error', 'Rien à rapporter', 'Lance d\'abord une recherche.'); return; }
+    window.open('/api/report?' + new URLSearchParams({ ...p, inline: '1' }), '_blank', 'noopener');
+  });
+  $('template-select').addEventListener('change', (e) => applyTemplate(e.target.value));
+  $('template-save').addEventListener('click', saveTemplate);
+  $('template-delete').addEventListener('click', deleteTemplate);
   $('root').addEventListener('change', () => { store.set('root', $('root').value.trim()); renderRecent(); scheduleIndexStatus(); });
   $('root').addEventListener('input', scheduleIndexStatus);
   $('index-build').addEventListener('click', buildIndex);
   $('index-delete').addEventListener('click', deleteIndex);
   $('root').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); store.set('root', $('root').value.trim()); $('q').focus(); } });
-  for (const id of ['opt-archives', 'opt-accents', 'opt-case', 'opt-word', 'opt-target']) {
-    $(id).addEventListener('change', () => store.set('options', { archives: $('opt-archives').checked, accents: $('opt-accents').checked, case: $('opt-case').checked, word: $('opt-word').checked, target: $('opt-target').value }));
+  for (const id of ['opt-archives', 'opt-accents', 'opt-case', 'opt-word', 'opt-target', 'opt-fuzzy']) {
+    $(id).addEventListener('change', () => store.set('options', { archives: $('opt-archives').checked, accents: $('opt-accents').checked, case: $('opt-case').checked, word: $('opt-word').checked, target: $('opt-target').value, fuzzy: $('opt-fuzzy').checked }));
   }
 
   $('formats').addEventListener('click', (e) => {
@@ -862,7 +1034,7 @@ async function init() {
   $('pv-copy').addEventListener('click', () => copy($('pv-path').textContent, 'Chemin absolu copié.'));
   $('ex-header').addEventListener('change', () => state.preview && renderSheet(state.preview));
 
-  $('extract-btn').addEventListener('click', () => { syncExtractForm(); showPane('extract'); });
+  $('extract-btn').addEventListener('click', () => { syncExtractForm(); loadTemplates(); showPane('extract'); });
   document.querySelectorAll('input[name="extract"]').forEach((r) => r.addEventListener('change', syncExtractForm));
   $('extract').addEventListener('submit', runExtract);
   $('sum-notices-btn').addEventListener('click', showNotices);
@@ -877,7 +1049,8 @@ async function init() {
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('q').focus(); $('q').select(); }
     if (e.key === 'Escape') {
-      if (!$('browser').hidden) toggleBrowser(false);
+      if (!$('history').hidden) toggleHistory(false);
+      else if (!$('browser').hidden) toggleBrowser(false);
       else if ($('rail').classList.contains('open')) closeRail();
       else if (state.controller) state.controller.abort();
     }
@@ -886,6 +1059,16 @@ async function init() {
 
   $('empty-hoist').querySelector('.halyard').append(flagSvg(0), flagSvg(1), flagSvg(2));
   refreshIndexStatus();
+  // Lien partagé : #root=…&q=… rejoue la recherche.
+  if (location.hash.length > 1) {
+    const shared = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+    if (shared.q && shared.root) {
+      applyParams(shared);
+      history.replaceState(null, '', location.pathname);
+      scheduleIndexStatus();
+      runSearch();
+    }
+  }
   renderHoist();
 }
 

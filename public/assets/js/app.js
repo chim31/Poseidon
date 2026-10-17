@@ -217,12 +217,12 @@ async function loadTemplates() {
   const current = select.value;
   select.replaceChildren(h('option', { value: '', text: 'Aucun modèle' }), ...templates.map((t) => h('option', { value: t.name, text: t.name })));
   select.value = templates.some((t) => t.name === current) ? current : '';
-  $('template-delete').hidden = !select.value;
+  $('template-delete').hidden = !select.value || state.isAdmin === false;
 }
 
 function applyTemplate(name) {
   const t = templates.find((x) => x.name === name);
-  $('template-delete').hidden = !t;
+  $('template-delete').hidden = !t || state.isAdmin === false;
   if (!t) return;
   applyParams({ ...t.query, ...t.options });
   const x = t.extraction || {};
@@ -559,6 +559,7 @@ function highlighted(text, spans) {
 /* ------------------------------------------------------------------ Aperçu */
 
 function showPane(which) {
+  $('audit').hidden = which !== 'audit';
   $('pane-empty').hidden = which !== 'empty';
   $('preview').hidden = which !== 'preview';
   $('extract').hidden = which !== 'extract';
@@ -827,7 +828,8 @@ async function refreshIndexStatus() {
 function renderIndexState(data) {
   const st = data.stats;
   $('index-build').disabled = false;
-  $('index-delete').hidden = !data.exists;
+  $('index-delete').hidden = !data.exists || state.isAdmin === false;
+  $('index-build').hidden = state.isAdmin === false;
   $('index-build').lastChild.textContent = data.exists ? 'Mettre à jour l\'index' : 'Indexer ce dossier';
   if (!data.exists) {
     $('index-state').textContent = 'Aucun index : chaque recherche relit les fichiers. Indexer accélère les recherches suivantes.';
@@ -939,8 +941,50 @@ async function copy(text, done) {
 function closeRail() { $('rail').classList.remove('open'); }
 
 function showLogin() {
+  const users = state.info?.authMode === 'users';
+  $('login-user').hidden = !users;
+  $('login-help').textContent = users ? 'Connecte-toi avec ton identifiant Poseidon.' : 'Cette instance est protégée. Entre le mot de passe d\'accès.';
   $('login').hidden = false;
-  $('login-password').focus();
+  (users ? $('login-name') : $('login-password')).focus();
+}
+
+function renderSession(user) {
+  const mode = state.info?.authMode || 'none';
+  $('session').hidden = mode === 'none' || !user;
+  if (!user) return;
+  $('session-user').textContent = user.login;
+  $('session-role').textContent = `(${user.role})`;
+  const admin = user.role === 'admin';
+  $('audit-btn').hidden = !admin;
+  state.isAdmin = admin;
+  $('index-build').hidden = !admin;
+  $('index-delete').hidden = $('index-delete').hidden || !admin;
+  $('template-delete').dataset.admin = admin ? '1' : '0';
+}
+
+async function showAudit() {
+  try {
+    const data = await (await api('/api/audit?limit=300')).json();
+    $('audit-list').replaceChildren(...data.entries.map((e) => {
+      const details = Object.entries(e).filter(([k]) => !['time', 'user', 'ip', 'action'].includes(k)).map(([k, v]) => `${k} : ${v}`).join(' · ');
+      return h('li', {},
+        h('span', { class: 'a-head' }, h('span', { class: 'a-act', text: e.action }), h('span', { text: e.user })),
+        h('span', { class: 'a-meta', text: `${new Date(e.time).toLocaleString('fr-FR')} · ${e.ip}` }),
+        details ? h('span', { class: 'a-det', text: details }) : null);
+    }));
+    if (!data.entries.length) $('audit-list').replaceChildren(h('li', { text: 'Journal vide.' }));
+    showPane('audit');
+  } catch (err) {
+    toast('error', 'Journal indisponible', err.message);
+  }
+}
+
+/* Thème : auto (système), clair ou sombre, mémorisé dans le navigateur. */
+function applyTheme(theme) {
+  if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  $('theme-switch').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === theme)));
+  store.set('theme', theme);
 }
 
 /* ------------------------------------------------------------------ Démarrage */
@@ -954,7 +998,10 @@ async function init() {
   }
   $('stat-pdf').textContent = (state.info.pdfEngine === 'pdftotext' ? 'pdftotext' : 'PHP (secours)') + (state.info.ocr ? ' + OCR' : '');
   document.querySelector('#formats [data-format="image"]').hidden = !state.info.ocr;
+  applyTheme(store.get('theme', 'auto'));
+  $('try-demo').hidden = !state.info.demo;
   if (state.info.authRequired && !state.info.authenticated) showLogin();
+  else renderSession(state.info.user);
 
   $('root').value = store.get('root', state.info.allowedRoots[0] || '');
   renderRecent();
@@ -968,9 +1015,13 @@ async function init() {
   $('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await api('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('login-password').value }) });
+      const res = await api('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login: $('login-name').value, password: $('login-password').value }) });
+      const data = await res.json();
       $('login').hidden = true;
       $('login-error').textContent = '';
+      $('login-password').value = '';
+      renderSession(data.user);
+      refreshIndexStatus();
     } catch (err) {
       $('login-error').textContent = err.message;
     }
@@ -1044,6 +1095,10 @@ async function init() {
   $('diff-back').addEventListener('click', () => { $('diff').hidden = true; renderTable(); });
 
   $('menu').addEventListener('click', () => $('rail').classList.add('open'));
+  $('theme-switch').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) applyTheme(b.dataset.theme); });
+  $('logout').addEventListener('click', async () => { try { await api('/api/logout', { method: 'POST' }); } catch { /* session déjà close */ } location.reload(); });
+  $('audit-btn').addEventListener('click', showAudit);
+  $('audit-close').addEventListener('click', () => showPane(state.selectedId ? 'preview' : 'empty'));
   $('rail-close').addEventListener('click', closeRail);
 
   document.addEventListener('keydown', (e) => {

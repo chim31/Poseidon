@@ -44,7 +44,11 @@
   <form class="login-card" id="login-form">
     <svg class="login-mark"><use href="#i-trident"/></svg>
     <h1>Poseidon</h1>
-    <p>Cette instance est protégée. Entre le mot de passe d'accès.</p>
+    <p id="login-help">Cette instance est protégée. Entre le mot de passe d'accès.</p>
+    <div id="login-user" hidden>
+      <label class="field-label" for="login-name">Identifiant</label>
+      <input class="input" id="login-name" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
     <label class="field-label" for="login-password">Mot de passe</label>
     <input class="input" id="login-password" type="password" autocomplete="current-password" required>
     <p class="form-error" id="login-error" role="alert"></p>
@@ -120,12 +124,28 @@
       </div>
     </section>
 
+    <section class="rail-group">
+      <span class="rail-label" id="theme-label">Apparence</span>
+      <div class="theme-switch" role="group" aria-labelledby="theme-label" id="theme-switch">
+        <button type="button" data-theme="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-theme="light" aria-pressed="false">Clair</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Sombre</button>
+      </div>
+    </section>
+
     <dl class="rail-stats" id="rail-stats">
       <div><dt>Fichiers parcourus</dt><dd id="stat-scanned">—</dd></div>
       <div><dt>Durée</dt><dd id="stat-duration">—</dd></div>
       <div id="stat-skipped-row" hidden><dt>Non relus (index)</dt><dd id="stat-skipped">—</dd></div>
       <div><dt>Moteur PDF</dt><dd id="stat-pdf">—</dd></div>
     </dl>
+    <div class="session" id="session" hidden>
+      <span>Connecté : <b id="session-user"></b> <span id="session-role"></span></span>
+      <span>
+        <button class="link-btn" id="audit-btn" type="button" hidden>Audit</button>
+        <button class="link-btn" id="logout" type="button">Déconnexion</button>
+      </span>
+    </div>
   </aside>
 
   <!-- Centre : filtre et résultats -->
@@ -322,6 +342,15 @@
         </div>
       </div>
     </form>
+
+    <section class="notices" id="audit" hidden aria-labelledby="audit-title">
+      <header class="extract-head">
+        <button class="icon-btn pane-close" id="audit-close" type="button" aria-label="Fermer"><svg><use href="#i-x"/></svg></button>
+        <h2 id="audit-title">Journal d'audit</h2>
+        <p>Les 300 dernières actions : connexions, recherches, consultations, téléchargements, extractions.</p>
+      </header>
+      <ul class="audit-list" id="audit-list"></ul>
+    </section>
 
     <section class="notices" id="notices" hidden aria-labelledby="notices-title">
       <header class="extract-head">

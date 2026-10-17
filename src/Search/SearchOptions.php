@@ -23,6 +23,7 @@ final class SearchOptions
         public readonly string $target = self::TARGET_CONTENT,
         public readonly int $maxResults = 5000,
         public readonly ?string $nameFilter = null,
+        public readonly bool $useIndex = true,
     ) {
         if (!in_array($target, [self::TARGET_CONTENT, self::TARGET_NAME, self::TARGET_BOTH], true)) {
             throw new \InvalidArgumentException('Cible de recherche inconnue : ' . $target);
@@ -50,6 +51,7 @@ final class SearchOptions
             (string) ($data['target'] ?? self::TARGET_CONTENT),
             max(1, min(50000, (int) ($data['limit'] ?? 5000))),
             $name === '' ? null : $name,
+            filter_var($data['index'] ?? true, FILTER_VALIDATE_BOOL),
         );
     }
 

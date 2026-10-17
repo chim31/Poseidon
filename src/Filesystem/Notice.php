@@ -6,6 +6,7 @@ namespace Poseidon\Filesystem;
 
 /**
  * Avertissement remonté à l'utilisateur (notification dans l'interface, ligne stderr en CLI).
+ * $archiveKey : archive qui l'a produit (rejoué par l'index quand l'archive n'est pas rouverte).
  */
 final class Notice
 {
@@ -13,6 +14,7 @@ final class Notice
         public readonly string $reason,
         public readonly string $path,
         public readonly string $message,
+        public readonly ?string $archiveKey = null,
     ) {
     }
 

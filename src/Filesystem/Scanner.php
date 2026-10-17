@@ -27,14 +27,14 @@ final class Scanner
      * @param list<string> $extensions Extensions retenues (vide = toutes).
      * @return \Generator<int, Source|Notice>
      */
-    public function scan(string $root, array $extensions = [], bool $intoArchives = true): \Generator
+    public function scan(string $root, array $extensions = [], bool $intoArchives = true, ?\Closure $descend = null): \Generator
     {
         $filter = array_fill_keys(array_map('strtolower', $extensions), true);
         $root = Path::normalize($root);
         $native = Path::toNative($root);
 
         if (is_file($native)) {
-            yield from $this->file($root, dirname($root), $filter, $intoArchives);
+            yield from $this->file($root, dirname($root), $filter, $intoArchives, $descend);
 
             return;
         }
@@ -87,7 +87,7 @@ final class Scanner
                     }
                     continue;
                 }
-                yield from $this->file($path, $root, $filter, $intoArchives);
+                yield from $this->file($path, $root, $filter, $intoArchives, $descend);
             }
             // Ordre alphabétique conservé : on empile à l'envers.
             foreach (array_reverse($subdirs) as $sub) {
@@ -100,7 +100,7 @@ final class Scanner
      * @param array<string, true> $filter
      * @return \Generator<int, Source|Notice>
      */
-    private function file(string $path, string $root, array $filter, bool $intoArchives): \Generator
+    private function file(string $path, string $root, array $filter, bool $intoArchives, ?\Closure $descend = null): \Generator
     {
         $native = Path::toNative($path);
         $ext = Path::extension($path);
@@ -118,8 +118,8 @@ final class Scanner
             yield $source;
         }
 
-        if ($intoArchives && ZipWalker::isArchive($ext)) {
-            yield from $this->zips->walk($source, $filter);
+        if ($intoArchives && ZipWalker::isArchive($ext) && ($descend === null || $descend($source))) {
+            yield from $this->zips->walk($source, $filter, $descend);
         }
     }
 

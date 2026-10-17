@@ -39,6 +39,9 @@ return [
         'max_entries' => 20000,
     ],
 
+    // Jeu d'échantillons de démonstration (samples/demo), généré à la demande. POSEIDON_DEMO=0 pour le désactiver (serveurs).
+    'demo' => getenv('POSEIDON_DEMO') !== '0',
+
     // Nombre maximal de lignes-preuves conservées par fichier.
     'max_hits_per_file' => 50,
 

@@ -47,6 +47,8 @@ final class Application
                 'index', 'i' => $this->index($args, $opts),
                 'report', 'r' => $this->report($args, $opts),
                 'templates', 't' => $this->templates($args, $opts),
+                'user', 'users' => $this->user($args, $opts),
+                'audit' => $this->auditLog($opts),
                 'help', '', '--help', '-h' => $this->help(),
                 default => throw new \InvalidArgumentException("Commande inconnue : {$command}. Tape « poseidon help »."),
             };
@@ -338,6 +340,93 @@ final class Application
      * @param list<string>                $args
      * @param array<string, string|bool> $opts
      */
+    private function user(array $args, array $opts): int
+    {
+        $store = new \Poseidon\Auth\UserStore($this->config);
+        $action = $args[0] ?? 'list';
+        $login = $args[1] ?? '';
+        $roots = array_values(array_filter(explode(';', (string) ($opts['roots'] ?? ''))));
+        switch ($action) {
+            case 'list':
+                $all = $store->all();
+                if ($all === []) {
+                    echo "Aucun compte : accès sans identifiant (ou mot de passe partagé POSEIDON_PASSWORD).\nCréer un compte : poseidon user add <identifiant> --role=admin\n";
+
+                    return 0;
+                }
+                foreach ($all as $name => $u) {
+                    printf("%-24s %-8s %s\n", $name, $u['role'], ($u['roots'] ?? []) === [] ? 'toutes les racines autorisées' : implode(' ; ', array_map([Path::class, 'display'], $u['roots'])));
+                }
+
+                return 0;
+            case 'add':
+            case 'update':
+                if ($login === '') {
+                    throw new \InvalidArgumentException('Usage : poseidon user add <identifiant> [--role=admin|lecteur] [--roots="C:\\Docs;D:\\Archives"] [--password=…]');
+                }
+                $existing = $store->get($login);
+                $password = isset($opts['password']) ? (string) $opts['password'] : ($existing === null || $action === 'add' ? self::askPassword() : '');
+                $store->save($login, $password, (string) ($opts['role'] ?? $existing['role'] ?? 'lecteur'), $roots !== [] || isset($opts['roots']) ? $roots : ($existing['roots'] ?? []));
+                (new \Poseidon\Auth\AuditLog($this->config))->log('compte ' . ($existing === null ? 'créé' : 'modifié'), 'cli', ['compte' => strtolower($login)]);
+                echo 'Compte ' . ($existing === null ? 'créé' : 'mis à jour') . ' : ' . strtolower($login) . PHP_EOL;
+
+                return 0;
+            case 'passwd':
+                if ($store->get($login) === null) {
+                    throw new \InvalidArgumentException('Compte introuvable : ' . $login);
+                }
+                $u = $store->get($login);
+                $store->save($login, isset($opts['password']) ? (string) $opts['password'] : self::askPassword(), $u['role'], $u['roots']);
+                echo 'Mot de passe changé.' . PHP_EOL;
+
+                return 0;
+            case 'delete':
+                $done = $store->delete($login);
+                (new \Poseidon\Auth\AuditLog($this->config))->log('compte supprimé', 'cli', ['compte' => strtolower($login)]);
+                echo ($done ? 'Compte supprimé.' : 'Compte introuvable.') . PHP_EOL;
+
+                return $done ? 0 : 1;
+            default:
+                throw new \InvalidArgumentException('Usage : poseidon user list|add|update|passwd|delete <identifiant>');
+        }
+    }
+
+    /** Saisie du mot de passe sans écho quand le terminal le permet. */
+    private static function askPassword(): string
+    {
+        fwrite(STDERR, 'Mot de passe (10 caractères minimum) : ');
+        $silent = DIRECTORY_SEPARATOR === '/' && function_exists('shell_exec') && @stream_isatty(STDIN);
+        if ($silent) {
+            @shell_exec('stty -echo');
+        }
+        $password = trim((string) fgets(STDIN));
+        if ($silent) {
+            @shell_exec('stty echo');
+            fwrite(STDERR, PHP_EOL);
+        }
+
+        return $password;
+    }
+
+    /** @param array<string, string|bool> $opts */
+    private function auditLog(array $opts): int
+    {
+        $entries = array_reverse((new \Poseidon\Auth\AuditLog($this->config))->tail((int) ($opts['tail'] ?? 50), isset($opts['user']) ? (string) $opts['user'] : null));
+        foreach ($entries as $e) {
+            $details = array_diff_key($e, array_flip(['time', 'user', 'ip', 'action']));
+            printf("%s  %-14s %-15s %-18s %s\n", $e['time'], $e['user'], $e['ip'], $e['action'], implode(' · ', array_map(static fn ($k, $v) => "{$k}=" . (is_scalar($v) ? $v : json_encode($v)), array_keys($details), $details)));
+        }
+        if ($entries === []) {
+            echo 'Journal vide.' . PHP_EOL;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param list<string>                $args
+     * @param array<string, string|bool> $opts
+     */
     private function templates(array $args, array $opts): int
     {
         $store = new \Poseidon\Export\TemplateStore($this->config);
@@ -446,6 +535,8 @@ final class Application
           index   <racine> [--rebuild|--status|--delete]  Index plein texte (recherches instantanées)
           report  <racine> <filtre> --out=rapport.html    Rapport HTML (imprimable en PDF)
           templates [--delete=nom]         Modèles d'extraction enregistrés
+          user    list|add|update|passwd|delete <identifiant> [--role=admin|lecteur] [--roots="…;…"]
+          audit   [--tail=50] [--user=nom]  Journal d'audit (qui a cherché, ouvert, extrait quoi)
 
         Options de recherche
           --mode=all|any|phrase|regex|near Tous les mots (défaut), un des mots, phrase exacte, regex, proximité

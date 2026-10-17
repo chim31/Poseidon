@@ -216,8 +216,8 @@ final class Index
      */
     public function candidates(Query $query): ?array
     {
-        if ($query->mode === Query::REGEX) {
-            return null;
+        if ($query->mode === Query::REGEX || $query->fuzzy) {
+            return null; // motif ou mots approchés : l'index (fragments exacts) ne peut pas répondre
         }
         $parts = [];
         foreach ($query->terms as $term) {

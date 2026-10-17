@@ -61,13 +61,13 @@ Règles clés : le jaune de surlignage est réservé aux correspondances ; le so
 
 - **Racine** : saisie libre (Windows, UNC, Linux, `file://`) ; bouton dossier = navigateur de dossiers (`/api/browse`) ; 4 racines récentes mémorisées (`localStorage`).
 - **Formats** : puces groupées (PDF, Word, Excel, CSV, ODT·PPT, TXT·MD, Code·logs, Courriels, Images (OCR) si Tesseract est présent) → paramètre `extensions`. Les conteneurs (ZIP, 7z, tar, courriels) sont toujours ouverts : le filtre porte sur leurs entrées.
-- **Options** : ZIP, accents, casse, mot entier, cible (contenu / nom / les deux), filtre de nom. Mémorisées localement.
+- **Options** : ZIP, accents, casse, mot entier, fautes de frappe (recherche floue), cible (contenu / nom / les deux), filtre de nom. Mémorisées localement.
 - **Index** (si `pdo_sqlite` est disponible) : état de l'index de la racine (fichiers, taille, date), boutons « Indexer ce dossier » / « Mettre à jour l'index » (progression en direct) et suppression.
 - **Statistiques** : fichiers parcourus, durée, fichiers non relus grâce à l'index, moteur PDF.
 
 ### Filtre
 
-Saisie + 4 modes (segmenté). Les pavillons se hissent pendant la frappe, avec le même découpage que le serveur (`"phrase entre guillemets"` = un terme). `Entrée` lance la recherche.
+Saisie + 5 modes (segmenté) : tous les mots, un des mots, phrase exacte, motif (regex), **proximité** (champ « à moins de N mots » affiché avec ce mode). Bouton **Historique** dans le champ : recherches enregistrées (étoile) et 15 récentes (stockage local du navigateur) ; un clic rejoue la recherche. Les pavillons se hissent pendant la frappe, avec le même découpage que le serveur (`"phrase entre guillemets"` = un terme). `Entrée` lance la recherche.
 
 ### Synthèse et résultats
 
@@ -75,7 +75,7 @@ Saisie + 4 modes (segmenté). Les pavillons se hissent pendant la frappe, avec l
 - Tri par nom, par compteur de chaque terme ou par total.
 - Clic ou `Entrée` sur une ligne → aperçu ; flèches haut/bas pour naviguer.
 - Cases à cocher : deux fichiers → **Comparer**.
-- **Extraire** ouvre le volet d'extraction.
+- **Extraire** ouvre le volet d'extraction ; **Rapport** ouvre le rapport HTML dans un onglet ; **Lien** copie une adresse `…/#root=…&q=…` qui rejoue la recherche à l'ouverture.
 
 ### Fichiers ignorés
 
@@ -87,7 +87,7 @@ Nom, chemin absolu complet (archives comprises), taille, date, compteurs par pav
 
 ### Volet d'extraction
 
-Mode (occurrences, lignes, colonnes, liste des fichiers), colonnes et ligne d'en-tête (mode colonnes), format (CSV, XLSX, JSON, TXT, MD), source et dédoublonnage. « Créer le document » télécharge le fichier et confirme le nombre de lignes.
+**Modèle** (liste des modèles enregistrés : en choisir un remplit filtre, options et extraction), mode (occurrences, lignes, colonnes, liste des fichiers), colonnes et ligne d'en-tête (mode colonnes), format (CSV, XLSX, JSON, TXT, MD), source et dédoublonnage. « Créer le document » télécharge le fichier et confirme le nombre de lignes. En bas : « Enregistrer ces réglages comme modèle ».
 
 ### Comparaison
 

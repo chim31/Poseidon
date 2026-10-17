@@ -28,12 +28,32 @@ Transformer une recherche en jeu de données, comme un `SELECT` avec mapping.
 
 | Mode | Une ligne par… | Colonnes |
 | --- | --- | --- |
-| `matches` | occurrence trouvée | [Fichier, Chemin], Emplacement, Terme, Valeur, Groupe 1…n (groupes capturés d'une regex) |
+| `matches` | occurrence trouvée | [Fichier, Chemin], Emplacement, Terme, Valeur, puis **une colonne par groupe nommé** `(?<nom>…)` (ou Groupe 1…n pour des groupes non nommés) |
 | `lines` | ligne contenant le filtre | [Fichier, Chemin], Emplacement, Ligne |
 | `columns` | ligne de tableau correspondante | [Fichier, Chemin], Feuille, Ligne, colonnes choisies |
 | `files` | fichier trouvé | Fichier, Chemin relatif, Chemin absolu, Occurrences, une colonne par terme |
 
 Résolution d'une colonne en mode `columns` : d'abord par nom d'en-tête (insensible à la casse), sinon par lettre. Une colonne absente d'un fichier reste vide. Les colonnes de plusieurs fichiers s'additionnent dans l'ordre de première apparition.
+
+## Groupes nommés → colonnes
+
+`(?<montant>\d[\d ]*,\d{2}) ?(?<devise>€|EUR)` en mode regex produit les colonnes `montant` et `devise`. Syntaxes reconnues : `(?<nom>…)`, `(?P<nom>…)`, `(?'nom'…)`. Les groupes sont relus à la position exacte de chaque occurrence (les assertions arrière restent justes).
+
+## Modèles d'extraction (`Export\TemplateStore`)
+
+Un modèle enregistre un « SELECT » complet — filtre, mode, options de recherche, formats, extraction (mode, colonnes, format…) — **sans la racine**, pour être rejoué sur n'importe quel dossier.
+
+| Action | Interface | CLI | API |
+| --- | --- | --- | --- |
+| Enregistrer | Volet Extraire → « Enregistrer ces réglages comme modèle » | `--save-template="Nom"` avec `extract` | `POST /api/templates` |
+| Rejouer | Liste « Modèle » du volet Extraire | `extract <racine> --template="Nom" --out=…` | — (l'interface remplit le formulaire) |
+| Lister / supprimer | Liste + × | `templates`, `templates --delete="Nom"` | `GET /api/templates`, `POST /api/templates/delete` |
+
+Stockage : `var/templates/<nom>.json` (`templates_dir`). Les paramètres sont validés à l'enregistrement (regex invalide refusée). En CLI, les options passées en ligne de commande priment sur le modèle.
+
+## Rapport (`Report\HtmlReport`)
+
+Fichier HTML unique, sans script ni ressource externe : filtre et options, pavillons et totaux par terme, synthèse, tableau des fichiers, lignes-preuves surlignées, fichiers ignorés. Feuille d'impression incluse : « Imprimer → Enregistrer en PDF » donne un PDF propre. Interface : bouton **Rapport** ; CLI : `poseidon report <racine> <filtre> --out=rapport.html` ; API : `GET /api/report?…`.
 
 ## `Export\DataExtractor`
 

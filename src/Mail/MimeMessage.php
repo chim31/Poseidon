@@ -84,8 +84,10 @@ final class MimeMessage
         $data = self::decodeBody($body, strtolower($headers['content-transfer-encoding'] ?? ''));
 
         if ($type === 'message/rfc822') {
-            $inner = self::parse($data);
-            $name = $filename !== '' ? $filename : (($inner->headers['subject'] ?? 'message') . '.eml');
+            // Pas d'analyse récursive ici (profondeur bornée) : seul l'objet sert à nommer la pièce jointe.
+            [$innerHeaders] = self::split(substr($data, 0, 65536));
+            $subject = isset($innerHeaders['subject']) ? self::decodeHeader($innerHeaders['subject']) : 'message';
+            $name = $filename !== '' ? $filename : ($subject . '.eml');
             $this->attachments[] = ['name' => self::safeName($name), 'data' => $data];
 
             return;

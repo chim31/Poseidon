@@ -143,7 +143,7 @@ try {
     check('la recherche se termine', ($r['__summary']['matched'] ?? 0) >= 7);
 
     section('Extraction de données');
-    $extractor = new DataExtractor($engine, $engine->extractors(), new FileLocator($engine->guard()));
+    $extractor = new DataExtractor($engine, $engine->extractors(), $engine->locator());
     $data = $extractor->run(new Query('[A-Z]{2}\d{6}', Query::REGEX), SearchOptions::fromArray(['root' => $dir]), new ExtractionSpec(ExtractionSpec::MATCHES, unique: true, withSource: false));
     $values = array_column($data['rows'], 2);
     sort($values);
@@ -161,7 +161,7 @@ try {
 
     section('Identifiants signés');
     $id = $r['juridique/CGV_v4.pdf']['file']['id'];
-    $locator = new FileLocator($engine->guard());
+    $locator = $engine->locator();
     check('identifiant valide relu', $locator->locate($id)->name() === 'CGV_v4.pdf');
     $forged = rtrim(strtr(base64_encode((string) json_encode(['/etc/passwd', [], '/'])), '+/', '-_'), '=') . '.AAAAAAAAAAAAAAAAAAAAAA';
     check('identifiant forgé refusé', (static function () use ($locator, $forged): bool {
@@ -218,12 +218,31 @@ try {
     if (Poseidon\Archive\Bsdtar::binary() !== null) {
         check('archive 7z (bsdtar)', isset($ext['archives/historique.7z › vieux/contrat-1998.txt']));
     }
+    $loc = $engine->locator();
+    $readable = true;
+    foreach (['archives/sauvegarde.tar.gz › notes/escale.md', 'courriels/triton.msg › avenant-triton.docx', 'archives/2025.zip › clients/nereide.zip › contrats/Avenant_02.docx'] + (Poseidon\Archive\Bsdtar::binary() !== null ? [3 => 'archives/historique.7z › vieux/contrat-1998.txt'] : []) as $path) {
+        $readable = $readable && isset($ext[$path]) && strlen($loc->locate($ext[$path]['file']['id'])->bytes()) > 0;
+    }
+    check('relecture par identifiant dans tous les conteneurs (aperçu, téléchargement)', $readable && str_contains($loc->locate(search($engine, $dir, 'NR204511')['notes/serveur.log.gz › serveur.log']['file']['id'])->bytes(), 'NR204511'));
     $mail = Poseidon\Mail\MimeMessage::parse((string) file_get_contents($dir . '/courriels/relance-neptune.eml'));
     same('en-tête RFC 2047 décodé', 'Relance : préavis du contrat Neptune', $mail->headers['subject'] ?? null);
     same('expéditeur décodé', 'Amphitrite Durand <amphitrite@nereide.example>', $mail->headers['from'] ?? null);
     $big = str_repeat('grande ligne ', 600);
     $outlook = Poseidon\Mail\OutlookMessage::parse(Poseidon\Demo\CfbWriter::message('Objet é', 'A', 'B', 'corps', ['gros.txt' => $big]));
     same('pièce jointe .msg hors mini-flux (> 4 Ko)', $big, $outlook->attachments[0]['data'] ?? null);
+    $forged = Poseidon\Demo\CfbWriter::message('x', 'a', 'b', 'c');
+    $forged = substr_replace($forged, pack('V', 1), 512 + 4, 4); // secteur du répertoire qui pointe sur lui-même
+    check('conteneur OLE forgé (chaîne cyclique) refusé sans boucler', (static function () use ($forged): bool {
+        try {
+            Poseidon\Mail\OutlookMessage::parse($forged);
+        } catch (Poseidon\Filesystem\UnreadableFileException) {
+            return true;
+        }
+
+        return false;
+    })());
+    $nested = "Subject: externe\r\nContent-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\ncorps\r\n--b\r\nContent-Type: message/rfc822\r\n\r\nSubject: =?UTF-8?Q?interne_=C3=A9?=\r\n\r\ntexte interne\r\n--b--\r\n";
+    same('message joint nommé par son objet (sans analyse récursive)', 'interne é.eml', Poseidon\Mail\MimeMessage::parse($nested)->attachments[0]['name'] ?? null);
 
     if (DIRECTORY_SEPARATOR === '/' && Poseidon\Support\Process::which('pdftoppm') !== null) {
         $fake = $dir . '-tesseract.sh';
@@ -320,6 +339,43 @@ try {
     same('fichiers identiques', [], Diff::hunks(Diff::lines(['x'], ['x'])));
     $big = Diff::lines(array_map(static fn ($i) => "a{$i}", range(1, 3000)), array_map(static fn ($i) => "b{$i}", range(1, 3000)));
     check('diff très différent borné (repli grossier)', count($big) === 6000 && memory_get_peak_usage() < 512 * 1024 * 1024);
+
+    section('Recherche avancée : proximité, flou, groupes nommés');
+    $doc = new Poseidon\Extractor\Document([['l1', 'Le contrat est signé.'], ['l2', 'Bien plus loin, sans rapport, il faudra parler du préavis un jour.'], ['l3', 'La résiliation du contrat'], ['l4', 'impose un préavis de 30 jours.']]);
+    $near = (new Poseidon\Search\Matcher(new Query('contrat préavis', Query::NEAR, distance: 4)))->match($doc);
+    same('proximité : seules les occurrences groupées comptent (même sur deux lignes)', [1, 1], $near->counts);
+    same('proximité : lignes-preuves l3 et l4', ['l3', 'l4'], array_column($near->hits, 'location'));
+    $far = (new Poseidon\Search\Matcher(new Query('contrat préavis', Query::NEAR, distance: 1)))->match($doc);
+    same('proximité trop courte : aucun résultat', [0, 0], $far->counts);
+    $fuzzy = new Query('contart résilation', Query::ANY, fuzzy: true);
+    same('flou : fautes de frappe tolérées', [2, 1], (new Poseidon\Search\Matcher($fuzzy))->match($doc)->counts);
+    check('flou : mot trop différent refusé', (new Poseidon\Search\Matcher(new Query('carton', fuzzy: true)))->match($doc)->counts === [0]);
+    $named = $extractor->run(new Query('(?<code>[A-Z]{2})(?<numero>\d{6})', Query::REGEX), SearchOptions::fromArray(['root' => $dir, 'extensions' => 'md']), new ExtractionSpec(ExtractionSpec::MATCHES, withSource: false, unique: true));
+    same('groupes nommés → colonnes', ['Emplacement', 'Terme', 'Valeur', 'code', 'numero'], $named['columns']);
+    same('valeurs des groupes nommés', ['NR', '204511'], array_slice($named['rows'][0] ?? [], 3));
+    check('proximité dans les fichiers (« préavis de quatre-vingt-dix »)', $engine->collect(new Query('préavis quatre-vingt-dix', Query::NEAR, distance: 1), SearchOptions::fromArray(['root' => $dir, 'index' => '0']))['summary']['matched'] === 1);
+    same('distance de frappe : inversion = 1 faute', 1, Query::typoDistance('contart', 'contrat'));
+
+    section('Modèles d\'extraction et rapport');
+    $tplConfig = $config->with(['templates_dir' => $dir . '-templates']);
+    $store = new Poseidon\Export\TemplateStore($tplConfig);
+    $store->save('Références dossiers', ['q' => '[A-Z]{2}\d{6}', 'mode' => 'regex', 'extensions' => 'md,log', 'extract' => 'matches', 'format' => 'xlsx', 'unique' => true, 'root' => '/ne/pas/garder']);
+    $tpl = $store->get('Références dossiers');
+    same('modèle relu (sans la racine)', ['q' => '[A-Z]{2}\d{6}', 'mode' => 'regex', 'extensions' => 'md,log', 'extract' => 'matches', 'format' => 'xlsx', 'unique' => true], Poseidon\Export\TemplateStore::flatten($tpl));
+    check('modèle listé puis supprimé', count($store->all()) === 1 && $store->delete('Références dossiers') && $store->all() === []);
+    check('modèle invalide refusé', (static function () use ($store): bool {
+        try {
+            $store->save('x', ['q' => '([', 'mode' => 'regex']);
+        } catch (InvalidArgumentException) {
+            return true;
+        }
+
+        return false;
+    })());
+    Fixtures::rmdir($dir . '-templates');
+    $rq = new Query('contrat <script>');
+    $html = Poseidon\Report\HtmlReport::render($rq, SearchOptions::fromArray(['root' => $dir]), $engine->collect(new Query('contrat'), SearchOptions::fromArray(['root' => $dir])));
+    check('rapport HTML autonome (aucun script, contenu échappé, surlignage)', !str_contains($html, '<script') && str_contains($html, '&lt;script&gt;') && str_contains($html, '<mark') && str_contains($html, 'Rapport de recherche'));
 
     section('Protections contre les fichiers piégés');
     $sheet = Fixtures::zip(['xl/workbook.xml' => '<workbook><sheets><sheet name="S" r:id="rId1"/></sheets></workbook>', 'xl/_rels/workbook.xml.rels' => '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>', 'xl/worksheets/sheet1.xml' => '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>ok</t></is></c><c r="ZZZZ1" t="inlineStr"><is><t>loin</t></is></c></row></sheetData></worksheet>']);

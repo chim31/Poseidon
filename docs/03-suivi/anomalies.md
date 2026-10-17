@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 21 anomalies corrigées (dont 7 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 25 anomalies corrigées (dont 10 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -29,12 +29,16 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-019 | Le lanceur ouvre une autre application | Double-clic sur `poseidon.bat` : le navigateur affiche « Oops! An Error Occurred / 404 » d'une autre application déjà installée sur le port 8080 / l'interface Poseidon doit s'ouvrir | Avoir une application sur le port 8080, double-cliquer sur `poseidon.bat` | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Cause : le lanceur ouvrait le navigateur sur 8080 sans vérifier que Poseidon avait pu y démarrer. `serve` teste le port (connexion + attachement), prend le suivant libre (jusqu'à +20), et `--open` n'ouvre le navigateur qu'après une réponse « Poseidon » de `/api/info`. | fix/port-occupe |
 | BUG-020 | Avertissements dupliqués avec l'index | Un avertissement rejoué depuis l'index était réenregistré, et se multipliait à chaque recherche / il doit apparaître une seule fois | Indexer, puis répéter une recherche sur une racine contenant un ZIP chiffré | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Les avertissements rejoués n'ont plus de clé d'archive ; ceux d'une archive non rouverte sont filtrés par extension comme le parcours normal. Détecté par le test d'équivalence avec/sans index. | feat/index-plein-texte |
 | BUG-021 | tar.gz vide sous Windows sans bsdtar | PharData rend un contenu vide pour les .tar.gz sous Windows (PHP 8.3) / le contenu doit être lu | Test « tar.gz sans bsdtar » sous Windows | Mineure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Décompression par `gzdecode` (bornée) vers un `.tar` temporaire, lu par PharData ; lecture immédiate des entrées. | feat/formats-etendus |
+| BUG-022 | Entrées de 7z, tar, gz et courriels non relisibles | Aperçu, téléchargement et extraction d'une entrée hors ZIP échouaient (« pas une archive ZIP valide ») / toute entrée doit être relisible | Extraire un motif présent dans `serveur.log.gz` | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | La relecture par identifiant passait par le seul lecteur ZIP ; `ArchiveWalker::readChain()` relit désormais n'importe quelle chaîne de conteneurs ; le localisateur reçoit la configuration du moteur. | feat/extraction-avancee |
+| BUG-023 | Message joint dans un message : profondeur non bornée | Un `.eml` joint (message/rfc822) était réanalysé sans limite de profondeur | `.eml` forgé à imbrications multiples | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Seul l'objet du message joint est lu (64 Ko max) pour le nommer ; son contenu est parcouru comme une pièce jointe, sous la limite de profondeur des conteneurs. | feat/extraction-avancee |
+| BUG-024 | Conteneur OLE forgé : table d'allocation gonflée | Un DIFAT répété ou hors fichier pouvait gonfler la mémoire ; garde de boucle contournable | `.msg` forgé | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Secteurs FAT dédoublonnés et bornés par la taille du fichier ; chaînes suivies avec un ensemble de secteurs visités ; flux bornés à la taille du fichier. | feat/extraction-avancee |
+| BUG-025 | Dossier temporaire prévisible (échantillons) | `poseidon-7z-<pid>` dans le dossier temporaire partagé | — | Mineure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Nom aléatoire, droits 0700, échec signalé. | feat/extraction-avancee |
 
 ## Limitations connues
 
 | ID | Titre | Description | Gravité | Statut | Contournement | Évolution prévue |
 | --- | --- | --- | --- | --- | --- | --- |
-| LIM-001 | Phrase coupée par un retour à la ligne | En mode « Phrase exacte », une phrase répartie sur deux lignes (PDF mis en page) n'est pas comptée | Mineure | Reporté | Mode « Tous les mots » | Recherche de proximité (phase 7) |
+| LIM-001 | Phrase coupée par un retour à la ligne | En mode « Phrase exacte », une phrase répartie sur deux lignes (PDF mis en page) n'est pas comptée | Mineure | Corrigé (phase 7) | Mode « Proximité », distance 0 ou 1 : les lignes sont enchaînées | Mode proximité |
 | LIM-002 | Partages UNC sous Linux/WSL | PHP ne lit pas `\\serveur\partage` directement | Mineure | Reporté | Monter le partage + `network_mounts` | Accès SMB via `smbclient` (à étudier) |
 | LIM-003 | Serveur intégré mono-processus sous Windows | Pendant une longue recherche, l'aperçu attend la fin | Mineure | Reporté | Apache/Nginx + PHP-FPM | Index persistant (phase 5) |
 | LIM-004 | PDF scannés | Aucun texte sans OCR | Majeure | Corrigé (phase 6) | Installer Tesseract | OCR Tesseract intégré |

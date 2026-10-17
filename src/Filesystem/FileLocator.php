@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Poseidon\Filesystem;
 
-use Poseidon\Archive\ZipHandle;
+use Poseidon\Archive\ArchiveWalker;
 use Poseidon\Support\Path;
 
 /**
@@ -13,8 +13,11 @@ use Poseidon\Support\Path;
  */
 final class FileLocator
 {
-    public function __construct(private RootGuard $guard)
+    private ArchiveWalker $archives;
+
+    public function __construct(private RootGuard $guard, ?ArchiveWalker $archives = null)
     {
+        $this->archives = $archives ?? new ArchiveWalker(\Poseidon\Config::load());
     }
 
     public function locate(string $id): Source
@@ -26,7 +29,8 @@ final class FileLocator
         if (!is_file($native)) {
             throw new \InvalidArgumentException('Fichier introuvable : il a peut-être été déplacé ou supprimé.');
         }
-        $loader = $chain === [] ? null : static fn (): string => ZipHandle::readChain($diskPath, $chain);
+        $archives = $this->archives;
+        $loader = $chain === [] ? null : static fn (): string => $archives->readChain($diskPath, $chain);
         $size = $chain === [] ? (int) @filesize($native) : 0;
 
         return new Source($diskPath, $chain, $root, $size, (int) @filemtime($native), $loader);

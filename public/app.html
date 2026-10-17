@@ -34,6 +34,8 @@
   <symbol id="i-extract" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 13v8M13.5 17.5 17 21l3.5-3.5"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></symbol>
   <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5M4 4v4.5h4.5M12 8v4.5l3 2"/></symbol>
 </svg>
@@ -98,6 +100,7 @@
       <label class="check"><input type="checkbox" id="opt-accents" checked><span>Ignorer les accents</span></label>
       <label class="check"><input type="checkbox" id="opt-case"><span>Respecter la casse</span></label>
       <label class="check"><input type="checkbox" id="opt-word"><span>Mot entier</span></label>
+      <label class="check"><input type="checkbox" id="opt-fuzzy"><span>Tolérer les fautes de frappe</span></label>
       <label class="rail-label rail-label-sub" for="opt-target">Chercher dans</label>
       <select class="rail-input" id="opt-target">
         <option value="content">Le contenu</option>
@@ -137,6 +140,7 @@
         <svg class="query-icon"><use href="#i-search"/></svg>
         <label for="q" class="sr-only">Filtre de recherche</label>
         <input class="query-input" id="q" name="q" type="text" autocomplete="off" spellcheck="false" placeholder="Mots, « phrase » ou motif">
+        <button class="icon-btn history-btn" id="history-btn" type="button" aria-expanded="false" aria-controls="history" title="Historique et recherches enregistrées"><svg><use href="#i-history"/></svg><span class="sr-only">Historique</span></button>
         <button class="btn btn-primary query-go" id="go" type="submit">Sonder</button>
       </div>
       <div class="query-under">
@@ -146,7 +150,13 @@
           <label><input type="radio" name="mode" value="any"><span>Un des mots</span></label>
           <label><input type="radio" name="mode" value="phrase"><span>Phrase exacte</span></label>
           <label><input type="radio" name="mode" value="regex"><span>Motif (regex)</span></label>
+          <label><input type="radio" name="mode" value="near"><span>Proximité</span></label>
         </div>
+        <label class="distance" id="distance-field" hidden>à moins de <input class="input input-num mono" id="distance" type="number" min="0" max="100" value="5"> mots</label>
+      </div>
+      <div class="history" id="history" hidden>
+        <div class="history-section" id="history-pinned"></div>
+        <div class="history-section" id="history-recent"></div>
       </div>
     </form>
 
@@ -165,6 +175,8 @@
       <div class="term-totals" id="term-totals"></div>
       </div>
       <div class="summary-actions">
+        <button class="btn btn-quiet" id="share-btn" type="button" title="Copier un lien qui rejoue cette recherche"><svg><use href="#i-link"/></svg>Lien</button>
+        <button class="btn btn-quiet" id="report-btn" type="button" title="Rapport HTML de la recherche (imprimable en PDF)"><svg><use href="#i-file"/></svg>Rapport</button>
         <button class="btn btn-quiet" id="compare-btn" type="button" disabled title="Coche deux fichiers pour les comparer"><svg><use href="#i-compare"/></svg>Comparer</button>
         <button class="btn btn-outline" id="extract-btn" type="button"><svg><use href="#i-extract"/></svg>Extraire</button>
       </div>
@@ -189,6 +201,8 @@
           <div><dt>Plusieurs mots</dt><dd><code>contrat préavis</code> : fichiers contenant les deux</dd></div>
           <div><dt>Phrase groupée</dt><dd><code>"préavis de 30 jours" contrat</code></dd></div>
           <div><dt>Motif</dt><dd><code>[A-Z]{2}\d{6}</code> en mode regex, puis Extraire</dd></div>
+          <div><dt>Colonnes nommées</dt><dd><code>(?&lt;montant&gt;\d+,\d{2}) ?€</code> : une colonne « montant »</dd></div>
+          <div><dt>Proximité</dt><dd><code>contrat résiliation</code> en mode Proximité, à moins de 5 mots</dd></div>
         </dl>
       </div>
 
@@ -260,6 +274,15 @@
         <h2>Extraire vers un document</h2>
         <p>Ne garde que ce que le filtre désigne, dans tous les fichiers trouvés.</p>
       </header>
+      <fieldset class="extract-group" id="templates-group">
+        <legend>Modèle</legend>
+        <div class="field-row">
+          <label class="sr-only" for="template-select">Modèle enregistré</label>
+          <select class="input" id="template-select"><option value="">Aucun modèle</option></select>
+          <button class="icon-btn" id="template-delete" type="button" title="Supprimer ce modèle" hidden><svg><use href="#i-x"/></svg><span class="sr-only">Supprimer le modèle</span></button>
+        </div>
+        <p class="hint">Un modèle rejoue un filtre, ses options et l'extraction sur n'importe quel dossier.</p>
+      </fieldset>
       <fieldset class="extract-group">
         <legend>Quoi extraire</legend>
         <label class="option"><input type="radio" name="extract" value="matches" checked><span><b>Les occurrences</b><small>Chaque valeur trouvée, une par ligne. Idéal avec un motif regex.</small></span></label>
@@ -291,6 +314,13 @@
         <label class="check check-dark"><input type="checkbox" id="ex-unique"><span>Supprimer les doublons</span></label>
       </fieldset>
       <button class="btn btn-primary extract-go" id="extract-go" type="submit"><svg><use href="#i-download"/></svg>Créer le document</button>
+      <div class="save-template">
+        <label class="field-label" for="template-name">Enregistrer ces réglages comme modèle</label>
+        <div class="field-row">
+          <input class="input" id="template-name" type="text" maxlength="80" placeholder="ex. Références clients">
+          <button class="btn btn-outline btn-sm" id="template-save" type="button">Enregistrer</button>
+        </div>
+      </div>
     </form>
 
     <section class="notices" id="notices" hidden aria-labelledby="notices-title">

@@ -12,6 +12,17 @@ Construit à partir de la saisie : `new Query($input, $mode, $caseSensitive, $wh
 | `all` (défaut) | saisie découpée en mots | **tous** les termes apparaissent |
 | `any` | saisie découpée en mots | **au moins un** terme apparaît |
 | `regex` | la saisie = motif PCRE | le motif correspond (validé à la construction) |
+| `near` | saisie découpée en mots | **tous** les termes, à moins de `distance` mots d'une occurrence du premier terme, **même sur plusieurs lignes** |
+
+Options supplémentaires : `distance` (proximité, 5 par défaut, 0 à 100) et `fuzzy` (recherche floue).
+
+### Recherche floue
+
+Avec `fuzzy`, chaque terme d'un seul mot (3 lettres ou plus, hors regex) est comparé aux **mots** du texte, sans casse ni accents, par la distance de Damerau-Levenshtein restreinte (`Query::typoDistance`) : une lettre en trop, en moins, remplacée ou **deux lettres inversées** comptent pour une faute. Tolérance : 0 faute sous 4 lettres, 1 faute de 4 à 7 lettres, 2 fautes à partir de 8. `contart` trouve `contrat`, `résilation` trouve `résiliation`. L'index n'est pas utilisé en mode flou.
+
+### Points d'entrée communs
+
+`Query::find($texte, $terme)` (positions en octets), `Query::count()`, `Query::isFuzzy()` : le `Matcher`, l'aperçu, l'extraction et la recherche dans les noms passent tous par là, pour rester cohérents.
 
 Découpage : espaces ; `"…"` ou `« … »` gardent une expression groupée ; ponctuation collée retirée (`contrat,` → `contrat`) ; doublons supprimés.
 
@@ -24,9 +35,10 @@ Compilation (une regex par terme, drapeau `u`, `i` sauf casse respectée) :
 
 `match(Document): MatchResult`
 
-1. Pré-filtre sur le texte complet : en mode `all`, abandon dès qu'un terme manque ; abandon si aucun terme n'est présent.
-2. Comptage ligne par ligne, avec les positions (`[début, longueur, terme]` en caractères).
-3. Conservation des `max_hits_per_file` premières lignes-preuves ; les lignes de plus de 400 caractères sont recadrées autour de la première correspondance.
+1. Pré-filtre sur le texte complet : en modes `all` et `near`, abandon dès qu'un terme manque ; abandon si aucun terme n'est présent.
+2. `spans(Document)` : toutes les correspondances par ligne (`[début, longueur, terme, octet]`) ; en mode proximité, seules les occurrences groupées sont gardées (positions comptées en mots depuis le début du document, lignes enchaînées).
+3. Comptage à partir de ces positions.
+4. Conservation des `max_hits_per_file` premières lignes-preuves ; les lignes de plus de 400 caractères sont recadrées autour de la première correspondance.
 
 `MatchResult` : `counts` (par terme), `hits`, `hitLines`, `total()`.
 

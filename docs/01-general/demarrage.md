@@ -128,6 +128,7 @@ Exemple Windows : `set POSEIDON_PASSWORD=…` puis `poseidon.bat`.
 | `pdf_timeout` | 30 s | Délai maximal d'analyse d'un PDF |
 | `cache_dir` | `var/cache` | Cache du texte extrait ; vide = désactivé |
 | `index_dir` | `var/index` | Index plein texte (un fichier SQLite par racine) |
+| `templates_dir` | `var/templates` | Modèles d'extraction (JSON) |
 
 Ne jamais écrire de mot de passe dans un fichier suivi par Git.
 
@@ -144,6 +145,9 @@ php bin/poseidon help
 | Phrase exacte | `php bin/poseidon search ./docs "préavis de 30 jours" --mode=phrase` |
 | Phrase groupée parmi d'autres mots | `php bin/poseidon search ./docs '"préavis de 30 jours" contrat'` |
 | Motif | `php bin/poseidon search ./docs "[A-Z]{2}\d{6}" --mode=regex` |
+| Mots proches (≤ 5 mots d'écart, même sur 2 lignes) | `php bin/poseidon search ./docs "contrat résiliation" --mode=near --distance=5` |
+| Avec fautes de frappe | `php bin/poseidon search ./docs "contart" --fuzzy` |
+| Rapport HTML / PDF | `php bin/poseidon report ./docs "résiliation" --out=rapport.html` |
 | Seulement les PDF et DOCX | `... --ext=pdf,docx` |
 | Juste la liste des fichiers (`grep -l`) | `... -l` |
 | Dans les noms de fichiers (`ls -R \| grep`) | `... --target=name` |
@@ -152,6 +156,9 @@ php bin/poseidon help
 | Sortie JSON | `... --json` |
 | Extraire des références vers Excel | `php bin/poseidon extract ./docs "[A-Z]{2}\d{6}" --mode=regex --unique --out=refs.xlsx` |
 | Extraire des colonnes | `php bin/poseidon extract ./finance "résilié" --extract=columns --columns=Client,Montant --out=out.csv` |
+| Colonnes nommées par la regex | `php bin/poseidon extract ./factures "(?<montant>\d+,\d{2}) ?€" --mode=regex --out=montants.xlsx` |
+| Enregistrer puis rejouer un modèle | `... --save-template="Montants"` puis `php bin/poseidon extract ./factures-novembre --template="Montants" --out=nov.xlsx` |
+| Lister les modèles | `php bin/poseidon templates` |
 | Afficher le texte d'un PDF (`cat`) | `php bin/poseidon cat rapport.pdf` |
 | Comparer deux fichiers | `php bin/poseidon diff v1.docx v2.docx` |
 
@@ -181,7 +188,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `82 tests réussis` sous Linux, `77` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `98 tests réussis` sous Linux, `93` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
@@ -237,7 +244,7 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | PDF trouvés mais texte vide | PDF scanné (image) | Installer Tesseract (+ langue `fra`) et `pdftoppm` : l'OCR s'active seul (`poseidon info` l'indique) |
 | Les 7z/RAR ne sont pas ouverts | `bsdtar` absent (Linux/macOS) | Installer `libarchive-tools` / `libarchive` |
 | Texte de PDF mal découpé | Lecteur PHP de secours utilisé | Installer `pdftotext` (poppler) |
-| Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Tous les mots » (voir [anomalies](../03-suivi/anomalies.md)) |
+| Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Proximité » (distance 0 ou 1) : il enchaîne les lignes |
 | L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Indexer la racine (recherches beaucoup plus courtes), ou servir via Apache/Nginx (§ 8) |
 | Le bloc « Index » n'apparaît pas | `pdo_sqlite` absent ou SQLite < 3.43 | Activer `extension=pdo_sqlite` dans `php.ini` |
 | « Hôte non autorisé » (code 421) | Accès par un nom ou une IP autre que `localhost` sans mot de passe | Définir `POSEIDON_PASSWORD`, ou ajouter l'hôte à `POSEIDON_HOSTS` |

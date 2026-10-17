@@ -8,6 +8,7 @@ use Poseidon\Extractor\Document;
 use Poseidon\Extractor\ExtractorRegistry;
 use Poseidon\Filesystem\FileLocator;
 use Poseidon\Filesystem\UnreadableFileException;
+use Poseidon\Search\Matcher;
 use Poseidon\Search\Query;
 use Poseidon\Search\SearchEngine;
 use Poseidon\Search\SearchOptions;
@@ -67,12 +68,17 @@ final class DataExtractor
         if ($spec->mode === ExtractionSpec::COLUMNS) {
             $columns = [...($spec->withSource ? ['Fichier', 'Chemin relatif'] : []), 'Feuille', 'Ligne', ...$dynamicColumns];
         } elseif ($spec->mode === ExtractionSpec::MATCHES) {
-            $groups = 0;
-            foreach ($rows as $row) {
-                $groups = max($groups, count($row) - count($columns));
-            }
-            for ($g = 1; $g <= $groups; $g++) {
-                $columns[] = 'Groupe ' . $g;
+            $named = self::groupNames($query);
+            if ($named !== []) {
+                array_push($columns, ...$named);
+            } else {
+                $groups = 0;
+                foreach ($rows as $row) {
+                    $groups = max($groups, count($row) - count($columns));
+                }
+                for ($g = 1; $g <= $groups; $g++) {
+                    $columns[] = 'Groupe ' . $g;
+                }
             }
         }
 
@@ -113,16 +119,22 @@ final class DataExtractor
     /** @return \Generator<int, list<string>> */
     private function matches(Document $document, Query $query): \Generator
     {
-        foreach ($document->lines as [$location, $line]) {
-            foreach ($query->patterns as $i => $pattern) {
-                if (preg_match_all($pattern, $line, $m, PREG_SET_ORDER) > 0) {
-                    foreach ($m as $groups) {
-                        if ($groups[0] === '') {
-                            continue;
+        $named = self::groupNames($query);
+        foreach ((new Matcher($query, PHP_INT_MAX))->spans($document) as $index => $spans) {
+            [$location, $line] = $document->lines[$index];
+            foreach ($spans as [$pos, $len, $term, $byte]) {
+                $value = mb_substr($line, $pos, $len);
+                $groups = [];
+                if ($query->mode === Query::REGEX && preg_match($query->patterns[$term], $line, $g, 0, $byte) === 1) {
+                    if ($named !== []) {
+                        foreach ($named as $name) {
+                            $groups[] = (string) ($g[$name] ?? '');
                         }
-                        yield [$location, $query->terms[$i], $groups[0], ...array_slice($groups, 1)];
+                    } else {
+                        $groups = array_map('strval', array_slice(array_values(array_filter($g, 'is_int', ARRAY_FILTER_USE_KEY)), 1));
                     }
                 }
+                yield [$location, $query->terms[$term], $value, ...$groups];
             }
         }
     }
@@ -130,14 +142,21 @@ final class DataExtractor
     /** @return \Generator<int, list<string>> */
     private function lines(Document $document, Query $query): \Generator
     {
-        foreach ($document->lines as [$location, $line]) {
-            foreach ($query->patterns as $pattern) {
-                if (preg_match($pattern, $line) === 1) {
-                    yield [$location, $line];
-                    break;
-                }
-            }
+        foreach (array_keys((new Matcher($query, PHP_INT_MAX))->spans($document)) as $index) {
+            yield $document->lines[$index];
         }
+    }
+
+    /** @return list<string> Noms des groupes capturants nommés d'une expression régulière. */
+    public static function groupNames(Query $query): array
+    {
+        if ($query->mode !== Query::REGEX) {
+            return [];
+        }
+        preg_match_all("/\\(\\?(?:P?<([A-Za-z_]\\w*)>|'([A-Za-z_]\\w*)')/", $query->input, $m);
+        $names = array_values(array_filter(array_merge($m[1], $m[2]), static fn (string $n): bool => $n !== ''));
+
+        return array_values(array_unique($names));
     }
 
     /**
@@ -190,7 +209,7 @@ final class DataExtractor
                 }
                 if (!$spec->allRows) {
                     $line = implode(' | ', $cells);
-                    $counts = array_map(static fn (string $p): int => (int) preg_match($p, $line), $query->patterns);
+                    $counts = array_map(static fn (int $i): int => $query->count($line, $i), array_keys($query->terms));
                     if (!$query->isMatch($counts)) {
                         continue;
                     }

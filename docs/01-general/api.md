@@ -34,7 +34,9 @@ Utilisés par `/api/search`, `/api/preview` et `/api/extract`.
 | --- | --- | --- | --- |
 | `root` | chaîne | — | Racine : `/home/…`, `C:\…`, `\\serveur\partage`, `file://…` |
 | `q` | chaîne | — | Filtre |
-| `mode` | `all` \| `any` \| `phrase` \| `regex` | `all` | Tous les mots, un des mots, phrase exacte, expression régulière |
+| `mode` | `all` \| `any` \| `phrase` \| `regex` \| `near` | `all` | Tous les mots, un des mots, phrase exacte, expression régulière, proximité |
+| `distance` | entier 0–100 | 5 | Proximité : nombre maximal de mots entre les termes |
+| `fuzzy` | `0`/`1` | `0` | Tolérer les fautes de frappe |
 | `caseSensitive` | `0`/`1` | `0` | Respecter la casse |
 | `wholeWord` | `0`/`1` | `0` | Mot entier |
 | `ignoreAccents` | `0`/`1` | `1` | `e` trouve aussi `é`, `è`, `ê`… |
@@ -144,6 +146,19 @@ Corps `{"root": "…", "rebuild": false}`. Construit ou met à jour l'index ; r�
 ### `POST /api/index/delete`
 
 Corps `{"root": "…"}` → `{"deleted": true}`.
+
+### `GET /api/report?…&inline=1`
+
+Rapport HTML autonome de la recherche (mêmes paramètres que `/api/search`). `inline=1` l'affiche, sinon téléchargement. Servi avec une CSP qui interdit tout script. Comme `/api/file`, accessible par simple lien (sans en-tête `X-Poseidon`).
+
+### `GET /api/templates` · `POST /api/templates` · `POST /api/templates/delete`
+
+Modèles d'extraction. Enregistrement : paramètres de recherche + d'extraction + `templateName` (+ `templateDescription`). Suppression : `{"name": "…"}`.
+
+```json
+{ "templates": [ { "name": "Références dossiers", "description": "", "query": { "q": "[A-Z]{2}\\d{6}", "mode": "regex" },
+  "options": { "extensions": "md,log" }, "extraction": { "extract": "matches", "format": "xlsx", "unique": true }, "savedAt": "2026-10-17T03:01:00+02:00" } ] }
+```
 
 ### `POST /api/login` / `POST /api/logout`
 

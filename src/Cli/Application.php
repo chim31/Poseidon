@@ -45,6 +45,8 @@ final class Application
                 'info' => $this->info(),
                 'demo' => $this->demo($args),
                 'index', 'i' => $this->index($args, $opts),
+                'report', 'r' => $this->report($args, $opts),
+                'templates', 't' => $this->templates($args, $opts),
                 'help', '', '--help', '-h' => $this->help(),
                 default => throw new \InvalidArgumentException("Commande inconnue : {$command}. Tape « poseidon help »."),
             };
@@ -112,15 +114,46 @@ final class Application
     /** @param list<string> $args @param array<string, string|bool> $opts */
     private function extract(array $args, array $opts): int
     {
+        $templates = new \Poseidon\Export\TemplateStore($this->config);
+        if (isset($opts['template'])) {
+            $template = $templates->get((string) $opts['template']) ?? throw new \InvalidArgumentException('Modèle introuvable : ' . $opts['template'] . '. Liste : poseidon templates');
+            $saved = \Poseidon\Export\TemplateStore::flatten($template);
+            // Les options de la ligne de commande priment sur le modèle.
+            $opts += array_filter([
+                'mode' => $saved['mode'] ?? null, 'ext' => $saved['extensions'] ?? null, 'extract' => $saved['extract'] ?? null,
+                'format' => $saved['format'] ?? null, 'columns' => $saved['columns'] ?? null, 'headerRow' => $saved['headerRow'] ?? null,
+                'distance' => $saved['distance'] ?? null, 'target' => $saved['target'] ?? null, 'name' => $saved['name'] ?? null,
+            ], static fn ($v): bool => $v !== null && $v !== '');
+            foreach (['caseSensitive' => 'case', 'wholeWord' => 'word', 'fuzzy' => 'fuzzy', 'allRows' => 'allRows', 'unique' => 'unique'] as $key => $flag) {
+                if (filter_var($saved[$key] ?? false, FILTER_VALIDATE_BOOL)) {
+                    $opts[$flag] = true;
+                }
+            }
+            if (isset($saved['ignoreAccents']) && !filter_var($saved['ignoreAccents'], FILTER_VALIDATE_BOOL)) {
+                $opts['accents'] = true;
+            }
+            if (count($args) === 1) {
+                $args[] = (string) ($saved['q'] ?? '');
+            }
+        }
         if (count($args) < 2) {
-            throw new \InvalidArgumentException('Usage : poseidon extract <racine> <filtre> --out=resultat.csv [--extract=matches|lines|columns|files] [--columns=A,C]');
+            throw new \InvalidArgumentException('Usage : poseidon extract <racine> <filtre> --out=resultat.csv [--extract=matches|lines|columns|files] [--columns=A,C] [--template=nom] [--save-template=nom]');
         }
         $engine = new SearchEngine($this->config);
         $out = (string) ($opts['out'] ?? '');
         $format = (string) ($opts['format'] ?? ($out !== '' ? Path::extension($out) : 'csv'));
         $spec = ExtractionSpec::fromArray(['extract' => $opts['extract'] ?? 'matches', 'format' => $format ?: 'csv'] + $opts);
-        $extractor = new DataExtractor($engine, $engine->extractors(), new FileLocator($engine->guard()));
-        $data = $extractor->run($this->query($args[1], $opts), $this->options($args[0], $opts), $spec);
+        $query = $this->query($args[1], $opts);
+        $extractor = new DataExtractor($engine, $engine->extractors(), $engine->locator());
+        $data = $extractor->run($query, $this->options($args[0], $opts), $spec);
+        if (isset($opts['save-template'])) {
+            $templates->save((string) $opts['save-template'], $query->toArray() + [
+                'extensions' => (string) ($opts['ext'] ?? ''), 'target' => (string) ($opts['target'] ?? 'content'),
+                'extract' => $spec->mode, 'format' => $spec->format, 'columns' => implode(',', $spec->columns),
+                'headerRow' => $spec->headerRow, 'allRows' => $spec->allRows, 'withSource' => $spec->withSource, 'unique' => $spec->unique,
+            ]);
+            fwrite(STDERR, 'Modèle enregistré : ' . $opts['save-template'] . PHP_EOL);
+        }
 
         foreach ($data['notices'] as $n) {
             fwrite(STDERR, $this->paint('35', '⚠ ' . $n['reason']) . ' ' . $n['path'] . ' — ' . $n['message'] . PHP_EOL);
@@ -285,6 +318,51 @@ final class Application
      * @param list<string>                $args
      * @param array<string, string|bool> $opts
      */
+    private function report(array $args, array $opts): int
+    {
+        if (count($args) < 2) {
+            throw new \InvalidArgumentException('Usage : poseidon report <racine> <filtre> --out=rapport.html');
+        }
+        $engine = new SearchEngine($this->config);
+        $query = $this->query($args[1], $opts);
+        $options = $this->options($args[0], $opts);
+        $html = \Poseidon\Report\HtmlReport::render($query, $options, $engine->collect($query, $options));
+        $out = (string) ($opts['out'] ?? 'rapport-poseidon.html');
+        file_put_contents($out, $html);
+        fwrite(STDERR, "Rapport écrit dans {$out} (ouvre-le dans un navigateur ; Ctrl+P pour un PDF)." . PHP_EOL);
+
+        return 0;
+    }
+
+    /**
+     * @param list<string>                $args
+     * @param array<string, string|bool> $opts
+     */
+    private function templates(array $args, array $opts): int
+    {
+        $store = new \Poseidon\Export\TemplateStore($this->config);
+        if (isset($opts['delete'])) {
+            echo ($store->delete((string) $opts['delete']) ? 'Modèle supprimé.' : 'Modèle introuvable.') . PHP_EOL;
+
+            return 0;
+        }
+        $all = $store->all();
+        if ($all === []) {
+            echo "Aucun modèle. Enregistre-en un : poseidon extract <racine> <filtre> --out=x.csv --save-template=\"Mon modèle\"" . PHP_EOL;
+
+            return 0;
+        }
+        foreach ($all as $t) {
+            printf("%-28s %-12s %-8s %s%s\n", $t['name'], $t['extraction']['extract'] ?? 'matches', $t['extraction']['format'] ?? 'csv', $t['query']['q'] ?? '', ($t['description'] ?? '') !== '' ? '  — ' . $t['description'] : '');
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param list<string>                $args
+     * @param array<string, string|bool> $opts
+     */
     private function index(array $args, array $opts): int
     {
         if ($args === []) {
@@ -366,9 +444,13 @@ final class Application
           info                             Configuration et formats pris en charge
           demo    [dossier]                Générer les échantillons synthétiques de démonstration
           index   <racine> [--rebuild|--status|--delete]  Index plein texte (recherches instantanées)
+          report  <racine> <filtre> --out=rapport.html    Rapport HTML (imprimable en PDF)
+          templates [--delete=nom]         Modèles d'extraction enregistrés
 
         Options de recherche
-          --mode=all|any|phrase|regex      Tous les mots (défaut), un des mots, phrase exacte, expression régulière
+          --mode=all|any|phrase|regex|near Tous les mots (défaut), un des mots, phrase exacte, regex, proximité
+          --distance=5                     Proximité : nombre maximal de mots entre les termes
+          --fuzzy                          Tolérer les fautes de frappe (mots proches)
           --case                           Respecter la casse
           --word                           Mot entier uniquement
           --accents                        Respecter les accents (ignorés par défaut)
@@ -388,12 +470,18 @@ final class Application
           --header-row=1                   Ligne d'en-tête (0 = aucune)
           --all-rows                       Toutes les lignes des tableaux, pas seulement celles qui correspondent
           --unique                         Dédoublonner
+          --template=nom                   Rejouer un modèle (filtre, options et extraction)
+          --save-template=nom              Enregistrer cette extraction comme modèle
 
         Exemples
           poseidon search ~/Documents "contrat résiliation" --ext=pdf,docx
           poseidon search "\\\\srv\\juridique" "\"préavis de 3 mois\"" --mode=any
           poseidon extract ./exports "[A-Z]{2}\\d{6}" --mode=regex --out=references.xlsx
           poseidon extract ./finance "résilié" --extract=columns --columns=Client,Montant --out=resilies.csv
+          poseidon extract ./factures "(?<montant>\\d+,\\d{2}) ?€" --mode=regex --out=montants.xlsx --save-template=Montants
+          poseidon extract ./factures-novembre --template=Montants --out=novembre.xlsx
+          poseidon search ./juridique "contrat préavis" --mode=near --distance=8
+          poseidon report ./juridique "résiliation" --out=rapport.html
 
         TXT;
 
@@ -409,6 +497,8 @@ final class Application
             isset($opts['case']),
             isset($opts['word']),
             !isset($opts['accents']),
+            (int) ($opts['distance'] ?? 5),
+            isset($opts['fuzzy']),
         );
     }
 

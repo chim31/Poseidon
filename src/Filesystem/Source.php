@@ -119,6 +119,18 @@ final class Source
         $this->bytes = null;
     }
 
+    /** Identité stable (chemin disque + chaîne d'archives), indépendante de la date. */
+    public function key(): string
+    {
+        return self::keyFor($this->diskPath, $this->innerPath);
+    }
+
+    /** @param list<string> $chain */
+    public static function keyFor(string $disk, array $chain): string
+    {
+        return Path::normalize($disk) . "\x1F" . json_encode(array_values($chain), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     /** Clé de cache stable tant que le fichier n'a pas changé. */
     public function cacheKey(): string
     {

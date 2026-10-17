@@ -231,6 +231,8 @@ function handleEvent(event, schedule) {
       state.summary = event.summary;
       $('stat-scanned').textContent = nf.format(event.summary.scanned);
       $('stat-duration').textContent = formatMs(event.summary.durationMs);
+      $('stat-skipped-row').hidden = !event.summary.index;
+      if (event.summary.index) $('stat-skipped').textContent = nf.format(event.summary.index.skippedFiles);
       if (event.summary.truncated) toast('warn', 'Résultats tronqués', 'La limite de résultats est atteinte : affine le filtre.');
       break;
     default:
@@ -637,6 +639,91 @@ function toast(kind, title, message = '', { path = null, action = null, icon: ic
   return el;
 }
 
+/* ------------------------------------------------------------------ Index */
+
+let indexTimer = null;
+function scheduleIndexStatus() {
+  clearTimeout(indexTimer);
+  indexTimer = setTimeout(refreshIndexStatus, 350);
+}
+
+async function refreshIndexStatus() {
+  if (!state.info?.indexAvailable) return;
+  const root = $('root').value.trim();
+  $('index-group').hidden = !root;
+  if (!root) return;
+  try {
+    const data = await (await api('/api/index?' + new URLSearchParams({ root }))).json();
+    renderIndexState(data);
+  } catch {
+    $('index-state').textContent = 'Dossier introuvable : pas d\'index.';
+    $('index-build').disabled = true;
+    $('index-delete').hidden = true;
+  }
+}
+
+function renderIndexState(data) {
+  const st = data.stats;
+  $('index-build').disabled = false;
+  $('index-delete').hidden = !data.exists;
+  $('index-build').lastChild.textContent = data.exists ? 'Mettre à jour l\'index' : 'Indexer ce dossier';
+  if (!data.exists) {
+    $('index-state').textContent = 'Aucun index : chaque recherche relit les fichiers. Indexer accélère les recherches suivantes.';
+    return;
+  }
+  const when = st.builtAt ? new Date(st.builtAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  $('index-state').replaceChildren(
+    h('b', { text: `${nf.format(st.files)} fichiers` }), ` indexés · ${formatSize(st.sizeBytes)}`, h('br'),
+    `Mis à jour le ${when}${st.root !== $('root').value.trim() ? ` (index de ${st.root})` : ''}`,
+  );
+}
+
+async function buildIndex() {
+  const root = $('root').value.trim();
+  if (!root) return;
+  const btn = $('index-build');
+  btn.disabled = true;
+  btn.lastChild.textContent = 'Indexation…';
+  try {
+    const res = await api('/api/index', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ root }) });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let summary = null;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl);
+        buffer = buffer.slice(nl + 1);
+        if (!line.trim()) continue;
+        const ev = JSON.parse(line);
+        if (ev.type === 'progress') $('index-state').textContent = `${nf.format(ev.scanned)} fichiers parcourus, ${nf.format(ev.indexed)} indexés…`;
+        if (ev.type === 'done') summary = ev.summary;
+      }
+    }
+    if (summary) {
+      toast('ok', 'Index à jour', `${nf.format(summary.files)} fichiers · ${nf.format(summary.indexed)} (ré)indexés · ${nf.format(summary.removed)} retirés · ${formatMs(summary.durationMs)}`, { icon: 'check' });
+      renderIndexState({ exists: true, stats: summary.stats });
+    }
+  } catch (err) {
+    toast('error', 'Indexation impossible', err.message);
+    refreshIndexStatus();
+  }
+}
+
+async function deleteIndex() {
+  try {
+    await api('/api/index/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ root: $('root').value.trim() }) });
+    toast('ok', 'Index supprimé', 'Les recherches relisent de nouveau tous les fichiers.', { icon: 'check' });
+  } catch (err) {
+    toast('error', 'Suppression impossible', err.message);
+  }
+  refreshIndexStatus();
+}
+
 /* ------------------------------------------------------------------ Racine et dossiers */
 
 function rememberRoot(root) {
@@ -647,7 +734,7 @@ function rememberRoot(root) {
 
 function renderRecent() {
   const current = $('root').value.trim();
-  $('recent').replaceChildren(...store.get('recent', []).filter((r) => r !== current).slice(0, 4).map((r) => h('li', {}, h('button', { type: 'button', title: r, onclick: () => { $('root').value = r; renderRecent(); } }, icon('history'), r))));
+  $('recent').replaceChildren(...store.get('recent', []).filter((r) => r !== current).slice(0, 4).map((r) => h('li', {}, h('button', { type: 'button', title: r, onclick: () => { $('root').value = r; renderRecent(); scheduleIndexStatus(); } }, icon('history'), r))));
 }
 
 let browserPath = '';
@@ -728,7 +815,10 @@ async function init() {
   $('query-form').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
   $('q').addEventListener('input', renderHoist);
   document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', renderHoist));
-  $('root').addEventListener('change', () => { store.set('root', $('root').value.trim()); renderRecent(); });
+  $('root').addEventListener('change', () => { store.set('root', $('root').value.trim()); renderRecent(); scheduleIndexStatus(); });
+  $('root').addEventListener('input', scheduleIndexStatus);
+  $('index-build').addEventListener('click', buildIndex);
+  $('index-delete').addEventListener('click', deleteIndex);
   $('root').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); store.set('root', $('root').value.trim()); $('q').focus(); } });
   for (const id of ['opt-archives', 'opt-accents', 'opt-case', 'opt-word', 'opt-target']) {
     $(id).addEventListener('change', () => store.set('options', { archives: $('opt-archives').checked, accents: $('opt-accents').checked, case: $('opt-case').checked, word: $('opt-word').checked, target: $('opt-target').value }));
@@ -748,9 +838,10 @@ async function init() {
   });
 
   $('browse').addEventListener('click', () => toggleBrowser());
-  $('browser-pick').addEventListener('click', () => { $('root').value = browserPath; store.set('root', browserPath); toggleBrowser(false); renderRecent(); $('q').focus(); });
+  $('browser-pick').addEventListener('click', () => { $('root').value = browserPath; store.set('root', browserPath); toggleBrowser(false); renderRecent(); scheduleIndexStatus(); $('q').focus(); });
   $('try-demo').addEventListener('click', () => {
     $('root').value = state.info.demo;
+    scheduleIndexStatus();
     $('q').value = 'contrat préavis';
     renderHoist();
     runSearch();
@@ -791,6 +882,7 @@ async function init() {
   });
 
   $('empty-hoist').querySelector('.halyard').append(flagSvg(0), flagSvg(1), flagSvg(2));
+  refreshIndexStatus();
   renderHoist();
 }
 

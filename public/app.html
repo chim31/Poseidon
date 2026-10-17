@@ -34,6 +34,7 @@
   <symbol id="i-extract" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 13v8M13.5 17.5 17 21l3.5-3.5"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></symbol>
   <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5M4 4v4.5h4.5M12 8v4.5l3 2"/></symbol>
 </svg>
 
@@ -105,9 +106,19 @@
       <input class="rail-input mono" id="opt-name" type="text" spellcheck="false" placeholder="ex. contrat_*.pdf">
     </section>
 
+    <section class="rail-group" id="index-group" hidden>
+      <span class="rail-label">Index</span>
+      <p class="index-state" id="index-state" aria-live="polite">—</p>
+      <div class="index-actions">
+        <button class="rail-btn rail-btn-wide" id="index-build" type="button"><svg><use href="#i-bolt"/></svg><span>Indexer ce dossier</span></button>
+        <button class="rail-btn" id="index-delete" type="button" title="Supprimer l'index de ce dossier" hidden><svg><use href="#i-x"/></svg><span class="sr-only">Supprimer l'index</span></button>
+      </div>
+    </section>
+
     <dl class="rail-stats" id="rail-stats">
       <div><dt>Fichiers parcourus</dt><dd id="stat-scanned">—</dd></div>
       <div><dt>Durée</dt><dd id="stat-duration">—</dd></div>
+      <div id="stat-skipped-row" hidden><dt>Non relus (index)</dt><dd id="stat-skipped">—</dd></div>
       <div><dt>Moteur PDF</dt><dd id="stat-pdf">—</dd></div>
     </dl>
   </aside>

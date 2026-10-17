@@ -43,6 +43,7 @@ Utilisés par `/api/search`, `/api/preview` et `/api/extract`.
 | `target` | `content` \| `name` \| `both` | `content` | Où chercher |
 | `name` | motif shell | — | Filtre sur le nom de fichier (`contrat_*.pdf`) |
 | `limit` | entier | 5000 | Nombre maximal de fichiers retournés |
+| `index` | `0`/`1` | `1` | Utiliser l'index de la racine s'il existe |
 
 ## Routes
 
@@ -73,10 +74,10 @@ Flux NDJSON (une ligne JSON par événement), `Content-Type: application/x-ndjso
 {"type":"match","file":{"id":"…","name":"CGV_v4.pdf","extension":"pdf","absolutePath":"/srv/docs/juridique/CGV_v4.pdf","relativePath":"juridique/CGV_v4.pdf","directory":"juridique","archiveDepth":0,"size":812,"modified":"2026-10-16T17:11:05+00:00"},"counts":[2,1],"total":3,"hitLines":2,"nameMatch":false,"hits":[{"location":"p. 1","text":"Le client peut resilier le contrat…","spans":[[25,7,0]]}]}
 {"type":"notice","reason":"protected","path":"/srv/docs/archives/protege.zip › secret.txt","message":"Entrée chiffrée (archive protégée par mot de passe) : ignorée."}
 {"type":"progress","scanned":1200,"matched":14,"current":"finance/2026/…"}
-{"type":"done","summary":{"root":"/srv/docs","scanned":18,"matched":7,"inArchives":1,"occurrences":19,"termTotals":[11,8],"byExtension":{"docx":2},"notices":3,"truncated":false,"durationMs":84}}
+{"type":"done","summary":{"root":"/srv/docs","scanned":18,"matched":7,"inArchives":1,"occurrences":19,"termTotals":[11,8],"byExtension":{"docx":2},"notices":3,"truncated":false,"index":{"root":"/srv/docs","usable":true,"skippedFiles":10,"skippedArchives":1},"durationMs":84}}
 ```
 
-`spans` : `[position, longueur, index du terme]` en caractères. Fermer la connexion arrête le parcours.
+`spans` : `[position, longueur, index du terme]` en caractères. `index` vaut `null` sans index. Fermer la connexion arrête le parcours.
 
 ### `GET /api/preview?id=&q=&mode=…`
 
@@ -125,6 +126,23 @@ curl -H "X-Poseidon: 1" -H "Content-Type: application/json" \
 ```
 
 En-têtes de réponse : `X-Poseidon-Rows` (lignes extraites), `X-Poseidon-Notices` (fichiers ignorés).
+
+### `GET /api/index?root=`
+
+État de l'index de la racine (ou d'un dossier parent) :
+
+```json
+{ "available": true, "exists": true,
+  "stats": { "root": "/srv/docs", "files": 10200, "withText": 9300, "notices": 3, "builtAt": "2026-10-17T00:30:28+00:00", "sizeBytes": 65241088 } }
+```
+
+### `POST /api/index`
+
+Corps `{"root": "…", "rebuild": false}`. Construit ou met à jour l'index ; réponse en flux NDJSON (`start`, `progress` avec `scanned`/`indexed`, `done` avec `files`, `indexed`, `unchanged`, `removed`, `notices`, `durationMs`, `stats`).
+
+### `POST /api/index/delete`
+
+Corps `{"root": "…"}` → `{"deleted": true}`.
 
 ### `POST /api/login` / `POST /api/logout`
 

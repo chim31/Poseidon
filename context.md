@@ -36,11 +36,11 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | Modes ET / OU / phrase / regex, casse, accents, mot entier | OCR des documents scannés (phase 6) |
 | Extraction CSV / XLSX / JSON / TXT / MD, mapping de colonnes | Accès SMB direct sous Linux sans montage |
 | Comparaison de deux fichiers (diff unifié) | Comptes multiples et rôles (phase 8) |
-| Interface web, CLI, lanceurs `.bat` / `.sh` | Base de données (cache disque uniquement) |
+| Interface web, CLI, lanceurs `.bat` / `.sh` | Base de données serveur (SQLite embarqué pour l'index uniquement) |
 
 **Documents non créés car non applicables** (règle d'adaptation) :
 
-- `docs/01-general/base-de-donnees.md` : Poseidon n'a pas de base de données. Le seul stockage est un cache de texte extrait sur disque (`var/cache`), décrit dans [socle-transversal.md](docs/02-technique/socle-transversal.md#cache). Un index SQLite FTS5 est prévu en phase 5 ; le document sera créé à ce moment-là.
+- `docs/01-general/base-de-donnees.md` : créé en phase 5 pour l'index SQLite (seul stockage structuré).
 - `docs/02-technique/interface/` : l'interface tient en un seul écran ; ses zones sont décrites dans [interface.md](docs/02-technique/interface.md).
 
 ## 3. État actuel
@@ -52,7 +52,9 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | Documentation, cahier des charges, roadmap | Terminé, fusionné dans `main` (PR #4) |
 | Fusion dans `main` | Faite le 2026-10-17 ; branches de fonctionnalité supprimées |
 | Essais sur de vraies arborescences Windows | Validés par le porteur le 2026-10-17 → v0.1.0 |
-| Phase en cours | P5 — Performance et fiabilité (index FTS5, CI) |
+| Index plein texte, banc d'essai | Terminés — phase P5 (PR #8) |
+| Intégration continue GitHub Actions | Prête mais **bloquée** : compte GitHub verrouillé pour facturation (à régler par le porteur). Tests passés à la main sous Linux (PHP 8.4) et Windows (PHP 8.3) |
+| Phase en cours | P6 — Formats étendus |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
 
@@ -70,6 +72,8 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Index SQLite FTS5 trigramme sans contenu | Recherches répétées quasi instantanées sans serveur à installer ; l'index ne fait que désigner des candidats, le Matcher vérifie toujours (résultats identiques). |
+| 2026-10-17 | Parallélisation écartée | Pas de fils d'exécution portables en PHP (Windows) ; l'index supprime l'essentiel des lectures. |
 | 2026-10-17 | Durcissement après revue de sécurité automatique | Protection DNS rebinding (liste d'hôtes, `POSEIDON_HOSTS`), en-tête `X-Poseidon` sur toute l'API, bornes anti-bombe (Office, PDF, tableurs), diff à mémoire bornée, formules CSV neutralisées partout. Racines contrôlées sur chemin réel (liens symboliques). Voir BUG-012 à BUG-018. |
 | 2026-10-17 | PR toujours dirigées vers `main` | Les PR empilées ont été fusionnées dans leur branche de base au lieu de `main` ; désormais chaque PR cible `main` directement. |
 | 2026-10-16 | Suivi piloté par `docs/web/data/projet.json` | Une seule source ; `php docs/tools/sync.php` régénère les vues web et Markdown. |
@@ -114,6 +118,7 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Phase P5 : index plein texte, intégration continue Linux/Windows, banc d'essai (10 000 fichiers : 5,2 s à froid, 0,47 s indexé). |
 | 2026-10-17 | Essai Windows validé après libération du port 8080 ; étiquette v0.1.0 ; démarrage de la phase P5. |
 | 2026-10-17 | Premier essai Windows : le lanceur ouvrait une autre application occupant le port 8080 → port libre automatique et ouverture du navigateur une fois Poseidon prêt (BUG-019). |
 | 2026-10-17 | PR #2 et #3 fusionnées par erreur dans les branches empilées : contenu regroupé et fusionné dans `main` via la PR #4 ; branches supprimées. |

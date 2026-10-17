@@ -26,6 +26,7 @@ Les façades ne contiennent aucune logique métier : elles traduisent HTTP ou `a
 | `Extractor/` | `Extractor`, `Document`, `ExtractorRegistry`, `PlainTextExtractor`, `CsvExtractor`, `WordExtractor`, `SpreadsheetExtractor`, `OpenDocumentExtractor`, `PdfExtractor`, `LegacyOfficeExtractor`, `RtfExtractor`, `OfficeArchive` | [extracteurs.md](backend/extracteurs.md) |
 | `Search/` | `Query`, `SearchOptions`, `Matcher`, `MatchResult`, `SearchEngine`, `Diff` | [moteur-de-recherche.md](backend/moteur-de-recherche.md) |
 | `Export/` | `ExtractionSpec`, `DataExtractor`, `Writer`, `XlsxWriter` | [extraction-de-donnees.md](backend/extraction-de-donnees.md) |
+| `Index/` | `Index`, `Indexer` | [index-plein-texte.md](backend/index-plein-texte.md) |
 | `Http/`, `Cli/` | `Kernel`, `HttpError`, `Application` | [http-et-cli.md](backend/http-et-cli.md) |
 | `Support/` | `Path`, `Text`, `Token`, `Process` | [socle-transversal.md](socle-transversal.md) |
 | `Demo/` | `Samples` | Jeu d'échantillons synthétiques (démo + tests) |

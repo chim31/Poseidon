@@ -257,6 +257,13 @@ select.rail-input option { background: var(--abyss); }
 .check-dark input:checked { background: var(--abyss); border-color: var(--abyss); }
 .check-dark input::after { border-color: #fff; }
 
+.index-state { font-size: 12.5px; color: var(--on-abyss-2); line-height: 1.45; }
+.index-state b { color: var(--on-abyss); font-weight: 600; }
+.index-actions { display: flex; gap: 6px; }
+.index-actions .rail-btn-wide { flex: 1; }
+.index-actions .rail-btn { height: 34px; }
+.rail-btn:disabled { opacity: 0.6; cursor: progress; }
+
 .rail-stats {
   margin: auto 0 0;
   padding-top: 14px;

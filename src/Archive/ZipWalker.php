@@ -32,18 +32,19 @@ final class ZipWalker
      * @param array<string, true> $filter
      * @return \Generator<int, Source|Notice>
      */
-    public function walk(Source $archive, array $filter = []): \Generator
+    public function walk(Source $archive, array $filter = [], ?\Closure $descend = null): \Generator
     {
         $budget = (int) $this->config->get('zip.max_total_size');
-        yield from $this->walkOpened($archive, $filter, $budget);
+        yield from $this->walkOpened($archive, $filter, $budget, $descend);
     }
 
     /**
      * @param array<string, true> $filter
      * @return \Generator<int, Source|Notice>
      */
-    private function walkOpened(Source $archive, array $filter, int &$budget): \Generator
+    private function walkOpened(Source $archive, array $filter, int &$budget, ?\Closure $descend = null): \Generator
     {
+        $akey = $archive->key();
         $maxDepth = (int) $this->config->get('zip.max_depth');
         $maxEntry = (int) $this->config->get('zip.max_entry_size');
         $maxRatio = (int) $this->config->get('zip.max_ratio');
@@ -51,7 +52,7 @@ final class ZipWalker
         $label = $archive->absolutePath();
 
         if ($archive->archiveDepth() >= $maxDepth) {
-            yield new Notice(UnreadableFileException::LIMIT, $label, sprintf('Archive non ouverte : profondeur maximale (%d) atteinte.', $maxDepth));
+            yield new Notice(UnreadableFileException::LIMIT, $label, sprintf('Archive non ouverte : profondeur maximale (%d) atteinte.', $maxDepth), $akey);
 
             return;
         }
@@ -59,7 +60,7 @@ final class ZipWalker
         try {
             $handle = ZipHandle::open($archive);
         } catch (UnreadableFileException $e) {
-            yield new Notice($e->reason, $label, $e->getMessage());
+            yield new Notice($e->reason, $label, $e->getMessage(), $akey);
 
             return;
         }
@@ -67,7 +68,7 @@ final class ZipWalker
         try {
             $zip = $handle->zip;
             if ($zip->numFiles > $maxEntries) {
-                yield new Notice(UnreadableFileException::LIMIT, $label, sprintf('Archive ignorée : %d entrées (limite %d).', $zip->numFiles, $maxEntries));
+                yield new Notice(UnreadableFileException::LIMIT, $label, sprintf('Archive ignorée : %d entrées (limite %d).', $zip->numFiles, $maxEntries), $akey);
 
                 return;
             }
@@ -96,21 +97,21 @@ final class ZipWalker
                 if (($stat['encryption_method'] ?? 0) !== 0) {
                     $protectedCount++;
                     if ($protectedCount <= 20) {
-                        yield new Notice(UnreadableFileException::PROTECTED, $display, 'Entrée chiffrée (archive protégée par mot de passe) : ignorée.');
+                        yield new Notice(UnreadableFileException::PROTECTED, $display, 'Entrée chiffrée (archive protégée par mot de passe) : ignorée.', $akey);
                     }
                     continue;
                 }
                 if ($size > $maxEntry) {
-                    yield new Notice(UnreadableFileException::TOO_LARGE, $display, 'Entrée trop volumineuse : ignorée.');
+                    yield new Notice(UnreadableFileException::TOO_LARGE, $display, 'Entrée trop volumineuse : ignorée.', $akey);
                     continue;
                 }
                 $compressed = max(1, (int) $stat['comp_size']);
                 if ($size > 1024 * 1024 && intdiv($size, $compressed) > $maxRatio) {
-                    yield new Notice(UnreadableFileException::LIMIT, $display, 'Taux de compression suspect (bombe ZIP ?) : entrée ignorée.');
+                    yield new Notice(UnreadableFileException::LIMIT, $display, 'Taux de compression suspect (bombe ZIP ?) : entrée ignorée.', $akey);
                     continue;
                 }
                 if ($budget - $size < 0) {
-                    yield new Notice(UnreadableFileException::LIMIT, $label, 'Volume décompressé maximal atteint : suite de l\'archive ignorée.');
+                    yield new Notice(UnreadableFileException::LIMIT, $label, 'Volume décompressé maximal atteint : suite de l\'archive ignorée.', $akey);
 
                     return;
                 }
@@ -130,12 +131,12 @@ final class ZipWalker
                     $budget -= $size;
                     yield $entry;
                 }
-                if ($isArchive) {
-                    yield from $this->walkOpened($entry, $filter, $budget);
+                if ($isArchive && ($descend === null || $descend($entry))) {
+                    yield from $this->walkOpened($entry, $filter, $budget, $descend);
                 }
             }
             if ($protectedCount > 20) {
-                yield new Notice(UnreadableFileException::PROTECTED, $label, sprintf('%d entrées chiffrées au total dans cette archive.', $protectedCount));
+                yield new Notice(UnreadableFileException::PROTECTED, $label, sprintf('%d entrées chiffrées au total dans cette archive.', $protectedCount), $akey);
             }
         } finally {
             $handle->close();

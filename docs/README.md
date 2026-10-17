@@ -10,8 +10,9 @@ Index de toute la documentation. Commence par le [guide de démarrage](01-genera
 | [stack-technique.md](01-general/stack-technique.md) | Langages, versions, outils, alternatives écartées |
 | [api.md](01-general/api.md) | API HTTP : conventions et chaque route |
 | [demarrage.md](01-general/demarrage.md) | Installer, configurer, lancer, tester, déployer, dépanner |
+| [performances.md](01-general/performances.md) | Banc d'essai, mesures, conseils pour les gros volumes |
 
-`base-de-donnees.md` n'existe pas : Poseidon n'a pas de base de données (voir [context.md](../context.md#2-périmètre)).
+[base-de-donnees.md](01-general/base-de-donnees.md) décrit l'index SQLite, seul stockage structuré de Poseidon.
 
 ## 02 — Technique
 
@@ -24,6 +25,7 @@ Index de toute la documentation. Commence par le [guide de démarrage](01-genera
 | [backend/extracteurs.md](02-technique/backend/extracteurs.md) | Lecture de chaque format |
 | [backend/moteur-de-recherche.md](02-technique/backend/moteur-de-recherche.md) | `Query`, `Matcher`, `SearchEngine`, `Diff` |
 | [backend/extraction-de-donnees.md](02-technique/backend/extraction-de-donnees.md) | `DataExtractor`, `Writer`, `XlsxWriter` |
+| [backend/index-plein-texte.md](02-technique/backend/index-plein-texte.md) | `Index`, `Indexer` (SQLite FTS5) |
 | [backend/http-et-cli.md](02-technique/backend/http-et-cli.md) | `Kernel` HTTP et `Application` CLI |
 
 ## 03 — Suivi

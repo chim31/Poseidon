@@ -9,6 +9,7 @@ use Poseidon\Export\DataExtractor;
 use Poseidon\Export\ExtractionSpec;
 use Poseidon\Export\Writer;
 use Poseidon\Filesystem\FileLocator;
+use Poseidon\Filesystem\Scanner;
 use Poseidon\Filesystem\Source;
 use Poseidon\Filesystem\UnreadableFileException;
 use Poseidon\Search\Diff;
@@ -43,6 +44,7 @@ final class Application
                 'serve' => $this->serve($opts),
                 'info' => $this->info(),
                 'demo' => $this->demo($args),
+                'index', 'i' => $this->index($args, $opts),
                 'help', '', '--help', '-h' => $this->help(),
                 default => throw new \InvalidArgumentException("Commande inconnue : {$command}. Tape « poseidon help »."),
             };
@@ -97,7 +99,7 @@ final class Application
                         echo PHP_EOL . $this->paint('1', sprintf(
                             '%d fichier(s) trouvé(s) sur %d analysé(s) · %d occurrence(s) · %d dans des archives · %d avertissement(s) · %s ms',
                             $s['matched'], $s['scanned'], $s['occurrences'], $s['inArchives'], $s['notices'], $s['durationMs']
-                        )) . PHP_EOL;
+                        )) . ($s['index'] !== null ? $this->paint('2', sprintf(' · index : %d fichiers et %d archives non relus', $s['index']['skippedFiles'], $s['index']['skippedArchives'])) : '') . PHP_EOL;
                     }
 
                     return $s['matched'] > 0 ? 0 : 1;
@@ -279,6 +281,51 @@ final class Application
         }
     }
 
+    /**
+     * @param list<string>                $args
+     * @param array<string, string|bool> $opts
+     */
+    private function index(array $args, array $opts): int
+    {
+        if ($args === []) {
+            throw new \InvalidArgumentException('Usage : poseidon index <racine> [--rebuild] [--status] [--delete]');
+        }
+        $engine = new SearchEngine($this->config);
+        $root = $engine->guard()->resolveRoot($args[0]);
+        if (!\Poseidon\Index\Index::available()) {
+            throw new \RuntimeException('Index indisponible : active l\'extension PHP pdo_sqlite (SQLite 3.43+).');
+        }
+        if (isset($opts['delete'])) {
+            echo (\Poseidon\Index\Index::delete($this->config, $root) ? 'Index supprimé.' : 'Aucun index pour cette racine.') . PHP_EOL;
+
+            return 0;
+        }
+        if (isset($opts['status'])) {
+            $index = \Poseidon\Index\Index::find($this->config, $root);
+            if ($index === null) {
+                echo 'Aucun index pour ' . Path::display($root) . PHP_EOL;
+
+                return 1;
+            }
+            $st = $index->stats();
+            printf("Index de %s : %d fichiers (%d avec texte, %d ignorés), %s, construit le %s\n", $st['root'], $st['files'], $st['withText'], $st['notices'], Scanner::humanSize($st['sizeBytes']), $st['builtAt'] ?? '—');
+
+            return 0;
+        }
+
+        $indexer = new \Poseidon\Index\Indexer($this->config, $engine->extractors(), $engine->guard());
+        foreach ($indexer->build($args[0], isset($opts['rebuild'])) as $event) {
+            match ($event['type']) {
+                'progress' => fwrite(STDERR, sprintf("\r%d fichiers parcourus, %d indexés…", $event['scanned'], $event['indexed'])),
+                'notice' => isset($opts['no-warnings']) ? null : fwrite(STDERR, "\r" . $this->paint('35', '⚠ ' . $event['reason']) . ' ' . $event['path'] . ' — ' . $event['message'] . PHP_EOL),
+                'done' => printf("\r%s : %d fichiers, %d (ré)indexés, %d inchangés, %d retirés, %d avertissements, %s ms\n", $event['summary']['root'], $event['summary']['files'], $event['summary']['indexed'], $event['summary']['unchanged'], $event['summary']['removed'], $event['summary']['notices'], $event['summary']['durationMs']),
+                default => null,
+            };
+        }
+
+        return 0;
+    }
+
     /** @param list<string> $args */
     private function demo(array $args): int
     {
@@ -314,6 +361,7 @@ final class Application
           serve   [--host=] [--port=] [--open]  Lancer l'interface web (port suivant si occupé)
           info                             Configuration et formats pris en charge
           demo    [dossier]                Générer les échantillons synthétiques de démonstration
+          index   <racine> [--rebuild|--status|--delete]  Index plein texte (recherches instantanées)
 
         Options de recherche
           --mode=all|any|phrase|regex      Tous les mots (défaut), un des mots, phrase exacte, expression régulière
@@ -327,6 +375,7 @@ final class Application
           -l, --files-only                 N'afficher que les fichiers
           --json                           Sortie JSON
           --no-warnings                    Masquer les avertissements (fichiers protégés...)
+          --no-index                       Ignorer l'index et tout relire
 
         Options d'extraction
           --out=fichier.(csv|json|txt|md|xlsx)
@@ -369,6 +418,7 @@ final class Application
             'target' => (string) ($opts['target'] ?? 'content'),
             'name' => (string) ($opts['name'] ?? ''),
             'limit' => (int) ($opts['limit'] ?? 50000),
+            'index' => !isset($opts['no-index']),
         ]);
     }
 

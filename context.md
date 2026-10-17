@@ -51,8 +51,8 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | Interface web + API + lanceurs | Terminé, revue de design faite, fusionné dans `main` (PR #4) |
 | Documentation, cahier des charges, roadmap | Terminé, fusionné dans `main` (PR #4) |
 | Fusion dans `main` | Faite le 2026-10-17 ; branches de fonctionnalité supprimées |
-| Essais sur de vraies arborescences Windows / partages réseau | **À faire par le porteur** (dernier point de la phase P4) |
-| Prochaine phase | P5 — Performance et fiabilité (index FTS5, CI) |
+| Essais sur de vraies arborescences Windows | Validés par le porteur le 2026-10-17 → v0.1.0 |
+| Phase en cours | P5 — Performance et fiabilité (index FTS5, CI) |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
 
@@ -114,6 +114,7 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Essai Windows validé après libération du port 8080 ; étiquette v0.1.0 ; démarrage de la phase P5. |
 | 2026-10-17 | Premier essai Windows : le lanceur ouvrait une autre application occupant le port 8080 → port libre automatique et ouverture du navigateur une fois Poseidon prêt (BUG-019). |
 | 2026-10-17 | PR #2 et #3 fusionnées par erreur dans les branches empilées : contenu regroupé et fusionné dans `main` via la PR #4 ; branches supprimées. |
 | 2026-10-17 | Revue de sécurité : 7 corrections (DNS rebinding, liens symboliques…) intégrées aux PR, 62 tests. |

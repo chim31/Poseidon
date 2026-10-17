@@ -778,21 +778,21 @@
       "id": "P4",
       "titre": "Validation et fusion",
       "debut": "2026-10-16",
-      "fin": "2026-10-23",
-      "statut": "En cours",
+      "fin": "2026-10-17",
+      "statut": "Terminé",
       "livrables": [
         "Durcissement sécurité (7 corrections)",
-        "Relecture et fusion dans main (PR #1, #4) — fait",
-        "Essais sur de vraies arborescences Windows et partages réseau — à faire",
+        "Relecture et fusion dans main (PR #1, #4)",
+        "Essai Windows validé par le porteur (correctif du port, PR #6)",
         "Étiquette v0.1.0"
       ]
     },
     {
       "id": "P5",
       "titre": "Performance et fiabilité",
-      "debut": "2026-10-26",
+      "debut": "2026-10-17",
       "fin": "2026-11-20",
-      "statut": "À faire",
+      "statut": "En cours",
       "livrables": [
         "Index plein texte SQLite FTS5",
         "Parallélisation du parcours",

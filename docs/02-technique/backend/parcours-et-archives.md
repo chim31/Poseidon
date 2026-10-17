@@ -24,7 +24,7 @@
 
 Un fichier à analyser : `diskPath` (fichier réel ou archive racine) + `innerPath` (chaîne d'entrées). Fournit `name()`, `extension()`, `absolutePath()` (`C:\a\b.zip › dossier/c.docx`), `relativePath()`, `archiveDepth()`, `bytes()` (paresseux), `cacheKey()`, `id()` (jeton signé) et `toArray()` (format JSON de l'API).
 
-## `Archive\ZipWalker`
+## `Archive\ZipWalker` (ZIP)
 
 `walk(Source $archive, array $filter): Generator<Source|Notice>`
 
@@ -38,6 +38,18 @@ Un fichier à analyser : `diskPath` (fichier réel ou archive racine) + `innerPa
 | Chiffrement | `encryption_method ≠ 0` | `Notice(protected)` (20 max par archive, puis un récapitulatif) |
 
 Les entrées `__MACOSX/` et les dossiers sont ignorés. Les entrées dont l'extension n'est pas demandée ne sont pas lues (sauf les archives, toujours ouvertes pour descendre).
+
+## `Archive\ArchiveWalker` (aiguilleur des conteneurs)
+
+| Conteneur | Extensions | Moyen | Remarques |
+| --- | --- | --- | --- |
+| ZIP | zip, jar, war, ear | `ZipWalker` (natif) | Protections anti-bombe, entrées chiffrées signalées |
+| 7z, RAR, ISO, CAB, xz, bz2 | 7z, rar, iso, cab… | `Bsdtar` (libarchive) | `bsdtar` sous Linux/macOS, `tar.exe` sous Windows 10/11 ; absent → non ouverts |
+| tar | tar, tgz, tar.gz, tar.bz2, tar.xz | `Bsdtar`, sinon `PharData` pour tar/tar.gz | tar.gz décompressé par `gzdecode` (contournement d'un défaut de PharData sous Windows) |
+| gzip simple | gz | `gzdecode` borné | Une entrée : le nom sans `.gz` |
+| Courriels | eml, msg | `MimeMessage`, `OutlookMessage` | Les **pièces jointes** sont des entrées : `mail.eml › facture.pdf` |
+
+Tous les conteneurs s'imbriquent (ZIP dans un mail, 7z dans un ZIP…), avec la même limite de profondeur (`zip.max_depth`). Les avertissements portent la clé de leur conteneur (rejoués par l'index).
 
 ## `Archive\ZipHandle`
 

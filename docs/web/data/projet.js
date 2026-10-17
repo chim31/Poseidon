@@ -163,22 +163,22 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L2-10",
                     "titre": "OCR des PDF scannés",
-                    "description": "Tesseract optionnel pour les PDF images.",
-                    "statut": "À faire",
+                    "description": "Tesseract (optionnel) pour les PDF scannés (rendus par pdftoppm) et les images ; borné en pages et en temps, mis en cache.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 6"
+                    "date": "2026-10-17",
+                    "ref": "feat/formats-etendus"
                 },
                 {
                     "id": "L2-11",
                     "titre": "Courriels EML / MSG",
-                    "description": "Corps et pièces jointes des e-mails.",
-                    "statut": "À faire",
+                    "description": ".eml (MIME) et .msg (Outlook, lecteur OLE maison) : en-têtes, corps, pièces jointes parcourues comme des entrées d'archive.",
+                    "statut": "Terminé",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 6"
+                    "date": "2026-10-17",
+                    "ref": "feat/formats-etendus"
                 }
             ]
         },
@@ -230,12 +230,12 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L3-05",
                     "titre": "7z, RAR, tar.gz",
-                    "description": "Autres formats d'archives (via binaires optionnels).",
-                    "statut": "À faire",
+                    "description": "7z, RAR, ISO, CAB, tar.* via bsdtar (natif sous Windows 10/11) ; tar et tar.gz en PHP pur à défaut ; .gz simple.",
+                    "statut": "Terminé",
                     "priorite": "Basse",
                     "responsable": "chim31",
-                    "date": "",
-                    "ref": "Phase 6"
+                    "date": "2026-10-17",
+                    "ref": "feat/formats-etendus"
                 }
             ]
         },
@@ -672,7 +672,7 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-03",
                     "titre": "Tests automatisés",
-                    "description": "Suite sans dépendance : 69 vérifications (dont équivalence avec/sans index), lancée en CI sous Linux et Windows.",
+                    "description": "Suite sans dépendance : 82 vérifications (Linux), 77 (Windows), dont équivalence avec/sans index.",
                     "statut": "Terminé",
                     "priorite": "Haute",
                     "responsable": "chim31",
@@ -805,20 +805,20 @@ window.POSEIDON_PROJET = {
             "id": "P6",
             "titre": "Formats étendus",
             "debut": "2026-10-17",
-            "fin": "2026-12-18",
-            "statut": "En cours",
+            "fin": "2026-10-17",
+            "statut": "Terminé",
             "livrables": [
-                "OCR des PDF scannés (Tesseract)",
-                "Courriels EML / MSG",
-                "Archives 7z, RAR, tar.gz"
+                "OCR des PDF scannés et des images (Tesseract, optionnel)",
+                "Courriels EML / MSG et leurs pièces jointes",
+                "Archives 7z, RAR, tar, tar.gz, gz"
             ]
         },
         {
             "id": "P7",
             "titre": "Extraction avancée",
-            "debut": "2027-01-04",
+            "debut": "2026-10-17",
             "fin": "2027-01-29",
-            "statut": "À faire",
+            "statut": "En cours",
             "livrables": [
                 "Modèles d'extraction enregistrés",
                 "Groupes nommés → colonnes",

@@ -3,11 +3,11 @@
 > Généré par `php docs/tools/sync.php` depuis [`docs/web/data/projet.json`](../web/data/projet.json) — modifier le JSON, pas ce fichier.
 > Version web : [cahier-des-charges.html](../web/cahier-des-charges.html) · [roadmap.html](../web/roadmap.html)
 
-**Mise à jour :** 2026-10-17 · **Version :** 0.1.0
+**Mise à jour :** 2026-10-17 · **Version :** 1.0.0
 
 ## Tableau de bord
 
-Avancement global : **95 %** `███████████████████░` — 65 exigences : 62 terminées, 0 en cours, 2 à faire, 1 bloquées.
+Avancement global : **98 %** `███████████████████░` — 65 exigences : 64 terminées, 0 en cours, 0 à faire, 1 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -18,7 +18,7 @@ Avancement global : **95 %** `████████████████�
 | L5 | Extraction de données | 7 | 0 | 0 | 100 % |
 | L6 | Interface web | 8 | 0 | 0 | 100 % |
 | L7 | Robustesse et sécurité | 8 | 0 | 0 | 100 % |
-| L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
+| L8 | Comparaison (git diff) | 5 | 0 | 0 | 100 % |
 | L9 | Exploitation et documentation | 6 | 0 | 0 | 86 % |
 
 ## L1 — Socle et parcours
@@ -132,8 +132,8 @@ _Comparer deux fichiers trouvés, quel que soit leur format._
 | L8-01 | **Diff ligne à ligne** — Algorithme de Myers, blocs avec contexte, format unifié copiable. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L8-02 | **Comparer dans l'interface** — Cocher deux fichiers → vue diff colorée avec numéros de ligne. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
 | L8-03 | **poseidon diff en CLI** — Sortie colorée façon git diff, code retour 1 si différent. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
-| L8-04 | **Diff entre deux recherches** — Instantanés : fichiers apparus, disparus, occurrences en hausse. | À faire | Moyenne | chim31 | — | Phase 9 |
-| L8-05 | **Historique Git** — Dans un dépôt Git : rechercher dans les versions passées, diff entre commits. | À faire | Basse | chim31 | — | Phase 9 |
+| L8-04 | **Diff entre deux recherches** — Instantanés par compte et par recherche : fichiers apparus, disparus, compteurs en hausse ou en baisse (interface, CLI --changes, API). | Terminé | Moyenne | chim31 | 2026-10-17 | feat/comparaison-avancee |
+| L8-05 | **Historique Git** — Historique d'un fichier, diff d'un commit sur le texte extrait (DOCX, PDF…), recherche des commits où un filtre a changé. | Terminé | Basse | chim31 | 2026-10-17 | feat/comparaison-avancee |
 
 ## L9 — Exploitation et documentation
 
@@ -143,7 +143,7 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | --- | --- | --- | --- | --- | --- | --- |
 | L9-01 | **Ligne de commande** — search, extract, diff, cat, serve, info, demo. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-02 | **Lanceurs Windows .bat** — poseidon.bat (serveur + navigateur), bin\poseidon.bat (CLI), poseidon.sh. | Terminé | Haute | chim31 | 2026-10-16 | feat/interface-web (fusionnée) |
-| L9-03 | **Tests automatisés** — Suite sans dépendance : 111 vérifications (Linux), aussi exécutée sous Windows et dans l'image Docker. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L9-03 | **Tests automatisés** — Suite sans dépendance : 127 vérifications (Linux), 122 (Windows), exécutée aussi dans l'image Docker. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Image Docker (Debian 13, OCR, 7z, index) + Caddy HTTPS ; guides Nginx, Apache, Windows Server. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/equipe-deploiement |

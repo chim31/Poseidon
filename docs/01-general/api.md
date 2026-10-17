@@ -59,7 +59,7 @@ Informations publiques (en-tête `X-Poseidon: 1` requis). Réponse :
 { "name": "Poseidon", "version": "0.1.0", "php": "8.4.24", "os": "Linux", "pdfEngine": "pdftotext",
   "formats": ["txt", "md", "pdf", "docx", "xlsx", "zip"], "allowedRoots": [], "authRequired": false,
   "authenticated": true, "home": "/home/moi", "demo": "/opt/poseidon/samples/demo (null si POSEIDON_DEMO=0)",
-  "indexAvailable": true, "ocr": false, "archives7z": true, "authMode": "none", "user": { "login": "local", "role": "admin" } }
+  "indexAvailable": true, "ocr": false, "archives7z": true, "git": true, "authMode": "none", "user": { "login": "local", "role": "admin" } }
 ```
 
 ### `GET /api/browse?path=`
@@ -83,6 +83,16 @@ Flux NDJSON (une ligne JSON par événement), `Content-Type: application/x-ndjso
 ```
 
 `spans` : `[position, longueur, index du terme]` en caractères. `index` vaut `null` sans index. Fermer la connexion arrête le parcours.
+
+Après `done`, un dernier événement compare avec la recherche identique précédente du même compte : `{"type":"changes","comparison":{"from":{…},"to":{…},"appeared":[{"path":"…","total":3}],"disappeared":[…],"changed":[{"path":"…","before":1,"after":4,"modified":true}],"unchanged":12}}` (`comparison` vaut `null` la première fois).
+
+### `GET /api/changes?…&from=&to=`
+
+Instantanés de la recherche (mêmes paramètres que `/api/search`) et comparaison : `{"snapshots":[{"id":"20261017-091200-123456","at":"…","matched":17,"occurrences":24}], "comparison":{…}}`.
+
+### `GET /api/git/log?id=` · `GET /api/git/diff?id=&commit=` · `GET /api/git/search?root=&q=&mode=`
+
+Historique Git : commits d'un fichier (`{"available":true,"repository":"…","path":"…","commits":[{"hash","short","author","date","subject"}]}`), diff d'un commit sur le texte extrait (même format que `/api/diff`, plus `commit`, `parent`, `path`), commits où le filtre a changé (`{"repository":"…","commits":[{…,"files":[{"path":"…","before":0,"after":1}]}]}`).
 
 ### `GET /api/preview?id=&q=&mode=…`
 

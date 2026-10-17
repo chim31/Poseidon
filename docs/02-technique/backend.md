@@ -27,6 +27,10 @@ Les façades ne contiennent aucune logique métier : elles traduisent HTTP ou `a
 | `Search/` | `Query`, `SearchOptions`, `Matcher`, `MatchResult`, `SearchEngine`, `Diff` | [moteur-de-recherche.md](backend/moteur-de-recherche.md) |
 | `Export/` | `ExtractionSpec`, `DataExtractor`, `Writer`, `XlsxWriter` | [extraction-de-donnees.md](backend/extraction-de-donnees.md) |
 | `Index/` | `Index`, `Indexer` | [index-plein-texte.md](backend/index-plein-texte.md) |
+| `History/`, `Git/` | `SnapshotStore`, `GitHistory`, `HistorySearch` | [historique.md](backend/historique.md) |
+| `Mail/` | `MimeMessage`, `OutlookMessage` | [extracteurs.md](backend/extracteurs.md) |
+| `Report/` | `HtmlReport` | [extraction-de-donnees.md](backend/extraction-de-donnees.md) |
+| `Auth/` | `UserStore`, `AuditLog`, `Throttle` | [socle-transversal.md](socle-transversal.md) |
 | `Http/`, `Cli/` | `Kernel`, `HttpError`, `Application` | [http-et-cli.md](backend/http-et-cli.md) |
 | `Support/` | `Path`, `Text`, `Token`, `Process` | [socle-transversal.md](socle-transversal.md) |
 | `Demo/` | `Samples` | Jeu d'échantillons synthétiques (démo + tests) |

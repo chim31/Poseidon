@@ -2,7 +2,7 @@
 
 Toutes les anomalies rencontrées pendant le développement, avec leur cause et leur correctif, ainsi que les limitations connues. À mettre à jour en temps réel.
 
-**Synthèse :** 28 anomalies corrigées (dont 12 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
+**Synthèse :** 31 anomalies corrigées (dont 12 de sécurité) · 0 ouverte · 4 limitations connues (reportées).
 
 ## Anomalies
 
@@ -36,6 +36,9 @@ Toutes les anomalies rencontrées pendant le développement, avec leur cause et 
 | BUG-026 | Une liste de configuration vide ne remplaçait pas la précédente | `Config::with(['allowed_roots' => []])` gardait les racines définies par `POSEIDON_ROOTS` / la liste doit être vidée | Lancer les tests avec `POSEIDON_ROOTS=/data` (conteneur) | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `array_replace_recursive` fusionne les listes indice par indice ; nouvelle fusion : les listes remplacent, les tableaux associatifs fusionnent. | feat/equipe-deploiement |
 | BUG-027 | Avertissement PHP dans les réponses JSON | Sur un serveur, la génération des échantillons (dossier non inscriptible) affichait un avertissement au milieu de `/api/info`, cassant l'interface et le healthcheck / aucune erreur ne doit sortir | Image Docker, compte non root | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | `display_errors=0` (erreurs journalisées) ; démo désactivable (`POSEIDON_DEMO=0`), générée seulement si le dossier est inscriptible. | feat/equipe-deploiement |
 | BUG-028 | Instance sans authentification joignable depuis le réseau | Liée à 0.0.0.0 (Docker, `serve --host=0.0.0.0`) sans compte ni mot de passe, un poste du réseau pouvait l'interroger en envoyant `Host: localhost` ; la composition Docker démarrait sans authentification / seule la machine locale doit être servie | `curl -H 'Host: localhost' http://ip-du-serveur:8080/api/search…` | Critique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Adresse source locale exigée en plus du nom d'hôte (503 sinon) ; ouverture réseau sans authentification seulement par `POSEIDON_INSECURE_NO_AUTH=1` ; `docker-compose.yml` exige `POSEIDON_PASSWORD`. | feat/comparaison-avancee |
+| BUG-029 | Version Git d'un document relue depuis le disque | Le diff d'un commit sur un DOCX/PDF comparait la version du disque, pas celle du commit / chaque version doit être lue en mémoire | Onglet Historique d'un DOCX modifié | Majeure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Les extracteurs choisissaient « octets ou chemin » selon `inArchive()` ; nouvelle notion `Source::inMemory()` (entrée d'archive ou contenu fourni). | feat/comparaison-avancee |
+| BUG-030 | Changements inversés entre deux recherches rapprochées | Deux recherches dans la même seconde : nouveaux et disparus échangés / l'ordre doit être chronologique | `search … --changes` deux fois de suite | Mineure | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Instantanés horodatés à la microseconde. | feat/comparaison-avancee |
+| BUG-031 | « nullnull » dans la vue des changements | Groupes vides rendus comme texte « null » / rien ne doit s'afficher | Changements sans fichier disparu ni modifié | Cosmétique | Corrigé | 2026-10-17 → 2026-10-17 | chim31 | Groupes vides filtrés avant `replaceChildren`. | feat/comparaison-avancee |
 
 ## Limitations connues
 

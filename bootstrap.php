@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 
 const POSEIDON_ROOT = __DIR__;
-const POSEIDON_VERSION = '0.1.0';
+const POSEIDON_VERSION = '1.0.0';
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'Poseidon\\';

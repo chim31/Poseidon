@@ -27,6 +27,7 @@ Tout ce qu'il faut pour installer, configurer, lancer, tester et déployer Posei
 | Extension `pdo_sqlite` (SQLite ≥ 3.43) | incluse dans PHP | Non, recommandé | Index plein texte (recherches instantanées) |
 | `bsdtar` (libarchive) | toute version récente | Non | Archives 7z, RAR, ISO, CAB, tar.xz — déjà présent sous Windows 10/11 (`tar.exe`) |
 | Tesseract OCR (+ langue `fra`) | 4 ou 5 | Non | PDF scannés et images |
+| Git | toute version récente | Non | Historique des fichiers suivis par Git |
 | Navigateur | Chrome, Edge, Firefox, Safari récents | Pour l'interface | |
 
 Aucun Composer, aucun Node, aucune base de données.
@@ -150,6 +151,9 @@ php bin/poseidon help
 | Mots proches (≤ 5 mots d'écart, même sur 2 lignes) | `php bin/poseidon search ./docs "contrat résiliation" --mode=near --distance=5` |
 | Avec fautes de frappe | `php bin/poseidon search ./docs "contart" --fuzzy` |
 | Rapport HTML / PDF | `php bin/poseidon report ./docs "résiliation" --out=rapport.html` |
+| Ce qui a changé depuis la même recherche | `... --changes` |
+| Historique Git d'un fichier | `php bin/poseidon git-log ./docs/contrat.docx` |
+| Commits où un terme a été ajouté ou retiré | `php bin/poseidon git-search ./docs "préavis"` |
 | Seulement les PDF et DOCX | `... --ext=pdf,docx` |
 | Juste la liste des fichiers (`grep -l`) | `... -l` |
 | Dans les noms de fichiers (`ls -R \| grep`) | `... --target=name` |
@@ -190,7 +194,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `111 tests réussis` sous Linux, `106` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `127 tests réussis` sous Linux, `122` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 

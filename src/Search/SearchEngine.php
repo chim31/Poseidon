@@ -48,6 +48,12 @@ final class SearchEngine
         return $this->guard;
     }
 
+    /** Localisateur de fichiers par identifiant, avec la même configuration que ce moteur. */
+    public function locator(): \Poseidon\Filesystem\FileLocator
+    {
+        return new \Poseidon\Filesystem\FileLocator($this->guard, new ArchiveWalker($this->config));
+    }
+
     /** @return \Generator<int, array<string, mixed>> */
     public function search(Query $query, SearchOptions $options): \Generator
     {
@@ -218,7 +224,7 @@ final class SearchEngine
     /** @return array<string, mixed>|null Correspondance sur le seul nom du fichier. */
     private function evaluateName(Source $source, Query $query): ?array
     {
-        $counts = array_map(static fn (string $p): int => (int) preg_match_all($p, $source->name()), $query->patterns);
+        $counts = array_map(static fn (int $i): int => $query->count($source->name(), $i), array_keys($query->terms));
 
         return $query->isMatch($counts) ? $this->payload($source, $counts, [], 0, true) : null;
     }
@@ -233,7 +239,7 @@ final class SearchEngine
             return $this->evaluateName($source, $query);
         }
         $nameHit = $options->target === SearchOptions::TARGET_BOTH && $this->evaluateName($source, $query) !== null;
-        $nameCounts = $nameHit ? array_map(static fn (string $p): int => (int) preg_match_all($p, $source->name()), $query->patterns) : [];
+        $nameCounts = $nameHit ? array_map(static fn (int $i): int => $query->count($source->name(), $i), array_keys($query->terms)) : [];
 
         try {
             $document = $this->extractors->extract($source);

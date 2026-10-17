@@ -55,7 +55,7 @@ final class PdfExtractor implements Extractor
     /** @template T @param \Closure(string): T $use @return T */
     private function withTempFile(Source $source, \Closure $use): mixed
     {
-        if (!$source->inArchive()) {
+        if (!$source->inMemory()) {
             return $use($source->diskPath);
         }
         $temp = tempnam(sys_get_temp_dir(), 'poseidon_pdf_');
@@ -74,7 +74,7 @@ final class PdfExtractor implements Extractor
     {
         $temp = null;
         $path = $source->diskPath;
-        if ($source->inArchive()) {
+        if ($source->inMemory()) {
             $temp = tempnam(sys_get_temp_dir(), 'poseidon_pdf_');
             if ($temp === false) {
                 throw new UnreadableFileException('Fichier temporaire impossible pour le PDF.');

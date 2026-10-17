@@ -77,7 +77,12 @@ Saisie + 5 modes (segmenté) : tous les mots, un des mots, phrase exacte, motif 
 - Tri par nom, par compteur de chaque terme ou par total.
 - Clic ou `Entrée` sur une ligne → aperçu ; flèches haut/bas pour naviguer.
 - Cases à cocher : deux fichiers → **Comparer**.
+- **Git** cherche le filtre dans l'historique du dépôt (commits où il a été ajouté ou retiré, documents compris) ;
 - **Extraire** ouvre le volet d'extraction ; **Rapport** ouvre le rapport HTML dans un onglet ; **Lien** copie une adresse `…/#root=…&q=…` qui rejoue la recherche à l'ouverture.
+
+### Changements depuis la recherche précédente
+
+Quand la même recherche a déjà été faite, une bande bleue sous la synthèse indique `+N nouveaux · −M disparus · K modifiés` ; « Voir les changements » remplace le tableau par la liste détaillée (compteurs avant → après).
 
 ### Fichiers ignorés
 
@@ -85,7 +90,7 @@ Bande d'alerte en ligne sous la synthèse (jamais par-dessus le contenu) : nombr
 
 ### Volet d'aperçu
 
-Nom, chemin absolu complet (archives comprises), taille, date, compteurs par pavillon ; actions Télécharger, Ouvrir (PDF, texte, images), Texte (.txt extrait), Chemin (copie). Onglet **Texte** : lignes avec emplacement (ligne, page, §, feuille · ligne), navigation d'occurrence. Onglet **Tableau** (tableurs/CSV) : grille par feuille ; un clic sur une lettre de colonne l'ajoute au mapping d'extraction.
+Nom, chemin absolu complet (archives comprises), taille, date, compteurs par pavillon ; onglet **Historique** si le fichier est suivi par Git (commits ; un clic affiche le diff du commit sur le texte extrait) ; actions Télécharger, Ouvrir (PDF, texte, images), Texte (.txt extrait), Chemin (copie). Onglet **Texte** : lignes avec emplacement (ligne, page, §, feuille · ligne), navigation d'occurrence. Onglet **Tableau** (tableurs/CSV) : grille par feuille ; un clic sur une lettre de colonne l'ajoute au mapping d'extraction.
 
 ### Volet d'extraction
 

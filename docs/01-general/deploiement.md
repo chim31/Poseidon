@@ -22,7 +22,7 @@ Mettre Poseidon à disposition d'une équipe, dans un navigateur, en HTTPS. Pour
 | Dossiers montés en lecture seule | Poseidon n'écrit jamais dans les racines | `:ro` (Docker), droits du compte de service |
 | Journal d'audit conservé | Traçabilité (qui a consulté quoi) | `var/log/audit.log`, sauvegardé |
 
-Sans mot de passe ni compte, Poseidon ne répond qu'à `localhost` et aux hôtes de `POSEIDON_HOSTS` (protection DNS rebinding). Dès qu'une authentification existe, tous les noms d'hôte sont acceptés.
+Sans mot de passe ni compte, Poseidon ne répond **qu'à la machine elle-même** (adresse source et nom d'hôte locaux : protège contre un poste du réseau qui enverrait `Host: localhost` et contre le DNS rebinding), avec une réponse 503 expliquant quoi faire. Dès qu'une authentification existe, le réseau est servi. Ouvrir au réseau sans authentification exige `POSEIDON_INSECURE_NO_AUTH=1` (déconseillé).
 
 ## 2. Comptes et rôles
 
@@ -55,8 +55,8 @@ Le dépôt fournit `Dockerfile` (PHP 8.4 sur Debian 13 : SQLite 3.46 pour l'inde
 
 ```sh
 # 1. Adapter docker-compose.yml : nom de domaine (poseidon.exemple.fr) et dossier ./donnees à fouiller
-# 2. Démarrer
-docker compose up -d --build
+# 2. Démarrer avec un mot de passe provisoire (obligatoire : sans lui, Compose refuse de démarrer)
+POSEIDON_PASSWORD='un-mot-de-passe-long' docker compose up -d --build
 # 3. Créer le premier compte administrateur
 docker compose exec poseidon php bin/poseidon user add admin --role=admin
 # 4. (Optionnel) indexer les données

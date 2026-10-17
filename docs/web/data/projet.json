@@ -1,7 +1,7 @@
 {
   "meta": {
     "projet": "Poseidon",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "miseAJour": "2026-10-17",
     "porteur": "chim31",
     "resume": "Recherche et extraction dans les fichiers : la combinaison ls -R, grep -R -i, pipes et cat, en PHP, avec PDF, Word, Excel, OpenDocument et ZIP imbriqués."
@@ -624,22 +624,22 @@
         {
           "id": "L8-04",
           "titre": "Diff entre deux recherches",
-          "description": "Instantanés : fichiers apparus, disparus, occurrences en hausse.",
-          "statut": "À faire",
+          "description": "Instantanés par compte et par recherche : fichiers apparus, disparus, compteurs en hausse ou en baisse (interface, CLI --changes, API).",
+          "statut": "Terminé",
           "priorite": "Moyenne",
           "responsable": "chim31",
-          "date": "",
-          "ref": "Phase 9"
+          "date": "2026-10-17",
+          "ref": "feat/comparaison-avancee"
         },
         {
           "id": "L8-05",
           "titre": "Historique Git",
-          "description": "Dans un dépôt Git : rechercher dans les versions passées, diff entre commits.",
-          "statut": "À faire",
+          "description": "Historique d'un fichier, diff d'un commit sur le texte extrait (DOCX, PDF…), recherche des commits où un filtre a changé.",
+          "statut": "Terminé",
           "priorite": "Basse",
           "responsable": "chim31",
-          "date": "",
-          "ref": "Phase 9"
+          "date": "2026-10-17",
+          "ref": "feat/comparaison-avancee"
         }
       ]
     },
@@ -671,7 +671,7 @@
         {
           "id": "L9-03",
           "titre": "Tests automatisés",
-          "description": "Suite sans dépendance : 111 vérifications (Linux), aussi exécutée sous Windows et dans l'image Docker.",
+          "description": "Suite sans dépendance : 127 vérifications (Linux), 122 (Windows), exécutée aussi dans l'image Docker.",
           "statut": "Terminé",
           "priorite": "Haute",
           "responsable": "chim31",
@@ -841,11 +841,11 @@
       "id": "P9",
       "titre": "Comparaison avancée → v1.0",
       "debut": "2026-10-17",
-      "fin": "2027-03-26",
-      "statut": "En cours",
+      "fin": "2026-10-17",
+      "statut": "Terminé",
       "livrables": [
         "Diff entre deux recherches",
-        "Historique Git",
+        "Historique Git (fichier, diff sur texte extrait, recherche dans les commits)",
         "Version 1.0"
       ]
     }

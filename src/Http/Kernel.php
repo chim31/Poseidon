@@ -58,9 +58,10 @@ final class Kernel
 
         // Anti « DNS rebinding » : sans mot de passe, seuls les hôtes locaux ou déclarés sont servis.
         if (!$this->hostAllowed((string) ($_SERVER['HTTP_HOST'] ?? ''))) {
-            http_response_code(421);
+            http_response_code(503);
             header('Content-Type: text/plain; charset=utf-8');
-            echo "Hôte non autorisé. Accède à Poseidon via 127.0.0.1 ou localhost, ou déclare cet hôte dans POSEIDON_HOSTS (ou protège l'instance avec POSEIDON_PASSWORD).";
+            echo "Poseidon n'est pas encore protégé : sans compte ni mot de passe, il ne répond qu'à la machine locale (http://127.0.0.1).\n"
+                . "Pour l'ouvrir au réseau : crée un compte (php bin/poseidon user add admin --role=admin) ou définis POSEIDON_PASSWORD.";
 
             return;
         }
@@ -116,6 +117,10 @@ final class Kernel
                 ['POST', '/api/templates/delete'] => $this->requireAdmin() ?? $this->templateDelete(),
                 ['GET', '/api/audit'] => $this->requireAdmin() ?? $this->json(['entries' => $this->audit->tail(max(1, min(1000, (int) ($_GET['limit'] ?? 300))))]),
                 ['GET', '/api/report'] => $this->report(),
+                ['GET', '/api/changes'] => $this->changes(),
+                ['GET', '/api/git/log'] => $this->gitLog(),
+                ['GET', '/api/git/diff'] => $this->gitDiff(),
+                ['GET', '/api/git/search'] => $this->gitSearch(),
                 ['POST', '/api/extract'] => $this->extract(),
                 default => throw new HttpError(404, 'Route inconnue : ' . $path),
             };
@@ -158,6 +163,7 @@ final class Kernel
             'indexAvailable' => \Poseidon\Index\Index::available(),
             'ocr' => $this->engine->extractors()->ocrAvailable(),
             'archives7z' => \Poseidon\Archive\Bsdtar::binary() !== null,
+            'git' => \Poseidon\Git\GitHistory::binary() !== null,
             'formats' => [...$this->engine->extractors()->supportedExtensions(), 'zip'],
             'allowedRoots' => array_map([Path::class, 'display'], $this->authenticated() && ($this->currentUser()['roots'] ?? []) !== [] ? $this->currentUser()['roots'] : $this->engine->guard()->allowedRoots()),
             'authRequired' => $this->passwordRequired(),
@@ -231,12 +237,31 @@ final class Kernel
 
         $this->emit($first);
         $events->next();
+        $matches = [];
+        $summary = null;
         while ($events->valid()) {
-            $this->emit($events->current());
+            $event = $events->current();
+            $this->emit($event);
+            if ($event['type'] === 'match') {
+                $matches[] = $event;
+            } elseif ($event['type'] === 'done') {
+                $summary = $event['summary'];
+            }
             if (connection_aborted()) {
                 return; // l'utilisateur a annulé : on arrête le parcours
             }
             $events->next();
+        }
+
+        // Instantané de la recherche et comparaison avec la précédente (mêmes filtre, options et compte).
+        if ($summary !== null) {
+            try {
+                $snapshots = new \Poseidon\History\SnapshotStore($this->config);
+                $snapshots->save($this->currentUser()['login'], $query, $options, $matches, $summary);
+                $this->emit(['type' => 'changes', 'comparison' => $snapshots->compare($this->currentUser()['login'], $query, $options)]);
+            } catch (\Throwable $e) {
+                error_log('[poseidon] instantané impossible : ' . $e->getMessage());
+            }
         }
     }
 
@@ -245,6 +270,101 @@ final class Kernel
     {
         echo json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
         flush();
+    }
+
+    private function changes(): void
+    {
+        $query = Query::fromArray($_GET);
+        $options = SearchOptions::fromArray($_GET);
+        $store = new \Poseidon\History\SnapshotStore($this->config);
+        $user = $this->currentUser()['login'];
+        $this->json([
+            'snapshots' => $store->list($user, $query, $options),
+            'comparison' => $store->compare($user, $query, $options, isset($_GET['from']) ? (string) $_GET['from'] : null, isset($_GET['to']) ? (string) $_GET['to'] : null),
+        ]);
+    }
+
+    /** @return array{0: \Poseidon\Filesystem\Source, 1: string, 2: string} Fichier, dépôt, chemin relatif au dépôt. */
+    private function gitFile(): array
+    {
+        $source = $this->locator->locate($this->required('id'));
+        if ($source->inArchive()) {
+            throw new HttpError(422, 'Ce fichier est dans une archive : il n\'a pas d\'historique Git propre.');
+        }
+        if (\Poseidon\Git\GitHistory::binary() === null) {
+            throw new HttpError(422, 'Git n\'est pas installé sur ce serveur.');
+        }
+        $repo = \Poseidon\Git\GitHistory::repository($source->diskPath) ?? throw new HttpError(404, 'Ce fichier n\'est pas dans un dépôt Git.');
+
+        return [$source, $repo, (string) Path::relativeTo($source->diskPath, $repo)];
+    }
+
+    private function gitLog(): void
+    {
+        try {
+            [$source, $repo, $rel] = $this->gitFile();
+        } catch (HttpError $e) {
+            $this->json(['available' => false, 'reason' => $e->getMessage(), 'commits' => []]);
+
+            return;
+        }
+        $this->json(['available' => true, 'repository' => Path::display($repo), 'path' => $rel, 'commits' => \Poseidon\Git\GitHistory::log($repo, $rel)]);
+    }
+
+    private function gitDiff(): void
+    {
+        [$source, $repo, $rel] = $this->gitFile();
+        $commit = $this->required('commit');
+        \Poseidon\Git\GitHistory::assertRevision($commit);
+        $max = (int) $this->config->get('max_file_size');
+        $parent = \Poseidon\Git\GitHistory::parent($repo, $commit);
+        $before = $parent === '' ? '' : \Poseidon\Git\GitHistory::show($repo, $parent, $rel, $max);
+        $after = \Poseidon\Git\GitHistory::show($repo, $commit, $rel, $max);
+        $this->audit->log('historique git', $this->currentUser()['login'], ['fichier' => $source->absolutePath(), 'commit' => $commit]);
+
+        $ops = Diff::lines($this->versionLines($source, $before), $this->versionLines($source, $after));
+        $hunks = Diff::hunks($ops);
+        $this->json([
+            'commit' => $commit,
+            'parent' => $parent,
+            'path' => $rel,
+            'added' => count(array_filter($ops, static fn (array $o): bool => $o[0] === '+')),
+            'removed' => count(array_filter($ops, static fn (array $o): bool => $o[0] === '-')),
+            'identical' => $hunks === [],
+            'hunks' => array_slice($hunks, 0, 500),
+            'unified' => Diff::unified($rel . '@' . ($parent === '' ? 'vide' : substr($parent, 0, 8)), $rel . '@' . substr($commit, 0, 8), $hunks),
+        ]);
+    }
+
+    /** @return list<string> Texte extrait d'une version (PDF, DOCX… comme fichiers texte). */
+    private function versionLines(\Poseidon\Filesystem\Source $source, string $bytes): array
+    {
+        if ($bytes === '') {
+            return [];
+        }
+        $version = new \Poseidon\Filesystem\Source($source->diskPath, [], $source->root, strlen($bytes), 0, static fn (): string => $bytes);
+        try {
+            $document = $this->engine->extractors()->extract($version, false);
+        } catch (UnreadableFileException) {
+            $document = null;
+        }
+
+        return $document === null ? ['(version non textuelle : ' . strlen($bytes) . ' octets)'] : array_column($document->lines, 1);
+    }
+
+    private function gitSearch(): void
+    {
+        $root = $this->engine->guard()->resolveRoot($this->required('root'));
+        $q = trim($this->required('q'));
+        if (\Poseidon\Git\GitHistory::binary() === null) {
+            throw new HttpError(422, 'Git n\'est pas installé sur ce serveur.');
+        }
+        $repo = \Poseidon\Git\GitHistory::repository($root) ?? throw new HttpError(404, 'Cette racine n\'est pas dans un dépôt Git.');
+        $this->audit->log('recherche git', $this->currentUser()['login'], ['racine' => $root, 'filtre' => $q]);
+        $this->json([
+            'repository' => Path::display($repo),
+            'commits' => (new \Poseidon\Git\HistorySearch($this->engine->extractors()))->search($repo, (string) Path::relativeTo($root, $repo), Query::fromArray($_GET)),
+        ]);
     }
 
     private function indexStatus(): void
@@ -584,18 +704,30 @@ final class Kernel
         session_start();
     }
 
+    /**
+     * Sans authentification, seule la machine elle-même peut utiliser Poseidon : adresse source locale
+     * (un poste du réseau pourrait sinon envoyer « Host: localhost ») et hôte local (anti DNS rebinding).
+     * L'ouverture au réseau sans mot de passe exige un choix explicite (POSEIDON_INSECURE_NO_AUTH=1).
+     */
     private function hostAllowed(string $host): bool
     {
-        if ($this->passwordRequired() || PHP_SAPI === 'cli') {
+        if ($this->passwordRequired() || PHP_SAPI === 'cli' && !isset($_SERVER['REMOTE_ADDR'])) {
             return true;
         }
         $name = strtolower((string) preg_replace('/:\d+$/', '', trim($host)));
-        if (in_array($name, ['localhost', '127.0.0.1', '[::1]', '::1'], true) || str_ends_with($name, '.localhost')) {
+        $localName = in_array($name, ['localhost', '127.0.0.1', '[::1]', '::1'], true) || str_ends_with($name, '.localhost');
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $localClient = $remote === '127.0.0.1' || $remote === '::1' || str_starts_with($remote, '127.') || $remote === '::ffff:127.0.0.1';
+        if ($localName && $localClient) {
             return true;
         }
-        $extra = array_filter(array_map(static fn (string $h): string => strtolower(trim($h)), (array) $this->config->get('allowed_hosts', [])));
+        if ($this->config->get('insecure_no_auth', false) === true) {
+            $extra = array_filter(array_map(static fn (string $h): string => strtolower(trim($h)), (array) $this->config->get('allowed_hosts', [])));
 
-        return in_array($name, $extra, true);
+            return $localName || in_array($name, $extra, true);
+        }
+
+        return false;
     }
 
     private function passwordRequired(): bool

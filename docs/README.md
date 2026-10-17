@@ -27,6 +27,7 @@ Index de toute la documentation. Commence par le [guide de démarrage](01-genera
 | [backend/moteur-de-recherche.md](02-technique/backend/moteur-de-recherche.md) | `Query`, `Matcher`, `SearchEngine`, `Diff` |
 | [backend/extraction-de-donnees.md](02-technique/backend/extraction-de-donnees.md) | `DataExtractor`, `Writer`, `XlsxWriter` |
 | [backend/index-plein-texte.md](02-technique/backend/index-plein-texte.md) | `Index`, `Indexer` (SQLite FTS5) |
+| [backend/historique.md](02-technique/backend/historique.md) | Instantanés de recherche, historique Git |
 | [backend/http-et-cli.md](02-technique/backend/http-et-cli.md) | `Kernel` HTTP et `Application` CLI |
 
 ## 03 — Suivi
@@ -35,6 +36,7 @@ Index de toute la documentation. Commence par le [guide de démarrage](01-genera
 | --- | --- |
 | [suivi-cahier-des-charges.md](03-suivi/suivi-cahier-des-charges.md) | Avancement par exigence (généré) |
 | [anomalies.md](03-suivi/anomalies.md) | Registre des anomalies et limitations |
+| [versions.md](03-suivi/versions.md) | Journal des versions |
 | [Cahier des charges web](web/cahier-des-charges.html) | Version web, avec tableau de bord et filtres |
 | [Roadmap web](web/roadmap.html) | Frise et phases jusqu'à la v1.0 |
 

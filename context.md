@@ -2,7 +2,7 @@
 
 > Source de vérité partagée par tous les intervenants (humains et agents). À lire au début de chaque session, à mettre à jour avant de clôturer toute action.
 
-**Dernière mise à jour :** 2026-10-17 · **Version :** 0.1.0
+**Dernière mise à jour :** 2026-10-17 · **Version :** 1.0.0
 
 ## Sommaire
 
@@ -57,7 +57,9 @@ Formats : TXT, MD, CSV, logs, code, PDF (OCR si scanné), DOCX, DOC, ODT, RTF, X
 | Formats étendus (courriels .eml/.msg, 7z/RAR/tar/gz, OCR) | Terminés — phase P6 |
 | Extraction avancée (proximité, flou, groupes nommés, modèles, historique, partage, rapport) | Terminée — phase P7 |
 | Équipe et déploiement (comptes, rôles, audit, Docker, HTTPS, mode sombre) | Terminés — phase P8 |
-| Phase en cours | P9 — Comparaison avancée → v1.0 |
+| Comparaison avancée (instantanés, historique Git) | Terminée — phase P9 |
+| **Version 1.0.0** | Publiée le 2026-10-17 : toutes les phases de la roadmap sont terminées |
+| Reste ouvert | CI GitHub Actions bloquée par la facturation du compte (à régler par le porteur) ; idées hors périmètre v1 : annuaire LDAP/SSO, partage SMB direct sous Linux |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
 
@@ -75,6 +77,8 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-17 | Historique Git sur le texte extrait | Un commit sur un DOCX ou un PDF se lit comme un diff de texte ; la recherche dans l'historique extrait les documents que `git log -S` ne voit pas. |
+| 2026-10-17 | Instantanés par compte et par recherche | Comparer deux recherches identiques sans rien stocker de plus que la liste des fichiers et leurs compteurs. |
 | 2026-10-17 | Comptes locaux en fichier JSON (pas de base) | Suffisant pour une équipe ; mots de passe hachés, rôles admin/lecteur, racines par compte ; LDAP/SSO hors périmètre. |
 | 2026-10-17 | Image Docker sur Debian 13 | SQLite 3.46 requis par l'index ; Tesseract français et libarchive inclus ; compte non root ; Caddy pour le HTTPS automatique. |
 | 2026-10-17 | Proximité et recherche floue dans le moteur | Un seul point d'entrée (`Query::find`) pour le moteur, l'aperçu, l'extraction et les noms : surlignage, comptage et export restent cohérents. Distance de Damerau (inversion = 1 faute). |
@@ -127,6 +131,7 @@ Projet individuel : pas de binôme.
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |
+| 2026-10-17 | Phase P9 : changements entre deux recherches, historique Git (fichier, diff, recherche) ; BUG-028 (accès réseau sans authentification) à BUG-031 ; tests Linux 127/127, Windows 122/122. **Version 1.0.0.** |
 | 2026-10-17 | Phase P8 : comptes et rôles, anti-forçage, journal d'audit, image Docker (tests et vrai OCR vérifiés dans le conteneur), guide HTTPS, mode sombre ; BUG-026 et BUG-027 ; tests Linux 111/111. |
 | 2026-10-17 | Phase P7 : proximité, flou, groupes nommés → colonnes, modèles d'extraction, historique, lien de partage, rapport HTML ; 3 correctifs de sécurité (BUG-023 à 025) et BUG-022 ; tests Linux 98/98. |
 | 2026-10-17 | Phase P6 : courriels .eml/.msg avec pièces jointes, 7z/RAR/tar/gz, OCR ; tests Linux 82/82, Windows 77/77. |

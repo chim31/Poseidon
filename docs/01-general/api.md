@@ -12,7 +12,7 @@ L'interface web consomme cette API ; elle est aussi utilisable par un script (`c
 | Authentification | comptes (`var/users.json`) ou mot de passe partagé (`POSEIDON_PASSWORD`) : `POST /api/login`, puis cookie de session `poseidon` ; sans les deux : accès local |
 | Rôles | `admin` (index, suppression de modèles, audit) et `lecteur` ; un compte peut être limité à ses propres racines |
 | En-tête obligatoire | toute requête `/api/` doit porter `X-Poseidon: 1` (anti-CSRF et anti-rebinding), sauf `GET /api/file` et `GET /api/text` (liens de téléchargement à identifiant signé) |
-| Hôtes | sans mot de passe, seuls `localhost`, `127.0.0.1`, `::1` et les hôtes de `POSEIDON_HOSTS` sont servis (sinon 421) |
+| Accès réseau | sans compte ni mot de passe, seules les requêtes **émises par la machine locale** vers un hôte local sont servies (sinon 503) ; ouverture explicite et déconseillée : `POSEIDON_INSECURE_NO_AUTH=1` + `POSEIDON_HOSTS` |
 | Erreurs | `{"error": "message"}` avec le code HTTP ci-dessous ; les fichiers protégés ajoutent `"reason"` |
 | Identifiants de fichiers | jetons signés `id` reçus dans les résultats ; ne pas les fabriquer |
 
@@ -22,7 +22,7 @@ L'interface web consomme cette API ; elle est aussi utilisable par un script (`c
 | 401 | Authentification requise ou mot de passe incorrect |
 | 403 | En-tête `X-Poseidon` manquant, ou chemin hors des racines autorisées |
 | 404 | Route inconnue |
-| 421 | Hôte non autorisé (protection DNS rebinding) |
+| 503 | Instance sans authentification interrogée depuis une autre machine ou un autre nom d'hôte (seule la machine locale est servie) |
 | 429 | Trop de tentatives de connexion (5 en 10 minutes par adresse IP) |
 | 415 | Fichier sans texte exploitable |
 | 422 | Fichier illisible ou protégé (`reason` : `protected`, `denied`, `corrupt`, `timeout`…) |
@@ -59,7 +59,7 @@ Informations publiques (en-tête `X-Poseidon: 1` requis). Réponse :
 { "name": "Poseidon", "version": "0.1.0", "php": "8.4.24", "os": "Linux", "pdfEngine": "pdftotext",
   "formats": ["txt", "md", "pdf", "docx", "xlsx", "zip"], "allowedRoots": [], "authRequired": false,
   "authenticated": true, "home": "/home/moi", "demo": "/opt/poseidon/samples/demo (null si POSEIDON_DEMO=0)",
-  "indexAvailable": true, "ocr": false, "archives7z": true, "authMode": "none", "user": { "login": "local", "role": "admin" } }
+  "indexAvailable": true, "ocr": false, "archives7z": true, "git": true, "authMode": "none", "user": { "login": "local", "role": "admin" } }
 ```
 
 ### `GET /api/browse?path=`
@@ -83,6 +83,16 @@ Flux NDJSON (une ligne JSON par événement), `Content-Type: application/x-ndjso
 ```
 
 `spans` : `[position, longueur, index du terme]` en caractères. `index` vaut `null` sans index. Fermer la connexion arrête le parcours.
+
+Après `done`, un dernier événement compare avec la recherche identique précédente du même compte : `{"type":"changes","comparison":{"from":{…},"to":{…},"appeared":[{"path":"…","total":3}],"disappeared":[…],"changed":[{"path":"…","before":1,"after":4,"modified":true}],"unchanged":12}}` (`comparison` vaut `null` la première fois).
+
+### `GET /api/changes?…&from=&to=`
+
+Instantanés de la recherche (mêmes paramètres que `/api/search`) et comparaison : `{"snapshots":[{"id":"20261017-091200-123456","at":"…","matched":17,"occurrences":24}], "comparison":{…}}`.
+
+### `GET /api/git/log?id=` · `GET /api/git/diff?id=&commit=` · `GET /api/git/search?root=&q=&mode=`
+
+Historique Git : commits d'un fichier (`{"available":true,"repository":"…","path":"…","commits":[{"hash","short","author","date","subject"}]}`), diff d'un commit sur le texte extrait (même format que `/api/diff`, plus `commit`, `parent`, `path`), commits où le filtre a changé (`{"repository":"…","commits":[{…,"files":[{"path":"…","before":0,"after":1}]}]}`).
 
 ### `GET /api/preview?id=&q=&mode=…`
 

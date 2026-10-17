@@ -196,6 +196,7 @@
       </div>
       <div class="summary-actions">
         <button class="btn btn-quiet" id="share-btn" type="button" title="Copier un lien qui rejoue cette recherche"><svg><use href="#i-link"/></svg>Lien</button>
+        <button class="btn btn-quiet" id="git-btn" type="button" hidden title="Chercher le filtre dans l'historique Git du dossier"><svg><use href="#i-compare"/></svg>Git</button>
         <button class="btn btn-quiet" id="report-btn" type="button" title="Rapport HTML de la recherche (imprimable en PDF)"><svg><use href="#i-file"/></svg>Rapport</button>
         <button class="btn btn-quiet" id="compare-btn" type="button" disabled title="Coche deux fichiers pour les comparer"><svg><use href="#i-compare"/></svg>Comparer</button>
         <button class="btn btn-outline" id="extract-btn" type="button"><svg><use href="#i-extract"/></svg>Extraire</button>
@@ -207,6 +208,13 @@
       <p><b id="alert-title"></b> <span id="alert-detail"></span> <span class="alert-path mono" id="alert-path"></span></p>
       <button class="link-btn" id="alert-more" type="button">Voir le détail</button>
       <button class="icon-btn" id="alert-close" type="button" aria-label="Masquer l'alerte"><svg><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="changes-band" id="changes-band" role="status" hidden>
+      <svg><use href="#i-history"/></svg>
+      <p id="changes-text"></p>
+      <button class="link-btn" id="changes-open" type="button">Voir les changements</button>
+      <button class="icon-btn" id="changes-close" type="button" aria-label="Masquer"><svg><use href="#i-x"/></svg></button>
     </div>
 
     <section class="results" id="results">
@@ -238,6 +246,15 @@
         </table>
         <button class="btn btn-quiet more" id="more" type="button" hidden>Afficher plus de résultats</button>
       </div>
+
+      <section class="changes" id="changes" hidden aria-labelledby="changes-title">
+        <header class="diff-head">
+          <button class="btn btn-quiet" id="changes-back" type="button"><svg><use href="#i-back"/></svg>Résultats</button>
+          <h2 id="changes-title">Changements</h2>
+          <span class="diff-stats mono" id="changes-stats"></span>
+        </header>
+        <div class="changes-body" id="changes-body"></div>
+      </section>
 
       <section class="diff" id="diff" hidden aria-labelledby="diff-title">
         <header class="diff-head">
@@ -275,6 +292,7 @@
       <div class="preview-tabs" role="tablist">
         <button role="tab" id="tab-text" aria-selected="true" aria-controls="pv-lines">Texte</button>
         <button role="tab" id="tab-table" aria-selected="false" aria-controls="pv-table" hidden>Tableau</button>
+        <button role="tab" id="tab-git" aria-selected="false" aria-controls="pv-git" hidden>Historique</button>
         <div class="occ-nav" id="occ-nav">
           <span class="mono" id="occ-pos">—</span>
           <button class="icon-btn" id="occ-prev" type="button" aria-label="Occurrence précédente"><svg><use href="#i-chev-up"/></svg></button>
@@ -284,6 +302,7 @@
       <div class="preview-body">
         <ol class="lines mono" id="pv-lines" role="tabpanel" aria-labelledby="tab-text"></ol>
         <div class="sheet" id="pv-table" role="tabpanel" aria-labelledby="tab-table" hidden></div>
+        <ol class="commits" id="pv-git" role="tabpanel" aria-labelledby="tab-git" hidden></ol>
         <div class="skeleton" id="pv-loading" hidden><span></span><span></span><span></span><span></span><span></span></div>
       </div>
     </div>

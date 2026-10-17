@@ -47,6 +47,12 @@ final class Source
         return $this->innerPath !== [];
     }
 
+    /** Contenu fourni en mémoire (entrée d'archive, version Git…) : ne jamais relire le chemin sur le disque. */
+    public function inMemory(): bool
+    {
+        return $this->loader !== null || $this->inArchive();
+    }
+
     public function archiveDepth(): int
     {
         return count($this->innerPath);

@@ -49,7 +49,7 @@ Sur un UNC, `..` ne remonte jamais au-dessus de `\\serveur\partage`.
 | Audit | `Auth\AuditLog` | `var/log/audit.log` (JSON par ligne), rotation à 10 Mo ; toutes les actions sensibles |
 | Erreurs PHP | `public/index.php` | `display_errors=0` : journalisées, jamais renvoyées au navigateur |
 | Anti-CSRF | `Http\Kernel` | Toute l'API exige l'en-tête `X-Poseidon: 1` (impossible à poser depuis un site tiers sans pré-requête CORS, refusée), sauf les liens de téléchargement à identifiant signé |
-| Anti-DNS-rebinding | `Http\Kernel` | Sans mot de passe : seuls `localhost`, `127.0.0.1`, `::1` et `allowed_hosts` (`POSEIDON_HOSTS`) sont servis, sinon 421 |
+| Accès sans authentification | `Http\Kernel` | Sans compte ni mot de passe : adresse source **et** nom d'hôte locaux exigés (poste du réseau avec `Host: localhost` refusé, DNS rebinding refusé), sinon 503 ; ouverture explicite `insecure_no_auth` + `allowed_hosts` |
 | En-têtes | `Http\Kernel` | CSP `default-src 'self'`, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` ; fichiers servis avec `CSP: sandbox` |
 | Exports | `Export\Writer` | Toute cellule CSV (en-têtes compris) commençant par `= + - @ \| %`, même après des espaces, préfixée d'une apostrophe |
 | Archives | `ZipWalker`, `OfficeArchive` | Profondeur, taille, volume, ratio, nombre d'entrées bornés ; parties XML Office bornées (150 Mo, ratio 200) |

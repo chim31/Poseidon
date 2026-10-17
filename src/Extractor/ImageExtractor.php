@@ -27,7 +27,7 @@ final class ImageExtractor implements Extractor
     {
         $path = $source->diskPath;
         $temp = null;
-        if ($source->inArchive()) {
+        if ($source->inMemory()) {
             $temp = tempnam(sys_get_temp_dir(), 'poseidon_img_');
             if ($temp === false) {
                 throw new UnreadableFileException('Fichier temporaire impossible pour l\'image.');

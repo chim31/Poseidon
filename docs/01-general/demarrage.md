@@ -27,6 +27,7 @@ Tout ce qu'il faut pour installer, configurer, lancer, tester et déployer Posei
 | Extension `pdo_sqlite` (SQLite ≥ 3.43) | incluse dans PHP | Non, recommandé | Index plein texte (recherches instantanées) |
 | `bsdtar` (libarchive) | toute version récente | Non | Archives 7z, RAR, ISO, CAB, tar.xz — déjà présent sous Windows 10/11 (`tar.exe`) |
 | Tesseract OCR (+ langue `fra`) | 4 ou 5 | Non | PDF scannés et images |
+| Git | toute version récente | Non | Historique des fichiers suivis par Git |
 | Navigateur | Chrome, Edge, Firefox, Safari récents | Pour l'interface | |
 
 Aucun Composer, aucun Node, aucune base de données.
@@ -102,7 +103,8 @@ return [
 | `POSEIDON_ROOTS` | vide (aucune restriction) | Racines autorisées, séparées par `;` |
 | `POSEIDON_PASSWORD` | vide (pas d'authentification) | Mot de passe d'accès à l'interface |
 | `POSEIDON_DEMO` | activé | `0` : pas d'échantillons de démonstration (serveurs) |
-| `POSEIDON_HOSTS` | vide | Noms d'hôte acceptés en plus de `localhost` quand il n'y a pas de mot de passe (ex. `poste-42;192.168.1.20`) |
+| `POSEIDON_INSECURE_NO_AUTH` | désactivé | `1` : servir le réseau sans authentification (déconseillé) |
+| `POSEIDON_HOSTS` | vide | Avec `POSEIDON_INSECURE_NO_AUTH=1` : noms d'hôte acceptés (ex. `poste-42;192.168.1.20`) |
 | `POSEIDON_MAX_FILE_SIZE` | 200 Mo | Taille maximale d'un fichier analysé (octets) |
 | `POSEIDON_PDFTOTEXT` | détecté dans le `PATH` | Chemin explicite de `pdftotext` |
 | `POSEIDON_ANTIWORD` | détecté dans le `PATH` | Chemin explicite d'`antiword` |
@@ -149,6 +151,9 @@ php bin/poseidon help
 | Mots proches (≤ 5 mots d'écart, même sur 2 lignes) | `php bin/poseidon search ./docs "contrat résiliation" --mode=near --distance=5` |
 | Avec fautes de frappe | `php bin/poseidon search ./docs "contart" --fuzzy` |
 | Rapport HTML / PDF | `php bin/poseidon report ./docs "résiliation" --out=rapport.html` |
+| Ce qui a changé depuis la même recherche | `... --changes` |
+| Historique Git d'un fichier | `php bin/poseidon git-log ./docs/contrat.docx` |
+| Commits où un terme a été ajouté ou retiré | `php bin/poseidon git-search ./docs "préavis"` |
 | Seulement les PDF et DOCX | `... --ext=pdf,docx` |
 | Juste la liste des fichiers (`grep -l`) | `... -l` |
 | Dans les noms de fichiers (`ls -R \| grep`) | `... --target=name` |
@@ -189,7 +194,7 @@ Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` apr�
 php tests/run.php
 ```
 
-La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `111 tests réussis` sous Linux, `106` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
+La suite génère des fichiers synthétiques (DOCX, XLSX, PDF, ZIP dans ZIP, ZIP chiffré, document protégé, fichier sans droit), vérifie chemins, filtres, formats, avertissements, extraction, identifiants signés et diff, puis nettoie tout. Résultat attendu : `127 tests réussis` sous Linux, `122` sous Windows (la section « Index » est ignorée sans `pdo_sqlite`). L'intégration continue GitHub Actions (`.github/workflows/tests.yml`) lance la même suite sous Linux et Windows, PHP 8.2 et 8.4, à chaque pull request — à condition que le compte GitHub ne soit pas bloqué pour facturation.
 
 Régénérer les échantillons de démonstration : `php bin/poseidon demo`.
 
@@ -199,7 +204,7 @@ Guide complet (comptes, Docker + HTTPS, Nginx, Apache, Windows Server, sauvegard
 
 Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour un accès réseau :
 
-1. **Toujours** définir `POSEIDON_PASSWORD` et `POSEIDON_ROOTS`. Sans mot de passe, Poseidon ne répond qu'aux hôtes locaux et à ceux de `POSEIDON_HOSTS` (protection contre le « DNS rebinding »).
+1. **Toujours** créer des comptes (ou définir `POSEIDON_PASSWORD`) et `POSEIDON_ROOTS`. Sans authentification, Poseidon ne répond qu'à la machine locale.
 2. Servir `public/` avec Apache ou Nginx + PHP-FPM, en réécrivant toutes les requêtes non statiques vers `public/index.php` :
 
    ```nginx
@@ -252,6 +257,6 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 | Une phrase exacte n'est pas trouvée dans un PDF | La phrase est coupée par un retour à la ligne | Utiliser le mode « Proximité » (distance 0 ou 1) : il enchaîne les lignes |
 | L'aperçu reste bloqué pendant une longue recherche (Windows) | Serveur intégré PHP mono-processus sous Windows | Indexer la racine (recherches beaucoup plus courtes), ou servir via Apache/Nginx (§ 8) |
 | Le bloc « Index » n'apparaît pas | `pdo_sqlite` absent ou SQLite < 3.43 | Activer `extension=pdo_sqlite` dans `php.ini` |
-| « Hôte non autorisé » (code 421) | Accès par un nom ou une IP autre que `localhost` sans mot de passe | Définir `POSEIDON_PASSWORD`, ou ajouter l'hôte à `POSEIDON_HOSTS` |
+| « Poseidon n'est pas encore protégé » (code 503) | Accès depuis une autre machine alors qu'aucun compte ni mot de passe n'existe | Créer un compte (`poseidon user add`) ou définir `POSEIDON_PASSWORD` |
 | « Identifiant de fichier invalide ou expiré » | `var/secret.key` régénéré (nouvelle installation) | Relancer la recherche |
 | Fichier signalé « Protégé » | Mot de passe sur le document ou l'archive | Normal : Poseidon n'ouvre pas les fichiers protégés |

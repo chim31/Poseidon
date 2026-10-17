@@ -44,7 +44,7 @@ final class LegacyOfficeExtractor implements Extractor
             throw UnreadableFileException::protected('Document Office protégé par mot de passe');
         }
 
-        if ($this->antiword !== null && $source->extension() === 'doc' && !$source->inArchive()) {
+        if ($this->antiword !== null && $source->extension() === 'doc' && !$source->inMemory()) {
             $result = Process::run([$this->antiword, '-m', 'UTF-8.txt', $source->diskPath], 20);
             if ($result['code'] === 0 && trim($result['stdout']) !== '') {
                 return new Document(Text::lines($result['stdout']));

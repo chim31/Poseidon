@@ -39,7 +39,7 @@ final class Kernel
     public function __construct(private Config $config)
     {
         $this->engine = new SearchEngine($config);
-        $this->locator = new FileLocator($this->engine->guard());
+        $this->locator = $this->engine->locator();
     }
 
     public function handle(string $method, string $uri): void
@@ -71,7 +71,7 @@ final class Kernel
         try {
             // En-tête obligatoire sur toute l'API (sauf liens de téléchargement, protégés par identifiant signé) :
             // un site tiers ne peut pas le poser sans requête préalable CORS, refusée.
-            $direct = $method === 'GET' && in_array($path, ['/api/file', '/api/text'], true);
+            $direct = $method === 'GET' && in_array($path, ['/api/file', '/api/text', '/api/report'], true);
             if (!$direct && ($_SERVER['HTTP_X_POSEIDON'] ?? '') !== '1') {
                 throw new HttpError(403, 'Requête refusée (en-tête de sécurité manquant).');
             }
@@ -101,6 +101,10 @@ final class Kernel
                 ['GET', '/api/index'] => $this->indexStatus(),
                 ['POST', '/api/index'] => $this->indexBuild(),
                 ['POST', '/api/index/delete'] => $this->indexDelete(),
+                ['GET', '/api/templates'] => $this->json(['templates' => (new \Poseidon\Export\TemplateStore($this->config))->all()]),
+                ['POST', '/api/templates'] => $this->templateSave(),
+                ['POST', '/api/templates/delete'] => $this->json(['deleted' => (new \Poseidon\Export\TemplateStore($this->config))->delete((string) ($this->input()['name'] ?? ''))]),
+                ['GET', '/api/report'] => $this->report(),
                 ['POST', '/api/extract'] => $this->extract(),
                 default => throw new HttpError(404, 'Route inconnue : ' . $path),
             };
@@ -259,6 +263,26 @@ final class Kernel
         }
     }
 
+    private function templateSave(): void
+    {
+        $input = $this->input();
+        $template = (new \Poseidon\Export\TemplateStore($this->config))->save((string) ($input['templateName'] ?? ''), $input, (string) ($input['templateDescription'] ?? ''));
+        $this->json(['template' => $template]);
+    }
+
+    private function report(): void
+    {
+        set_time_limit(0);
+        $query = Query::fromArray($_GET);
+        $options = SearchOptions::fromArray($_GET);
+        $html = \Poseidon\Report\HtmlReport::render($query, $options, $this->engine->collect($query, $options));
+        // Rapport autonome : styles en ligne autorisés, aucun script.
+        header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'");
+        header('Content-Type: text/html; charset=utf-8');
+        header('Content-Disposition: ' . (($_GET['inline'] ?? '') === '1' ? 'inline' : 'attachment') . '; ' . self::filenameHeader('rapport-poseidon-' . date('Ymd-His') . '.html'));
+        echo $html;
+    }
+
     private function indexDelete(): void
     {
         $root = $this->engine->guard()->resolveRoot((string) ($this->input()['root'] ?? ''));
@@ -278,24 +302,10 @@ final class Kernel
         $spansByLine = [];
         $counts = [];
         if (trim((string) ($_GET['q'] ?? '')) !== '') {
-            $query = Query::fromArray($_GET);
-            $result = (new Matcher($query, PHP_INT_MAX))->match($document);
-            $counts = $result->counts;
-            foreach ($document->lines as $i => [, $line]) {
-                $spans = [];
-                foreach ($query->patterns as $t => $pattern) {
-                    if (preg_match_all($pattern, $line, $m, PREG_OFFSET_CAPTURE) > 0) {
-                        foreach ($m[0] as [$value, $offset]) {
-                            if ($value !== '') {
-                                $spans[] = [mb_strlen(substr($line, 0, $offset)), mb_strlen($value), $t];
-                            }
-                        }
-                    }
-                }
-                if ($spans !== []) {
-                    usort($spans, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
-                    $spansByLine[$i] = $spans;
-                }
+            $matcher = new Matcher(Query::fromArray($_GET), PHP_INT_MAX);
+            $counts = $matcher->match($document)->counts;
+            foreach ($matcher->spans($document) as $i => $spans) {
+                $spansByLine[$i] = array_map(static fn (array $sp): array => [$sp[0], $sp[1], $sp[2]], $spans);
             }
         }
 

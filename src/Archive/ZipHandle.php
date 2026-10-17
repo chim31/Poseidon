@@ -21,7 +21,7 @@ final class ZipHandle
     public static function open(Source $source): self
     {
         $temp = null;
-        if ($source->inArchive()) {
+        if ($source->inMemory()) {
             $temp = tempnam(sys_get_temp_dir(), 'poseidon_');
             if ($temp === false || file_put_contents($temp, $source->bytes()) === false) {
                 throw new UnreadableFileException('Impossible de créer un fichier temporaire pour l\'archive imbriquée.', UnreadableFileException::DENIED);

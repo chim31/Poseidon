@@ -291,7 +291,7 @@ final class ArchiveWalker
     /** @return array{0: string, 1: bool} Chemin lisible par un outil externe, et s'il faut le supprimer. */
     private function onDisk(Source $container): array
     {
-        if (!$container->inArchive()) {
+        if (!$container->inMemory()) {
             return [Path::toNative($container->diskPath), false];
         }
         $suffix = preg_match('/(\.tar\.(?:gz|bz2|xz)|\.[a-z0-9]+)$/i', $container->name(), $m) ? strtolower($m[1]) : '.bin';

@@ -75,7 +75,7 @@ final class ExtractorRegistry
      *
      * @throws \Poseidon\Filesystem\UnreadableFileException
      */
-    public function extract(Source $source): ?Document
+    public function extract(Source $source, bool $useCache = true): ?Document
     {
         $ext = $source->extension();
         $extractor = $this->byExtension[$ext] ?? null;
@@ -84,14 +84,14 @@ final class ExtractorRegistry
             if (\Poseidon\Archive\ArchiveWalker::isContainer($source->name()) || in_array($ext, ['zip', 'jar', 'war', 'ear', '7z', 'rar', 'gz', 'tgz', 'tar', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'mp3', 'mp4', 'avi', 'mov', 'mkv', 'exe', 'dll', 'so', 'bin', 'iso', 'gz', 'tgz', '7z', 'rar', 'woff', 'woff2', 'ttf', 'otf', 'class', 'pyc', 'o', 'a', 'db', 'sqlite'], true)) {
                 return null;
             }
-            $sample = $source->inArchive() ? $source->bytes() : (string) @file_get_contents($source->diskPath, false, null, 0, 8192);
+            $sample = $source->inMemory() ? $source->bytes() : (string) @file_get_contents($source->diskPath, false, null, 0, 8192);
             if (Text::looksBinary($sample)) {
                 return null;
             }
             $extractor = $this->fallback;
         }
 
-        $cacheFile = in_array($ext, self::CACHED, true) ? $this->cacheFile($source) : null;
+        $cacheFile = $useCache && in_array($ext, self::CACHED, true) ? $this->cacheFile($source) : null;
         if ($cacheFile !== null && is_file($cacheFile)) {
             $cached = @unserialize((string) @gzdecode((string) file_get_contents($cacheFile)), ['allowed_classes' => [Document::class]]);
             if ($cached instanceof Document) {

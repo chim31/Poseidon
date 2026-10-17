@@ -26,7 +26,7 @@ final class OfficeArchive
 
     public static function open(Source $source): self
     {
-        $head = $source->inArchive() ? substr($source->bytes(), 0, 8) : self::head($source);
+        $head = $source->inMemory() ? substr($source->bytes(), 0, 8) : self::head($source);
         if ($head === self::OLE_SIGNATURE) {
             throw UnreadableFileException::protected('Document Office protégé par mot de passe');
         }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Poseidon\Search;
 
-use Poseidon\Archive\ZipWalker;
+use Poseidon\Archive\ArchiveWalker;
 use Poseidon\Config;
 use Poseidon\Extractor\ExtractorRegistry;
 use Poseidon\Filesystem\Notice;
@@ -35,7 +35,7 @@ final class SearchEngine
     {
         $this->extractors ??= new ExtractorRegistry($config);
         $this->guard = new RootGuard($config);
-        $this->scanner = new Scanner($config, new ZipWalker($config), $this->guard);
+        $this->scanner = new Scanner($config, new ArchiveWalker($config), $this->guard);
     }
 
     public function extractors(): ExtractorRegistry
@@ -70,7 +70,7 @@ final class SearchEngine
                 foreach ($index->archiveNotices($key) as $notice) {
                     // Mêmes règles que le parcours : avertissements des seules entrées retenues par le filtre.
                     $ext = Path::extension((string) preg_replace('/^.* › /u', '', $notice->path));
-                    if ($wanted === [] || isset($wanted[$ext]) || ZipWalker::isArchive($ext)) {
+                    if ($wanted === [] || isset($wanted[$ext]) || ArchiveWalker::isContainer('x.' . $ext)) {
                         $pending[] = $notice;
                     }
                 }

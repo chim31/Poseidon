@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Poseidon\Filesystem;
 
-use Poseidon\Archive\ZipWalker;
+use Poseidon\Archive\ArchiveWalker;
 use Poseidon\Config;
 use Poseidon\Support\Path;
 
@@ -18,7 +18,7 @@ final class Scanner
     /** @var array<string, true> */
     private array $excluded;
 
-    public function __construct(private Config $config, private ZipWalker $zips, private ?RootGuard $guard = null)
+    public function __construct(private Config $config, private ArchiveWalker $archives, private ?RootGuard $guard = null)
     {
         $this->excluded = array_fill_keys(array_map('strtolower', (array) $config->get('excluded_dirs', [])), true);
     }
@@ -118,8 +118,8 @@ final class Scanner
             yield $source;
         }
 
-        if ($intoArchives && ZipWalker::isArchive($ext) && ($descend === null || $descend($source))) {
-            yield from $this->zips->walk($source, $filter, $descend);
+        if ($intoArchives && ArchiveWalker::isContainer($path) && ($descend === null || $descend($source))) {
+            yield from $this->archives->walk($source, $filter, $descend);
         }
     }
 

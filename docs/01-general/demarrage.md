@@ -64,7 +64,7 @@ git clone git@github.com:chim31/Poseidon.git && cd Poseidon
 
 | Système | Commande | Résultat |
 | --- | --- | --- |
-| Windows | double-clic sur `poseidon.bat` | Serveur sur le port 8080, navigateur ouvert |
+| Windows | double-clic sur `poseidon.bat` | Serveur sur le port 8080 (ou le suivant libre), navigateur ouvert une fois Poseidon prêt |
 | Windows, autre port | `poseidon.bat 9000` | Port 9000 |
 | Linux / macOS / WSL | `./poseidon.sh` | Serveur sur le port 8080, navigateur ouvert |
 | Partout | `php bin/poseidon serve --port=8080` | Serveur seul |
@@ -216,6 +216,7 @@ Le serveur intégré de PHP (`poseidon serve`) suffit pour un usage local. Pour 
 
 | Symptôme | Cause | Solution |
 | --- | --- | --- |
+| Le navigateur affiche « Oops! An Error Occurred » ou la page d'une autre application | Une autre application occupe le port (souvent 8080) | Depuis la v0.1.1, Poseidon prend automatiquement le port libre suivant (8081…) et ouvre le bon : relance `poseidon.bat`. Sinon : `poseidon.bat 9000` |
 | `PHP introuvable` au lancement de `poseidon.bat` | PHP absent du `PATH` | Ajouter PHP au `PATH` ou le placer dans `php\` à côté du lanceur |
 | `Les extensions PHP "zip" et "mbstring" sont requises` | Extensions désactivées | Décommenter `extension=zip` et `extension=mbstring` dans `php.ini` |
 | « Le partage réseau … n'est pas accessible directement » | Chemin UNC sous Linux/WSL | Monter le partage et le déclarer dans `network_mounts` (§ 6) |

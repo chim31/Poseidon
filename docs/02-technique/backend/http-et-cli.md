@@ -28,7 +28,7 @@ Routes : voir [api.md](../../01-general/api.md).
 | `extract <racine> <filtre> --out=` | `x` | `DataExtractor` + `Writer` ; format déduit de l'extension |
 | `diff <A> <B>` | `d` | `Diff` coloré ; code 1 si différent |
 | `cat <fichier>` | | Texte extrait avec emplacements |
-| `serve [--host] [--port] [--workers]` | | `php -S` ; 4 processus sous Linux (`PHP_CLI_SERVER_WORKERS`) ; avertit si ouvert sans mot de passe |
+| `serve [--host] [--port] [--workers] [--open]` | | `php -S` ; port suivant libre si le port demandé est occupé ; `--open` ouvre le navigateur une fois `/api/info` répond « Poseidon » ; 4 processus sous Linux ; avertit si ouvert sans mot de passe |
 | `info` | | Version, moteur PDF, racines, formats |
 | `demo [dossier]` | | Génère les échantillons synthétiques |
 

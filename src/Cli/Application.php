@@ -190,9 +190,24 @@ final class Application
     private function serve(array $opts): int
     {
         $host = (string) ($opts['host'] ?? '127.0.0.1');
-        $port = (int) ($opts['port'] ?? 8080);
+        $wanted = (int) ($opts['port'] ?? 8080);
         $public = POSEIDON_ROOT . '/public';
-        echo $this->paint('1;36', 'Poseidon') . " écoute sur http://{$host}:{$port}  (Ctrl+C pour arrêter)" . PHP_EOL;
+
+        // Port déjà pris par une autre application ? On prend le suivant libre.
+        $port = $wanted;
+        while (!self::portFree($host, $port)) {
+            if (++$port > $wanted + 20) {
+                throw new \RuntimeException(sprintf('Aucun port libre entre %d et %d. Lance Poseidon avec un autre port : poseidon.bat 9000', $wanted, $wanted + 20));
+            }
+        }
+        if ($port !== $wanted) {
+            fwrite(STDERR, $this->paint('33', sprintf('Le port %d est déjà utilisé par une autre application : Poseidon utilise le port %d.', $wanted, $port)) . PHP_EOL);
+        }
+
+        $browse = $host === '0.0.0.0' ? '127.0.0.1' : $host;
+        $url = "http://{$browse}:{$port}/";
+        echo $this->paint('1;36', 'Poseidon') . " écoute sur {$url}  (Ctrl+C pour arrêter)" . PHP_EOL;
+        flush();
         if ($host !== '127.0.0.1' && $host !== 'localhost' && (string) $this->config->get('password') === '') {
             fwrite(STDERR, $this->paint('33', 'Attention : interface ouverte sur le réseau sans mot de passe. Définis POSEIDON_PASSWORD (recommandé) ; sinon seuls localhost et les hôtes de POSEIDON_HOSTS seront servis.') . PHP_EOL);
         }
@@ -200,9 +215,68 @@ final class Application
             // Plusieurs processus : l'aperçu reste réactif pendant qu'une recherche tourne.
             putenv('PHP_CLI_SERVER_WORKERS=' . max(2, (int) ($opts['workers'] ?? 4)));
         }
-        passthru(escapeshellarg(PHP_BINARY) . ' -d variables_order=EGPCS -S ' . escapeshellarg("{$host}:{$port}") . ' -t ' . escapeshellarg($public) . ' ' . escapeshellarg($public . '/index.php'), $code);
 
-        return (int) $code;
+        $server = proc_open([PHP_BINARY, '-d', 'variables_order=EGPCS', '-S', "{$host}:{$port}", '-t', $public, $public . '/index.php'], [STDIN, STDOUT, STDERR], $pipes);
+        if (!is_resource($server)) {
+            throw new \RuntimeException('Impossible de démarrer le serveur PHP.');
+        }
+
+        // Le navigateur ne s'ouvre qu'une fois Poseidon réellement en écoute sur ce port.
+        if (isset($opts['open'])) {
+            if (self::waitForPoseidon($browse, $port)) {
+                self::openBrowser($url);
+            } else {
+                fwrite(STDERR, $this->paint('31', "Poseidon ne répond pas sur {$url} : vérifie les messages ci-dessus.") . PHP_EOL);
+            }
+        }
+
+        return proc_close($server);
+    }
+
+    /** Vrai si rien n'écoute déjà sur ce port et qu'on peut s'y attacher. */
+    private static function portFree(string $host, int $port): bool
+    {
+        $probe = $host === '0.0.0.0' ? '127.0.0.1' : $host;
+        $client = @fsockopen($probe, $port, $errno, $errstr, 0.3);
+        if ($client !== false) {
+            fclose($client);
+
+            return false; // une application répond déjà
+        }
+        $socket = @stream_socket_server("tcp://{$host}:{$port}", $errno, $errstr);
+        if ($socket === false) {
+            return false;
+        }
+        fclose($socket);
+
+        return true;
+    }
+
+    /** Attend que /api/info réponde « Poseidon » (et pas une autre application). */
+    private static function waitForPoseidon(string $host, int $port, float $timeout = 8.0): bool
+    {
+        $context = stream_context_create(['http' => ['header' => "X-Poseidon: 1\r\n", 'timeout' => 1, 'ignore_errors' => true]]);
+        $deadline = microtime(true) + $timeout;
+        while (microtime(true) < $deadline) {
+            $body = @file_get_contents("http://{$host}:{$port}/api/info", false, $context);
+            if (is_string($body) && str_contains($body, '"name":"Poseidon"')) {
+                return true;
+            }
+            usleep(150_000);
+        }
+
+        return false;
+    }
+
+    private static function openBrowser(string $url): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            pclose(popen('start "" "' . $url . '"', 'r'));
+        } elseif (PHP_OS_FAMILY === 'Darwin') {
+            exec('open ' . escapeshellarg($url) . ' >/dev/null 2>&1 &');
+        } else {
+            exec('(xdg-open ' . escapeshellarg($url) . ' || wslview ' . escapeshellarg($url) . ') >/dev/null 2>&1 &');
+        }
     }
 
     /** @param list<string> $args */
@@ -237,7 +311,7 @@ final class Application
           extract <racine> <filtre>        Extraire vers un nouveau document (alias : x)
           diff    <fichierA> <fichierB>    Comparer deux fichiers façon git diff (alias : d)
           cat     <fichier>                Afficher le texte extrait d'un fichier
-          serve   [--host=] [--port=]      Lancer l'interface web
+          serve   [--host=] [--port=] [--open]  Lancer l'interface web (port suivant si occupé)
           info                             Configuration et formats pris en charge
           demo    [dossier]                Générer les échantillons synthétiques de démonstration
 

@@ -712,8 +712,8 @@ window.POSEIDON_PROJET = {
                 {
                     "id": "L9-07",
                     "titre": "Intégration continue",
-                    "description": "GitHub Actions : tests sur Linux et Windows à chaque PR.",
-                    "statut": "Terminé",
+                    "description": "Workflow GitHub Actions prêt (Linux + Windows, PHP 8.2/8.4) ; ne démarre pas tant que le compte GitHub est bloqué pour facturation. Vérifié à la main : Linux PHP 8.4 (69 tests) et Windows PHP 8.3 (66 tests).",
+                    "statut": "Bloqué",
                     "priorite": "Moyenne",
                     "responsable": "chim31",
                     "date": "2026-10-17",
@@ -796,7 +796,7 @@ window.POSEIDON_PROJET = {
             "statut": "Terminé",
             "livrables": [
                 "Index plein texte SQLite FTS5",
-                "Intégration continue Linux + Windows (PHP 8.2, 8.4)",
+                "Intégration continue Linux + Windows prête (bloquée par la facturation GitHub ; tests Windows passés à la main)",
                 "Banc d'essai : 10 000 fichiers en 5,2 s à froid, 0,47 s indexé",
                 "Parallélisation écartée (remplacée par l'index)"
             ]

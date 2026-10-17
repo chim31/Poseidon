@@ -52,7 +52,8 @@ Formats : TXT, MD, CSV, logs, code, PDF, DOCX, DOC, ODT, RTF, XLSX, XLS, ODS, PP
 | Documentation, cahier des charges, roadmap | Terminé, fusionné dans `main` (PR #4) |
 | Fusion dans `main` | Faite le 2026-10-17 ; branches de fonctionnalité supprimées |
 | Essais sur de vraies arborescences Windows | Validés par le porteur le 2026-10-17 → v0.1.0 |
-| Index plein texte, CI, banc d'essai | Terminés — phase P5 (PR #8) |
+| Index plein texte, banc d'essai | Terminés — phase P5 (PR #8) |
+| Intégration continue GitHub Actions | Prête mais **bloquée** : compte GitHub verrouillé pour facturation (à régler par le porteur). Tests passés à la main sous Linux (PHP 8.4) et Windows (PHP 8.3) |
 | Phase en cours | P6 — Formats étendus |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).

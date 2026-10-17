@@ -7,7 +7,7 @@
 
 ## Tableau de bord
 
-Avancement global : **82 %** `████████████████░░░░` — 65 exigences : 53 terminées, 0 en cours, 12 à faire, 0 bloquées.
+Avancement global : **80 %** `████████████████░░░░` — 65 exigences : 52 terminées, 0 en cours, 12 à faire, 1 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -19,7 +19,7 @@ Avancement global : **82 %** `████████████████�
 | L6 | Interface web | 7 | 0 | 1 | 88 % |
 | L7 | Robustesse et sécurité | 7 | 0 | 1 | 88 % |
 | L8 | Comparaison (git diff) | 3 | 0 | 2 | 60 % |
-| L9 | Exploitation et documentation | 6 | 0 | 1 | 86 % |
+| L9 | Exploitation et documentation | 5 | 0 | 1 | 71 % |
 
 ## L1 — Socle et parcours
 
@@ -147,4 +147,4 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | L9-04 | **Documentation et suivi** — docs/ structuré, context.md, cahier des charges et roadmap web. | Terminé | Haute | chim31 | 2026-10-16 | docs/fondations (fusionnée) |
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Déploiement serveur derrière Nginx/Caddy. | À faire | Moyenne | chim31 | — | Phase 8 |
-| L9-07 | **Intégration continue** — GitHub Actions : tests sur Linux et Windows à chaque PR. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/index-plein-texte |
+| L9-07 | **Intégration continue** — Workflow GitHub Actions prêt (Linux + Windows, PHP 8.2/8.4) ; ne démarre pas tant que le compte GitHub est bloqué pour facturation. Vérifié à la main : Linux PHP 8.4 (69 tests) et Windows PHP 8.3 (66 tests). | Bloqué | Moyenne | chim31 | 2026-10-17 | feat/index-plein-texte |

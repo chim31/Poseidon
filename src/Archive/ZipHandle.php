@@ -44,48 +44,6 @@ final class ZipHandle
         return new self($zip, $temp);
     }
 
-    /**
-     * Lit une entrée au bout d'une chaîne d'archives : a.zip › b.zip › c.txt.
-     *
-     * @param list<string> $chain
-     */
-    public static function readChain(string $diskPath, array $chain): string
-    {
-        if ($chain === []) {
-            $data = @file_get_contents(Path::toNative($diskPath));
-            if ($data === false) {
-                throw new UnreadableFileException('Lecture impossible : droits insuffisants ou fichier verrouillé.');
-            }
-
-            return $data;
-        }
-
-        $current = new Source($diskPath, [], dirname($diskPath), 0, 0);
-        $prefix = [];
-        foreach ($chain as $entryName) {
-            $handle = self::open($current);
-            try {
-                $stat = $handle->zip->statName($entryName);
-                if ($stat === false) {
-                    throw new UnreadableFileException('Entrée introuvable dans l\'archive : ' . $entryName, UnreadableFileException::CORRUPT);
-                }
-                if (($stat['encryption_method'] ?? 0) !== 0) {
-                    throw UnreadableFileException::protected('Entrée d\'archive chiffrée');
-                }
-                $data = $handle->zip->getFromName($entryName);
-                if ($data === false) {
-                    throw new UnreadableFileException('Entrée d\'archive illisible : ' . $entryName, UnreadableFileException::CORRUPT);
-                }
-            } finally {
-                $handle->close();
-            }
-            $prefix[] = $entryName;
-            $current = new Source($diskPath, $prefix, dirname($diskPath), strlen($data), 0, static fn (): string => $data);
-        }
-
-        return $data;
-    }
-
     public function close(): void
     {
         @$this->zip->close();

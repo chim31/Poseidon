@@ -98,6 +98,68 @@ final class ArchiveWalker
     }
 
     /**
+     * Lit une entrée au bout d'une chaîne de conteneurs (a.zip › b.7z › mail.eml › facture.pdf),
+     * quel que soit le type de chaque conteneur.
+     *
+     * @param list<string> $chain
+     */
+    public function readChain(string $diskPath, array $chain): string
+    {
+        $current = new Source($diskPath, [], dirname($diskPath), 0, (int) @filemtime(Path::toNative($diskPath)));
+        if ($chain === []) {
+            return $current->bytes();
+        }
+        $prefix = [];
+        foreach ($chain as $name) {
+            $data = $this->readEntry($current, $name);
+            $prefix[] = $name;
+            $current = new Source($diskPath, $prefix, dirname($diskPath), strlen($data), $current->mtime, static fn (): string => $data);
+        }
+
+        return $current->bytes();
+    }
+
+    private function readEntry(Source $container, string $name): string
+    {
+        $kind = self::kind($container->name());
+        if ($kind === 'zip') {
+            $handle = ZipHandle::open($container);
+            try {
+                $stat = $handle->zip->statName($name);
+                if ($stat === false) {
+                    throw new UnreadableFileException('Entrée introuvable dans l\'archive : ' . $name, UnreadableFileException::CORRUPT);
+                }
+                if (($stat['encryption_method'] ?? 0) !== 0) {
+                    throw UnreadableFileException::protected('Entrée d\'archive chiffrée');
+                }
+                if ((int) $stat['size'] > (int) $this->config->get('zip.max_entry_size')) {
+                    throw new UnreadableFileException('Entrée trop volumineuse.', UnreadableFileException::TOO_LARGE);
+                }
+                $data = $handle->zip->getFromName($name);
+            } finally {
+                $handle->close();
+            }
+            if ($data === false) {
+                throw new UnreadableFileException('Entrée d\'archive illisible : ' . $name, UnreadableFileException::CORRUPT);
+            }
+
+            return $data;
+        }
+        $entries = match ($kind) {
+            'mail' => $this->mailEntries($container),
+            'gz' => $this->gzipEntries($container),
+            'tar', 'bsdtar' => $this->tarEntries($container),
+            default => throw new UnreadableFileException('Conteneur non pris en charge : ' . $container->name(), UnreadableFileException::UNSUPPORTED),
+        };
+        foreach ($entries as $entry) {
+            if ($entry['name'] === $name) {
+                return ($entry['load'])();
+            }
+        }
+        throw new UnreadableFileException('Entrée introuvable dans l\'archive : ' . $name, UnreadableFileException::CORRUPT);
+    }
+
+    /**
      * @param list<array{name: string, size: int, load: \Closure}> $entries
      * @param array<string, true>                                   $filter
      * @return \Generator<int, Source|Notice>

@@ -119,6 +119,7 @@
       <span class="rail-label">Index</span>
       <p class="index-state" id="index-state" aria-live="polite">—</p>
       <div class="index-actions">
+        <button class="rail-btn rail-btn-wide" id="rail-diff-btn" type="button"><svg><use href="#i-branch"/></svg><span>Git Diff & Dossiers</span></button>
         <button class="rail-btn rail-btn-wide" id="index-build" type="button"><svg><use href="#i-bolt"/></svg><span>Indexer ce dossier</span></button>
         <button class="rail-btn" id="index-delete" type="button" title="Supprimer l'index de ce dossier" hidden><svg><use href="#i-x"/></svg><span class="sr-only">Supprimer l'index</span></button>
       </div>
@@ -153,6 +154,7 @@
     <header class="topbar">
       <button class="icon-btn menu-btn" id="menu" type="button" aria-label="Paramètres de recherche" aria-controls="rail"><svg><use href="#i-menu"/></svg></button>
       <span class="topbar-brand"><svg><use href="#i-trident"/></svg>Poseidon</span>
+      <button class="btn btn-outline btn-sm topbar-diff-btn" id="open-diff-btn" type="button" style="margin-left: auto;"><svg><use href="#i-branch"/></svg>Git Diff & Dossiers</button>
     </header>
 
     <form class="query" id="query-form" role="search">
@@ -259,10 +261,58 @@
       <section class="diff" id="diff" hidden aria-labelledby="diff-title">
         <header class="diff-head">
           <button class="btn btn-quiet" id="diff-back" type="button"><svg><use href="#i-back"/></svg>Résultats</button>
-          <h2 id="diff-title">Comparaison</h2>
+          <h2 id="diff-title">Git Diff intégral</h2>
           <span class="diff-stats mono" id="diff-stats"></span>
-          <button class="btn btn-quiet" id="diff-copy" type="button"><svg><use href="#i-copy"/></svg>Copier le diff</button>
+          <button class="btn btn-quiet" id="diff-copy" type="button"><svg><use href="#i-copy"/></svg>Copier le patch unifié</button>
         </header>
+
+        <div class="diff-control-bar" id="diff-control-bar">
+          <div class="segmented" role="radiogroup" aria-label="Type de comparaison" id="diff-types">
+            <label><input type="radio" name="diff-type" value="folders" checked><span>Comparer deux dossiers</span></label>
+            <label><input type="radio" name="diff-type" value="git"><span>Dépôt Git</span></label>
+          </div>
+
+          <form class="diff-form" id="diff-folders-form">
+            <div class="diff-input-group">
+              <input class="input mono" id="diff-dir-a" type="text" placeholder="Dossier A (base / ancienne version)" autocomplete="off">
+              <button class="btn btn-outline btn-sm" id="diff-browse-a" type="button" title="Parcourir le dossier A"><svg><use href="#i-folder"/></svg></button>
+            </div>
+            <span class="diff-vs">↔</span>
+            <div class="diff-input-group">
+              <input class="input mono" id="diff-dir-b" type="text" placeholder="Dossier B (nouveau / cible)" autocomplete="off">
+              <button class="btn btn-outline btn-sm" id="diff-browse-b" type="button" title="Parcourir le dossier B"><svg><use href="#i-folder"/></svg></button>
+            </div>
+            <button class="btn btn-primary btn-sm" id="diff-run-folders" type="submit">Lancer le diff</button>
+          </form>
+
+          <form class="diff-form" id="diff-git-form" hidden>
+            <div class="diff-input-group diff-repo-input">
+              <input class="input mono" id="diff-git-repo" type="text" placeholder="Dépôt Git (ou vide pour racine actuelle)">
+            </div>
+            <div class="diff-input-group diff-rev-input">
+              <input class="input mono" id="diff-git-from" type="text" placeholder="From (ex: HEAD~1, main)" value="HEAD~1">
+              <span class="diff-vs">..</span>
+              <input class="input mono" id="diff-git-to" type="text" placeholder="To (ex: HEAD, dev)" value="HEAD">
+            </div>
+            <button class="btn btn-primary btn-sm" id="diff-run-git" type="submit">Diff Git</button>
+          </form>
+        </div>
+
+        <div class="diff-gh-summary" id="diff-gh-summary" hidden>
+          <div class="diff-gh-summary-left">
+            <span class="diff-gh-count" id="diff-gh-count">0 fichier(s) modifiés</span>
+            <span class="diff-gh-stats mono" id="diff-gh-stats"></span>
+          </div>
+          <div class="diff-filter-pills" id="diff-filter-pills">
+            <button class="diff-pill active" data-filter="all" type="button">Tous</button>
+            <button class="diff-pill" data-filter="M" type="button">Modifiés</button>
+            <button class="diff-pill" data-filter="A" type="button">Ajoutés</button>
+            <button class="diff-pill" data-filter="D" type="button">Supprimés</button>
+          </div>
+        </div>
+
+        <div class="diff-files-nav mono" id="diff-files-nav" hidden></div>
+        <div class="diff-cards-container" id="diff-cards-container"></div>
         <div class="diff-files mono" id="diff-files"></div>
         <div class="diff-body mono" id="diff-body"></div>
       </section>

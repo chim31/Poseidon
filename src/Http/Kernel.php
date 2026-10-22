@@ -54,6 +54,14 @@ final class Kernel
     public function handle(string $method, string $uri): void
     {
         $path = '/' . trim((string) parse_url($uri, PHP_URL_PATH), '/');
+        $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+        $scriptDir = rtrim(str_replace(DIRECTORY_SEPARATOR, '/', dirname($scriptName)), '/');
+        if ($scriptDir !== '' && $scriptDir !== '/' && str_starts_with($path, $scriptDir)) {
+            $path = '/' . ltrim(substr($path, strlen($scriptDir)), '/');
+        }
+        if (str_starts_with($path, '/index.php')) {
+            $path = '/' . ltrim(substr($path, strlen('/index.php')), '/');
+        }
         $this->securityHeaders();
 
         // Anti « DNS rebinding » : sans mot de passe, seuls les hôtes locaux ou déclarés sont servis.
@@ -109,6 +117,8 @@ final class Kernel
                 ['GET', '/api/file'] => $this->file(),
                 ['GET', '/api/text'] => $this->text(),
                 ['GET', '/api/diff'] => $this->diff(),
+                ['GET', '/api/diff/folders'] => $this->diffFolders(),
+                ['GET', '/api/git/diff-tree'] => $this->gitDiffTree(),
                 ['GET', '/api/index'] => $this->indexStatus(),
                 ['POST', '/api/index'] => $this->requireAdmin() ?? $this->indexBuild(),
                 ['POST', '/api/index/delete'] => $this->requireAdmin() ?? $this->indexDelete(),
@@ -227,7 +237,7 @@ final class Kernel
         $first = $events->current();
 
         set_time_limit(0);
-        ignore_user_abort(false);
+        ignore_user_abort(true);
         header('Content-Type: application/x-ndjson; charset=utf-8');
         header('Cache-Control: no-store');
         header('X-Accel-Buffering: no');
@@ -387,7 +397,7 @@ final class Kernel
         $first = $events->current();
 
         set_time_limit(0);
-        ignore_user_abort(false);
+        ignore_user_abort(true);
         header('Content-Type: application/x-ndjson; charset=utf-8');
         header('Cache-Control: no-store');
         header('X-Accel-Buffering: no');
@@ -513,6 +523,137 @@ final class Kernel
         header('Content-Type: text/plain; charset=utf-8');
         header('Content-Disposition: attachment; ' . self::filenameHeader(pathinfo($source->name(), PATHINFO_FILENAME) . '.txt'));
         echo $out;
+    }
+
+    private function diffFolders(): void
+    {
+        $dirA = $this->required('a');
+        $dirB = $this->required('b');
+        $context = max(0, min(20, (int) ($_GET['context'] ?? 3)));
+        $guard = $this->engine->guard();
+        $guard->assertAllowed($dirA);
+        $guard->assertAllowed($dirB);
+        $this->audit->log('comparaison dossiers', $this->currentUser()['login'], ['a' => $dirA, 'b' => $dirB]);
+
+        $res = Diff::compareDirectories($dirA, $dirB, $this->engine->extractors(), $context);
+        $this->json($res);
+    }
+
+    private function gitDiffTree(): void
+    {
+        $repoInput = trim((string) ($_GET['repo'] ?? ''));
+        if ($repoInput === '') {
+            $path = trim((string) ($_GET['path'] ?? ''));
+            $repo = \Poseidon\Git\GitHistory::repository($path !== '' ? $path : POSEIDON_ROOT);
+        } else {
+            $repo = \Poseidon\Git\GitHistory::repository($repoInput);
+        }
+        if ($repo === null) {
+            throw new HttpError(404, 'Dépôt Git introuvable.');
+        }
+        $guard = $this->engine->guard();
+        $guard->assertAllowed($repo);
+
+        $from = trim((string) ($_GET['from'] ?? 'HEAD~1'));
+        $to = trim((string) ($_GET['to'] ?? 'HEAD'));
+        $this->audit->log('git diff', $this->currentUser()['login'], ['repo' => $repo, 'from' => $from, 'to' => $to]);
+
+        if ($from !== '' && !preg_match('/^[a-zA-Z0-9_\-\.\^\~\/]+$/', $from)) {
+            throw new \InvalidArgumentException('Référence Git "from" invalide.');
+        }
+        if ($to !== '' && !preg_match('/^[a-zA-Z0-9_\-\.\^\~\/]+$/', $to)) {
+            throw new \InvalidArgumentException('Référence Git "to" invalide.');
+        }
+
+        $res = $this->gitDiffFull($repo, $from, $to, (string) ($_GET['pathspec'] ?? ''));
+        $this->json($res);
+    }
+
+    private function gitDiffFull(string $repo, string $from, string $to, string $pathspec): array
+    {
+        $args = ['diff', '--name-status', '--no-color', '--no-ext-diff'];
+        if ($from !== '' && $to !== '') {
+            $args[] = $from;
+            $args[] = $to;
+        } elseif ($from !== '') {
+            $args[] = $from;
+        }
+        $args[] = '--';
+        if ($pathspec !== '') {
+            $args[] = $pathspec;
+        }
+
+        $bin = \Poseidon\Git\GitHistory::binary() ?? throw new HttpError(500, 'Git est introuvable.');
+        $result = \Poseidon\Support\Process::run([$bin, '-c', 'safe.directory=*', '-C', \Poseidon\Support\Path::toNative($repo), ...$args], 30);
+        $lines = array_filter(explode("\n", trim($result['stdout'])));
+        $files = [];
+        $totalAdd = 0;
+        $totalDel = 0;
+        $countAdded = 0;
+        $countModified = 0;
+        $countDeleted = 0;
+        $max = (int) $this->config->get('max_file_size');
+        $context = max(0, min(20, (int) ($_GET['context'] ?? 3)));
+
+        foreach ($lines as $line) {
+            $parts = explode("\t", trim($line));
+            if (count($parts) < 2) {
+                continue;
+            }
+            $statusCode = substr($parts[0], 0, 1);
+            $rel = $parts[1];
+            $status = in_array($statusCode, ['A', 'D', 'M', 'R'], true) ? $statusCode : 'M';
+            $statusLabel = match ($status) {
+                'A' => 'Nouveau',
+                'D' => 'Supprimé',
+                'R' => 'Renommé',
+                default => 'Modifié',
+            };
+            if ($status === 'A') $countAdded++;
+            elseif ($status === 'D') $countDeleted++;
+            else $countModified++;
+
+            $before = ($status === 'A') ? '' : \Poseidon\Git\GitHistory::show($repo, $from !== '' ? $from : 'HEAD', $rel, $max);
+            $after = ($status === 'D') ? '' : ($to !== '' ? \Poseidon\Git\GitHistory::show($repo, $to, $rel, $max) : (string) @file_get_contents(\Poseidon\Support\Path::toNative($repo . '/' . $rel)));
+
+            $source = new \Poseidon\Filesystem\Source($repo . '/' . $rel, [], $repo, strlen($after), 0);
+            $linesA = $this->versionLines($source, $before);
+            $linesB = $this->versionLines($source, $after);
+            $ops = Diff::lines($linesA, $linesB);
+            $hunks = Diff::hunks($ops, $context);
+            $added = count(array_filter($ops, static fn (array $o): bool => $o[0] === '+'));
+            $removed = count(array_filter($ops, static fn (array $o): bool => $o[0] === '-'));
+            $totalAdd += $added;
+            $totalDel += $removed;
+            $fileUnified = Diff::unified("a/{$rel}", "b/{$rel}", $hunks);
+
+            $files[] = [
+                'path' => $rel,
+                'status' => $status,
+                'statusLabel' => $statusLabel,
+                'added' => $added,
+                'removed' => $removed,
+                'hunks' => $hunks,
+                'unified' => $fileUnified,
+            ];
+        }
+
+        return [
+            'stats' => [
+                'totalFiles' => count($files),
+                'added' => $countAdded,
+                'modified' => $countModified,
+                'deleted' => $countDeleted,
+                'unchanged' => 0,
+                'additions' => $totalAdd,
+                'deletions' => $totalDel,
+            ],
+            'repo' => \Poseidon\Support\Path::display($repo),
+            'from' => $from,
+            'to' => $to,
+            'files' => $files,
+            'unified' => implode("\n", array_column($files, 'unified')),
+        ];
     }
 
     private function diff(): void

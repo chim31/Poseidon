@@ -53,7 +53,7 @@ final class Scanner
                 $visited[$real] = true;
             }
 
-            $entries = @scandir(Path::toNative($dir), SCANDIR_SORT_ASCENDING);
+            $entries = @scandir(Path::toNative($dir, true), SCANDIR_SORT_ASCENDING);
             if ($entries === false) {
                 yield new Notice(UnreadableFileException::DENIED, Path::display($dir), 'Dossier illisible : accès refusé.');
                 continue;

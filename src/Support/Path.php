@@ -14,24 +14,25 @@ final class Path
 {
     public static function normalize(string $path): string
     {
-        $path = trim($path);
+        $raw = trim($path);
         // Retire des guillemets collés autour d'un chemin copié depuis l'explorateur Windows.
-        if (strlen($path) >= 2 && ($path[0] === '"' && str_ends_with($path, '"') || $path[0] === "'" && str_ends_with($path, "'"))) {
-            $path = substr($path, 1, -1);
+        if (strlen($raw) >= 2 && ($raw[0] === '"' && str_ends_with($raw, '"') || $raw[0] === "'" && str_ends_with($raw, "'"))) {
+            $raw = substr($raw, 1, -1);
         }
         // file:// et smb:// copiés depuis un navigateur ou un gestionnaire de fichiers.
-        if (preg_match('#^file:/{2,3}#i', $path)) {
-            $path = rawurldecode(preg_replace('#^file:/{2}(?=/)|^file:/{2}#i', '', $path) ?? $path);
-            if (preg_match('#^/[A-Za-z]:#', $path)) {
-                $path = substr($path, 1);
+        if (preg_match('#^file:/{2,3}#i', $raw)) {
+            $raw = rawurldecode(preg_replace('#^file:/{2}(?=/)|^file:/{2}#i', '', $raw) ?? $raw);
+            if (preg_match('#^/[A-Za-z]:#', $raw)) {
+                $raw = substr($raw, 1);
             }
         }
-        if (preg_match('#^smb://#i', $path)) {
-            $path = '//' . rawurldecode(substr($path, 6));
+        if (preg_match('#^smb://#i', $raw)) {
+            $raw = '//' . rawurldecode(substr($raw, 6));
         }
 
-        $path = str_replace('\\', '/', $path);
-        $isUnc = str_starts_with($path, '//');
+        $wasBackslashUnc = str_starts_with($raw, '\\\\') || (str_starts_with($raw, '\\') && preg_match('#^\\\\[A-Za-z0-9_\-\.]+[\\/][A-Za-z0-9_\-\.$]+#', $raw));
+        $path = str_replace('\\', '/', $raw);
+        $isUnc = str_starts_with($path, '//') || $wasBackslashUnc;
         $prefix = '';
 
         if ($isUnc) {
@@ -124,11 +125,31 @@ final class Path
     }
 
     /** Chemin utilisable par le système de fichiers courant. */
-    public static function toNative(string $path): string
+    public static function toNative(string $path, bool $forDir = false): string
     {
         $path = self::normalize($path);
+        $native = DIRECTORY_SEPARATOR === '\\' ? str_replace('/', '\\', $path) : $path;
+        if ($forDir && DIRECTORY_SEPARATOR === '\\' && self::isUnc($path) && substr_count(trim($path, '/'), '/') === 1) {
+            $native = rtrim($native, '\\') . '\\';
+        }
 
-        return DIRECTORY_SEPARATOR === '\\' ? str_replace('/', '\\', $path) : $path;
+        return $native;
+    }
+
+    public static function isDir(string $path): bool
+    {
+        $path = self::normalize($path);
+        $native = self::toNative($path);
+
+        return is_dir($native) || (DIRECTORY_SEPARATOR === '\\' && self::isUnc($path) && is_dir(self::toNative($path, true)));
+    }
+
+    public static function fileExists(string $path): bool
+    {
+        $path = self::normalize($path);
+        $native = self::toNative($path);
+
+        return file_exists($native) || (DIRECTORY_SEPARATOR === '\\' && self::isUnc($path) && file_exists(self::toNative($path, true)));
     }
 
     public static function extension(string $path): string

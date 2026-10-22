@@ -193,4 +193,164 @@ final class Diff
 
         return array_reverse($ops);
     }
+
+    /**
+     * Compare deux répertoires de manière intégrale (façon GitHub diff) :
+     * fichiers modifiés (M), nouveaux/générés (A), supprimés (D).
+     *
+     * @return array{
+     *   stats: array{totalFiles: int, added: int, modified: int, deleted: int, unchanged: int, additions: int, deletions: int},
+     *   dirA: string,
+     *   dirB: string,
+     *   files: list<array{path: string, status: string, statusLabel: string, added: int, removed: int, hunks: list<mixed>, unified: string}>,
+     *   unified: string
+     * }
+     */
+    public static function compareDirectories(string $dirA, string $dirB, ?\Poseidon\Extractor\ExtractorRegistry $extractors = null, int $context = 3): array
+    {
+        $dirA = \Poseidon\Support\Path::normalize($dirA);
+        $dirB = \Poseidon\Support\Path::normalize($dirB);
+        if (!\Poseidon\Support\Path::isDir($dirA)) {
+            throw new \InvalidArgumentException('Le premier dossier est introuvable ou inaccessible : ' . \Poseidon\Support\Path::display($dirA));
+        }
+        if (!\Poseidon\Support\Path::isDir($dirB)) {
+            throw new \InvalidArgumentException('Le second dossier est introuvable ou inaccessible : ' . \Poseidon\Support\Path::display($dirB));
+        }
+
+        $scan = static function (string $dir): array {
+            $files = [];
+            $stack = [''];
+            while ($stack !== []) {
+                $sub = array_pop($stack);
+                $fullDir = $sub === '' ? $dir : $dir . '/' . $sub;
+                $entries = @scandir(\Poseidon\Support\Path::toNative($fullDir, true));
+                if ($entries === false) {
+                    continue;
+                }
+                foreach ($entries as $entry) {
+                    if ($entry === '.' || $entry === '..' || $entry === '.git' || $entry === '.impeccable') {
+                        continue;
+                    }
+                    $rel = $sub === '' ? $entry : $sub . '/' . $entry;
+                    $itemPath = $dir . '/' . $rel;
+                    $native = \Poseidon\Support\Path::toNative($itemPath, true);
+                    if (is_dir($native)) {
+                        $stack[] = $rel;
+                    } elseif (is_file(\Poseidon\Support\Path::toNative($itemPath))) {
+                        $files[$rel] = $itemPath;
+                    }
+                }
+            }
+            ksort($files);
+
+            return $files;
+        };
+
+        $filesA = $scan($dirA);
+        $filesB = $scan($dirB);
+        $allKeys = array_unique([...array_keys($filesA), ...array_keys($filesB)]);
+        sort($allKeys);
+
+        $getLines = static function (string $diskPath, string $root) use ($extractors): array {
+            $native = \Poseidon\Support\Path::toNative($diskPath);
+            if (!is_file($native)) {
+                return [];
+            }
+            $size = (int) @filesize($native);
+            $mtime = (int) @filemtime($native);
+            $source = new \Poseidon\Filesystem\Source($diskPath, [], $root, $size, $mtime);
+            if ($extractors !== null) {
+                try {
+                    $doc = $extractors->extract($source);
+                    if ($doc !== null) {
+                        return array_column($doc->lines, 1);
+                    }
+                } catch (\Throwable) {
+                }
+            }
+            $content = @file_get_contents($native);
+            if ($content === false) {
+                return [];
+            }
+            if (\Poseidon\Support\Text::looksBinary($content)) {
+                return ['(fichier binaire : ' . $size . ' octets)'];
+            }
+
+            return explode("\n", str_replace(["\r\n", "\r"], "\n", $content));
+        };
+
+        $diffFiles = [];
+        $totalAdditions = 0;
+        $totalDeletions = 0;
+        $countAdded = 0;
+        $countModified = 0;
+        $countDeleted = 0;
+        $countUnchanged = 0;
+        $unifiedAll = [];
+
+        foreach ($allKeys as $rel) {
+            $inA = isset($filesA[$rel]);
+            $inB = isset($filesB[$rel]);
+            if ($inA && $inB) {
+                $pathA = $filesA[$rel];
+                $pathB = $filesB[$rel];
+                if (filesize(\Poseidon\Support\Path::toNative($pathA)) === filesize(\Poseidon\Support\Path::toNative($pathB)) && sha1_file(\Poseidon\Support\Path::toNative($pathA)) === sha1_file(\Poseidon\Support\Path::toNative($pathB))) {
+                    $countUnchanged++;
+                    continue;
+                }
+                $linesA = $getLines($pathA, $dirA);
+                $linesB = $getLines($pathB, $dirB);
+                $status = 'M';
+                $statusLabel = 'Modifié';
+                $countModified++;
+            } elseif ($inB) {
+                $linesA = [];
+                $linesB = $getLines($filesB[$rel], $dirB);
+                $status = 'A';
+                $statusLabel = 'Nouveau';
+                $countAdded++;
+            } else {
+                $linesA = $getLines($filesA[$rel], $dirA);
+                $linesB = [];
+                $status = 'D';
+                $statusLabel = 'Supprimé';
+                $countDeleted++;
+            }
+
+            $ops = self::lines($linesA, $linesB);
+            $hunks = self::hunks($ops, $context);
+            $added = count(array_filter($ops, static fn (array $o): bool => $o[0] === '+'));
+            $removed = count(array_filter($ops, static fn (array $o): bool => $o[0] === '-'));
+            $totalAdditions += $added;
+            $totalDeletions += $removed;
+            $fileUnified = self::unified("a/{$rel}", "b/{$rel}", $hunks);
+            $unifiedAll[] = $fileUnified;
+
+            $diffFiles[] = [
+                'path' => $rel,
+                'status' => $status,
+                'statusLabel' => $statusLabel,
+                'added' => $added,
+                'removed' => $removed,
+                'hunks' => $hunks,
+                'unified' => $fileUnified,
+            ];
+        }
+
+        return [
+            'stats' => [
+                'totalFiles' => count($diffFiles),
+                'added' => $countAdded,
+                'modified' => $countModified,
+                'deleted' => $countDeleted,
+                'unchanged' => $countUnchanged,
+                'additions' => $totalAdditions,
+                'deletions' => $totalDeletions,
+            ],
+            'dirA' => \Poseidon\Support\Path::display($dirA),
+            'dirB' => \Poseidon\Support\Path::display($dirB),
+            'files' => $diffFiles,
+            'unified' => implode("\n", $unifiedAll),
+        ];
+    }
 }

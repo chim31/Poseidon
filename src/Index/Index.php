@@ -29,7 +29,7 @@ final class Index
     private function __construct(private string $file, public readonly string $root)
     {
         $this->db = new \PDO('sqlite:' . $file, null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
-        $this->db->exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000;');
+        $this->db->exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 10000;');
         $this->db->exec(<<<'SQL'
             CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
             CREATE TABLE IF NOT EXISTS files (
@@ -290,6 +290,17 @@ final class Index
         ];
     }
 
+    public function rollback(): void
+    {
+        if ($this->db->inTransaction()) {
+            try {
+                $this->db->rollBack();
+            } catch (\Throwable) {
+            }
+        }
+        $this->pendingWrites = 0;
+    }
+
     public function commit(): void
     {
         if ($this->db->inTransaction()) {
@@ -303,7 +314,7 @@ final class Index
         try {
             $this->commit();
         } catch (\Throwable) {
-            // base verrouillée ou fermée : rien à sauver de plus
+            $this->rollback();
         }
     }
 

@@ -59,14 +59,16 @@ final class RootGuard
             ));
         }
         $native = Path::toNative($path);
-        if (!file_exists($native)) {
+        $exists = file_exists($native) || (DIRECTORY_SEPARATOR === '\\' && Path::isUnc($path) && (file_exists(Path::toNative($path, true)) || is_dir(Path::toNative($path, true))));
+        if (!$exists) {
             $this->assertAllowed($path);
             throw new \InvalidArgumentException(sprintf('Répertoire introuvable : %s', Path::display($path)));
         }
         // Vérification sur le chemin réel (liens symboliques résolus), pas sur la saisie.
         $real = self::real($path);
         $this->assertAllowed($real);
-        if (!is_readable($native)) {
+        $readable = is_readable($native) || (DIRECTORY_SEPARATOR === '\\' && Path::isUnc($path) && is_readable(Path::toNative($path, true)));
+        if (!$readable) {
             throw new \InvalidArgumentException(sprintf('Accès refusé au répertoire : %s', Path::display($path)));
         }
 
@@ -90,7 +92,11 @@ final class RootGuard
     /** Chemin réel s'il existe (liens symboliques résolus), sinon le chemin normalisé. */
     public static function real(string $path): string
     {
-        $real = @realpath(Path::toNative($path));
+        $native = Path::toNative($path);
+        $real = @realpath($native);
+        if ($real === false && DIRECTORY_SEPARATOR === '\\' && Path::isUnc($path)) {
+            $real = @realpath(Path::toNative($path, true));
+        }
 
         return $real === false ? Path::normalize($path) : Path::normalize($real);
     }

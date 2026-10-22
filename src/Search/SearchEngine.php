@@ -101,7 +101,8 @@ final class SearchEngine
         $truncated = false;
         $lastProgress = microtime(true);
 
-        foreach ($this->withPending($this->scanner->scan($root, $options->extensions, $options->intoArchives, $descend), $pending) as $item) {
+        try {
+            foreach ($this->withPending($this->scanner->scan($root, $options->extensions, $options->intoArchives, $descend), $pending) as $item) {
             if ($item instanceof Notice) {
                 if ($index !== null && $item->archiveKey !== null) {
                     $index->addArchiveNotice($item->archiveKey, $item);
@@ -158,7 +159,9 @@ final class SearchEngine
                 yield ['type' => 'progress', 'scanned' => $scanned, 'matched' => $matched, 'current' => $item->relativePath()];
             }
         }
-        $index?->commit();
+        } finally {
+            $index?->commit();
+        }
 
         arsort($byExtension);
         yield ['type' => 'done', 'summary' => [

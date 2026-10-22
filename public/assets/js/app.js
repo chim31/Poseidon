@@ -335,9 +335,14 @@ async function runSearch() {
     requestAnimationFrame(() => { pending = false; renderSummary(); renderTable(); });
   };
 
+  if (state.activeReader) {
+    try { await state.activeReader.cancel(); } catch { /* ignore */ }
+    state.activeReader = null;
+  }
   try {
     const res = await api('/api/search?' + new URLSearchParams(params), { signal: controller.signal });
     const reader = res.body.getReader();
+    state.activeReader = reader;
     const decoder = new TextDecoder();
     let buffer = '';
     for (;;) {
@@ -356,6 +361,7 @@ async function runSearch() {
     if (err.name !== 'AbortError') toast('error', 'Recherche impossible', err.message);
     else toast('warn', 'Recherche annulée', `${nf.format(state.results.length)} fichier(s) trouvé(s) avant l'arrêt.`);
   } finally {
+    if (state.activeReader === reader) state.activeReader = null;
     if (state.controller === controller) {
       state.controller = null;
       $('progress').hidden = true;
@@ -859,6 +865,147 @@ function renderDiffData(data, labelA, labelB) {
   $('diff-body').replaceChildren(frag);
 }
 
+
+/* ------------------------------------------------------------------ Git Diff façon GitHub */
+
+function openDiffView() {
+  $('table-wrap').hidden = true;
+  $('changes').hidden = true;
+  $('diff').hidden = false;
+  closeRail();
+  if (!$('diff-dir-a').value) $('diff-dir-a').value = $('root').value.trim();
+  if (!$('diff-git-repo').value) $('diff-git-repo').value = $('root').value.trim();
+}
+
+async function runFoldersDiff(e) {
+  if (e) e.preventDefault();
+  const a = $('diff-dir-a').value.trim();
+  const b = $('diff-dir-b').value.trim();
+  if (!a || !b) { toast('error', 'Dossiers requis', 'Indique le dossier A et le dossier B à comparer.'); return; }
+  $('diff-cards-container').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
+  $('diff-gh-summary').hidden = true;
+  $('diff-files-nav').hidden = true;
+  $('diff-files').textContent = '';
+  $('diff-body').textContent = '';
+  try {
+    const data = await (await api('/api/diff/folders?' + new URLSearchParams({ a, b }))).json();
+    renderGitHubMultiDiff(data, `Comparaison : ${data.dirA} ↔ ${data.dirB}`);
+  } catch (err) {
+    $('diff-cards-container').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
+  }
+}
+
+async function runGitFullDiff(e) {
+  if (e) e.preventDefault();
+  const repo = $('diff-git-repo').value.trim();
+  const from = $('diff-git-from').value.trim();
+  const to = $('diff-git-to').value.trim();
+  $('diff-cards-container').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
+  $('diff-gh-summary').hidden = true;
+  $('diff-files-nav').hidden = true;
+  $('diff-files').textContent = '';
+  $('diff-body').textContent = '';
+  try {
+    const data = await (await api('/api/git/diff-tree?' + new URLSearchParams({ repo, from, to }))).json();
+    renderGitHubMultiDiff(data, `Git diff : ${data.repo} (${data.from} .. ${data.to})`);
+  } catch (err) {
+    $('diff-cards-container').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
+  }
+}
+
+function renderGitHubMultiDiff(data, title) {
+  $('diff-title').textContent = title;
+  const st = data.stats;
+  $('diff-stats').replaceChildren(
+    h('span', { class: 'add', text: `+${nf.format(st.additions)}` }), ' ',
+    h('span', { class: 'del', text: `−${nf.format(st.deletions)}` })
+  );
+  $('diff-copy').onclick = () => copy(data.unified, 'Patch unifié copié.');
+
+  $('diff-gh-summary').hidden = false;
+  $('diff-gh-count').textContent = `${nf.format(st.totalFiles)} fichier(s) modifié(s)`;
+  $('diff-gh-stats').replaceChildren(
+    h('span', { class: 'add', text: `+${nf.format(st.additions)} lignes` }), ' · ',
+    h('span', { class: 'del', text: `−${nf.format(st.deletions)} lignes` }),
+    st.unchanged ? ` · ${nf.format(st.unchanged)} inchangé(s)` : ''
+  );
+
+  const pills = $('diff-filter-pills');
+  pills.querySelectorAll('.diff-pill').forEach((btn) => {
+    btn.onclick = () => {
+      pills.querySelectorAll('.diff-pill').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterDiffCards(btn.dataset.filter);
+    };
+  });
+
+  const nav = $('diff-files-nav');
+  nav.hidden = data.files.length === 0;
+  nav.replaceChildren(...data.files.map((f, idx) => {
+    const badgeClass = f.status === 'A' ? 'diff-badge-new' : f.status === 'D' ? 'diff-badge-del' : 'diff-badge-mod';
+    return h('a', { class: 'diff-nav-item', href: '#diff-card-' + idx, onclick: (e) => { e.preventDefault(); $('diff-card-' + idx)?.scrollIntoView({ behavior: 'smooth' }); } },
+      h('span', { class: 'diff-nav-badge ' + badgeClass, text: f.status }),
+      h('span', { text: f.path }),
+      h('span', { class: 'mono', text: `+${f.added}/−${f.removed}` })
+    );
+  }));
+
+  const container = $('diff-cards-container');
+  if (data.files.length === 0) {
+    container.replaceChildren(h('p', { class: 'diff-same', text: 'Aucune différence trouvée entre les deux versions.' }));
+    return;
+  }
+
+  container.replaceChildren(...data.files.map((f, idx) => {
+    const badgeClass = f.status === 'A' ? 'diff-badge-new' : f.status === 'D' ? 'diff-badge-del' : 'diff-badge-mod';
+    const card = h('article', { class: 'diff-card', id: 'diff-card-' + idx, 'data-status': f.status });
+
+    let cardBody;
+    const cardHead = h('header', { class: 'diff-card-head' },
+      h('span', { class: 'diff-nav-badge ' + badgeClass, text: f.statusLabel }),
+      h('span', { class: 'diff-card-title mono', text: f.path }),
+      h('span', { class: 'mono diff-stats' },
+        h('span', { class: 'add', text: `+${f.added}` }), ' ',
+        h('span', { class: 'del', text: `−${f.removed}` })
+      ),
+      h('div', { class: 'diff-card-actions' },
+        h('button', { class: 'btn btn-outline btn-sm', type: 'button', onclick: () => copy(f.path, 'Chemin copié.') }, 'Chemin'),
+        h('button', { class: 'btn btn-outline btn-sm', type: 'button', onclick: () => cardBody.hidden = !cardBody.hidden }, 'Replier')
+      )
+    );
+
+    cardBody = h('div', { class: 'diff-card-body mono' });
+    if (f.hunks.length === 0) {
+      cardBody.append(h('p', { class: 'diff-same', text: f.status === 'A' ? 'Nouveau fichier vide' : 'Fichier identique ou vide' }));
+    } else {
+      for (const hunk of f.hunks) {
+        cardBody.append(h('div', { class: 'hunk-head', text: hunk.header }));
+        let [, la, lb] = /-(\d+)(?:,\d+)? \+(\d+)/.exec(hunk.header).map(Number);
+        for (const [type, text] of hunk.lines) {
+          const cls = type === '+' ? 'add' : type === '-' ? 'del' : '';
+          cardBody.append(h('div', { class: 'dl ' + cls },
+            h('span', { class: 'n', text: type === '+' ? '' : String(la) }),
+            h('span', { class: 'n', text: type === '-' ? '' : String(lb) }),
+            h('span', { class: 's', text: type === ' ' ? '' : type === '-' ? '−' : '+' }),
+            h('span', { class: 't', text })
+          ));
+          if (type !== '+') la++;
+          if (type !== '-') lb++;
+        }
+      }
+    }
+
+    card.append(cardHead, cardBody);
+    return card;
+  }));
+}
+
+function filterDiffCards(filter) {
+  document.querySelectorAll('#diff-cards-container .diff-card').forEach((card) => {
+    card.hidden = filter !== 'all' && card.dataset.status !== filter;
+  });
+}
+
 /* ------------------------------------------------------------------ Avertissements */
 
 function showNotices() {
@@ -1198,6 +1345,27 @@ async function init() {
   $('alert-more').addEventListener('click', showNotices);
   $('alert-close').addEventListener('click', () => { state.alertDismissed = true; $('alert').hidden = true; });
   $('compare-btn').addEventListener('click', runDiff);
+
+  $('open-diff-btn')?.addEventListener('click', openDiffView);
+  $('rail-diff-btn')?.addEventListener('click', openDiffView);
+  document.querySelectorAll('input[name="diff-type"]').forEach((r) => r.addEventListener('change', () => {
+    const isGit = r.value === 'git' && r.checked;
+    $('diff-folders-form').hidden = isGit;
+    $('diff-git-form').hidden = !isGit;
+  }));
+  $('diff-folders-form')?.addEventListener('submit', runFoldersDiff);
+  $('diff-git-form')?.addEventListener('submit', runGitFullDiff);
+  $('diff-browse-a')?.addEventListener('click', () => {
+    browserPath = $('diff-dir-a').value.trim() || $('root').value.trim();
+    toggleBrowser(true);
+    $('browser-pick').onclick = () => { $('diff-dir-a').value = browserPath; toggleBrowser(false); };
+  });
+  $('diff-browse-b')?.addEventListener('click', () => {
+    browserPath = $('diff-dir-b').value.trim() || $('root').value.trim();
+    toggleBrowser(true);
+    $('browser-pick').onclick = () => { $('diff-dir-b').value = browserPath; toggleBrowser(false); };
+  });
+
   $('diff-back').addEventListener('click', () => { $('diff').hidden = true; renderTable(); });
 
   $('menu').addEventListener('click', () => $('rail').classList.add('open'));

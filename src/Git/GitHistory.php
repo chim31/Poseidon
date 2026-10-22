@@ -34,6 +34,7 @@ final class GitHistory
     {
         $none = 'poseidon-programme-desactive'; // introuvable : jamais exécuté
         $opts = [
+            '-c', 'safe.directory=*',
             '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=' . (DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null'),
             '-c', 'diff.external=', '-c', 'core.pager=cat', '-c', 'core.quotepath=false', '-c', 'protocol.allow=never',
             // Vérification de signatures : un dépôt piégé pourrait désigner son propre « gpg ».

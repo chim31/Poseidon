@@ -363,6 +363,32 @@ try {
     $big = Diff::lines(array_map(static fn ($i) => "a{$i}", range(1, 3000)), array_map(static fn ($i) => "b{$i}", range(1, 3000)));
     check('diff très différent borné (repli grossier)', count($big) === 6000 && memory_get_peak_usage() < 512 * 1024 * 1024);
 
+    $cmpA = $dir . '-diff-a';
+    $cmpB = $dir . '-diff-b';
+    @mkdir($cmpA, 0777, true);
+    @mkdir($cmpB, 0777, true);
+    file_put_contents($cmpA . '/commun.txt', "ligne1
+ligne2
+");
+    file_put_contents($cmpB . '/commun.txt', "ligne1
+ligne-modifiee
+ligne2
+");
+    file_put_contents($cmpA . '/supprime.txt', "a supprimer
+");
+    file_put_contents($cmpB . '/nouveau.txt', "nouveau contenu
+");
+    $folderDiff = Diff::compareDirectories($cmpA, $cmpB);
+    same('comparaison dossiers : 3 fichiers modifiés au total', 3, $folderDiff['stats']['totalFiles']);
+    same('comparaison dossiers : 1 ajouté', 1, $folderDiff['stats']['added']);
+    same('comparaison dossiers : 1 modifié', 1, $folderDiff['stats']['modified']);
+    same('comparaison dossiers : 1 supprimé', 1, $folderDiff['stats']['deleted']);
+    check('comparaison dossiers : statut M pour commun.txt', in_array('commun.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'M'), 'path'), true));
+    check('comparaison dossiers : statut A pour nouveau.txt', in_array('nouveau.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'A'), 'path'), true));
+    check('comparaison dossiers : statut D pour supprime.txt', in_array('supprime.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'D'), 'path'), true));
+    Fixtures::rmdir($cmpA);
+    Fixtures::rmdir($cmpB);
+
     section('Recherche avancée : proximité, flou, groupes nommés');
     $doc = new Poseidon\Extractor\Document([['l1', 'Le contrat est signé.'], ['l2', 'Bien plus loin, sans rapport, il faudra parler du préavis un jour.'], ['l3', 'La résiliation du contrat'], ['l4', 'impose un préavis de 30 jours.']]);
     $near = (new Poseidon\Search\Matcher(new Query('contrat préavis', Query::NEAR, distance: 4)))->match($doc);

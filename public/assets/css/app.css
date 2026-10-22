@@ -764,3 +764,41 @@ mark.current { background: var(--mark-strong); outline: 2px solid var(--primary-
 .audit-list .a-act { font-weight: 700; }
 .audit-list .a-meta { font-family: var(--mono); font-size: 11px; color: var(--mute); }
 .audit-list .a-det { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------------------ Git Diff façon GitHub */
+.diff-control-bar { padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 10px; }
+.diff-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.diff-input-group { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
+.diff-input-group input { flex: 1; font-size: 13px; }
+.diff-vs { font-weight: 700; color: var(--mute); font-size: 13px; }
+.diff-repo-input { min-width: 240px; }
+.diff-rev-input { display: flex; align-items: center; gap: 6px; max-width: 320px; }
+.diff-rev-input input { max-width: 140px; }
+
+.diff-gh-summary { padding: 10px 24px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.diff-gh-summary-left { display: flex; align-items: center; gap: 14px; }
+.diff-gh-count { font-weight: 750; font-size: 13.5px; }
+.diff-gh-stats { font-size: 13px; }
+.diff-gh-stats .add { color: var(--ok); font-weight: 700; }
+.diff-gh-stats .del { color: var(--bad); font-weight: 700; }
+
+.diff-filter-pills { display: flex; gap: 6px; }
+.diff-pill { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ink-2); transition: all 0.15s; }
+.diff-pill:hover { background: var(--tint); color: var(--ink); }
+.diff-pill.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+.diff-files-nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line-soft); font-size: 11.5px; max-height: 140px; overflow-y: auto; }
+.diff-nav-item { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 4px; background: var(--paper); border: 1px solid var(--line); text-decoration: none; color: var(--ink); cursor: pointer; }
+.diff-nav-item:hover { border-color: var(--brand); background: var(--tint); }
+.diff-nav-badge { font-weight: 700; font-size: 10.5px; padding: 1px 5px; border-radius: 3px; }
+
+.diff-badge-new { background: rgba(46, 160, 67, 0.18); color: #1a7f37; }
+.diff-badge-mod { background: rgba(56, 139, 253, 0.18); color: #0969da; }
+.diff-badge-del { background: rgba(248, 81, 73, 0.18); color: #cf222e; }
+
+.diff-cards-container { padding: 16px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+.diff-card { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.diff-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 48px; z-index: 2; font-size: 12.5px; }
+.diff-card-title { font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; word-break: break-all; }
+.diff-card-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.diff-card-body { overflow-x: auto; font-size: 12px; line-height: 1.55; }

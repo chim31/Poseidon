@@ -2,7 +2,7 @@
 
 > Source de vérité partagée par tous les intervenants (humains et agents). À lire au début de chaque session, à mettre à jour avant de clôturer toute action.
 
-**Dernière mise à jour :** 2026-10-17 · **Version :** 1.0.0
+**Dernière mise à jour :** 2026-10-23 · **Version :** 1.1.0
 
 ## Sommaire
 
@@ -35,8 +35,8 @@ Formats : TXT, MD, CSV, logs, code, PDF (OCR si scanné), DOCX, DOC, ODT, RTF, X
 | 11 familles de formats + ZIP imbriqués | Ouverture des fichiers protégés par mot de passe |
 | Modes ET / OU / phrase / regex, casse, accents, mot entier | OCR sans Tesseract installé |
 | Extraction CSV / XLSX / JSON / TXT / MD, mapping de colonnes | Accès SMB direct sous Linux sans montage |
-| Comparaison de deux fichiers (diff unifié) | Annuaire d'entreprise (LDAP / SSO) |
-| Interface web, CLI, lanceurs `.bat` / `.sh` | Base de données serveur (SQLite embarqué pour l'index uniquement) |
+| Comparaison de deux fichiers, de deux dossiers et d'un dépôt Git (façon GitHub) | Annuaire d'entreprise (LDAP / SSO) |
+| Interface web (lancement par `index.php` sur IIS / Apache / WAMP), CLI, lanceurs `.bat` / `.sh` | Base de données serveur (SQLite embarqué pour l'index uniquement) |
 
 **Documents non créés car non applicables** (règle d'adaptation) :
 
@@ -59,6 +59,8 @@ Formats : TXT, MD, CSV, logs, code, PDF (OCR si scanné), DOCX, DOC, ODT, RTF, X
 | Équipe et déploiement (comptes, rôles, audit, Docker, HTTPS, mode sombre) | Terminés — phase P8 |
 | Comparaison avancée (instantanés, historique Git) | Terminée — phase P9 |
 | **Version 1.0.0** | Publiée le 2026-10-17 : toutes les phases de la roadmap sont terminées |
+| **Version 1.1.0** | 2026-10-23 : comparaison de dossiers et Git diff complet, lancement sans terminal (`index.php`), accès UNC, annulation de recherche corrigée ; vérification et correctifs BUG-035 à BUG-049 ; tests Linux 148/148 |
+| Branches | `dev` : projet complet (docs, tests, outils) ; `main` : strict minimum de production, alimenté depuis `dev` |
 | Reste ouvert | CI GitHub Actions bloquée par la facturation du compte (à régler par le porteur) ; idées hors périmètre v1 : annuaire LDAP/SSO, partage SMB direct sous Linux |
 
 Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.html) · [suivi Markdown](docs/03-suivi/suivi-cahier-des-charges.md) · [roadmap](docs/web/roadmap.html).
@@ -77,6 +79,9 @@ Avancement détaillé : [cahier des charges web](docs/web/cahier-des-charges.htm
 | 2026-10-16 | Comparaison façon `git diff` (Myers) | Demande du porteur. Fonctionne sur le texte extrait : PDF contre DOCX possible. |
 | 2026-10-16 | Lanceurs `poseidon.bat` et `bin\poseidon.bat` | Demande du porteur : alternative Windows en double-clic. |
 | 2026-10-16 | Univers visuel « Pavillons de signaux » | Choisi par le porteur parmi les directions proposées ; chaque terme reçoit un pavillon du code international des signaux. Sol froid « embrun » plutôt que crème. Voir [DESIGN.md](DESIGN.md). |
+| 2026-10-22 | `main` réduit au strict minimum de production, projet complet sur `dev` | Demande du porteur : livrer le moins de fichiers possible en production. |
+| 2026-10-22 | Lancement par `index.php` à la racine | Demande du porteur : en environnement protégé, ouvrir un terminal est un risque. Fonctionne sans module de réécriture (API via `index.php/…`) ; `web.config` et `.htaccess` ferment les dossiers internes (BUG-039, BUG-046). |
+| 2026-10-23 | Dépôts Git partagés : `git_trusted_repos`, jamais `safe.directory=*` | Le correctif du 22/10 avait réintroduit `safe.directory=*` (BUG-037) ; un dépôt d'un autre compte n'est lu que s'il est déclaré, et même alors rien de sa configuration ne s'exécute. |
 | 2026-10-17 | Outils externes durcis | `--` avant tout nom venant d'un fichier (bsdtar) ; Git sans `safe.directory=*`, configuration exécutable du dépôt neutralisée (BUG-032, BUG-033). |
 | 2026-10-17 | Historique Git sur le texte extrait | Un commit sur un DOCX ou un PDF se lit comme un diff de texte ; la recherche dans l'historique extrait les documents que `git log -S` ne voit pas. |
 | 2026-10-17 | Instantanés par compte et par recherche | Comparer deux recherches identiques sans rien stocker de plus que la liste des fichiers et leurs compteurs. |
@@ -129,6 +134,8 @@ Projet individuel : pas de binôme.
 
 | Date | Évolution |
 | --- | --- |
+| 2026-10-23 | Vérification du correctif du 22/10 : 15 anomalies corrigées (BUG-035 à BUG-049, dont 4 de sécurité) — recherche bloquée après annulation, Git diff inutilisable avec `HEAD~1`, `safe.directory=*` réintroduit, fichiers internes exposés, renommages et accents, liens symboliques, API en sous-dossier, mise en page ; tests Linux 148/148, parcours vérifié dans Chromium. **Version 1.1.0.** |
+| 2026-10-22 | Git diff façon GitHub (dossiers, dépôt), accès UNC, lancement `index.php`, annulation de recherche ; `main` allégé, projet complet sur `dev`. |
 | 2026-10-16 | Cadrage : besoin reformulé, stack PHP natif validée, direction visuelle choisie. |
 | 2026-10-16 | Ajouts demandés en cours de route : signalement des fichiers protégés, lanceurs `.bat`, comparaison façon `git diff`. |
 | 2026-10-16 | Moteur, interface, documentation et suivi livrés sur trois branches ; PR #1, #2, #3 ouvertes pour validation. |

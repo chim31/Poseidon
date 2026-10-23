@@ -34,7 +34,6 @@ final class GitHistory
     {
         $none = 'poseidon-programme-desactive'; // introuvable : jamais exécuté
         $opts = [
-            '-c', 'safe.directory=*',
             '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=' . (DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null'),
             '-c', 'diff.external=', '-c', 'core.pager=cat', '-c', 'core.quotepath=false', '-c', 'protocol.allow=never',
             // Vérification de signatures : un dépôt piégé pourrait désigner son propre « gpg ».
@@ -172,9 +171,71 @@ final class GitHistory
         return $parts[1] ?? '';
     }
 
+    /**
+     * Référence saisie (HEAD~1, main, v1.0, hash…) résolue en identifiant de commit complet.
+     * Une référence ne peut jamais commencer par « - » : elle serait lue comme une option de Git.
+     */
+    public static function resolve(string $repo, string $ref): string
+    {
+        $ref = trim($ref);
+        if ($ref === '' || str_starts_with($ref, '-') || str_contains($ref, '..') || !preg_match('#^[\w.\-/^~@{}]+$#u', $ref)) {
+            throw new \InvalidArgumentException(sprintf('Référence Git invalide : %s', $ref));
+        }
+        try {
+            $hash = trim(self::git($repo, ['rev-parse', '--verify', '--quiet', $ref . '^{commit}']));
+        } catch (\RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'git_trusted_repos')) {
+                throw $e;
+            }
+            $hash = '';
+        }
+        if (!preg_match('/^[0-9a-f]{40,64}$/', $hash)) {
+            throw new \InvalidArgumentException(sprintf('Référence Git introuvable dans ce dépôt : %s', $ref));
+        }
+
+        return $hash;
+    }
+
+    /**
+     * Fichiers ajoutés, modifiés, supprimés ou renommés entre deux commits
+     * (ou entre un commit et le dossier de travail si $to est vide), sous un chemin.
+     *
+     * @return list<array{status: string, path: string, oldPath: string}>
+     */
+    public static function changes(string $repo, string $from, string $to, string $pathspec = ''): array
+    {
+        self::assertRevision($from);
+        $args = ['diff', '--no-textconv', '--no-ext-diff', '--no-color', '--name-status', '-z', '-M', $from];
+        if ($to !== '') {
+            self::assertRevision($to);
+            $args[] = $to;
+        }
+        array_push($args, '--', $pathspec === '' ? '.' : $pathspec);
+        // -z : chemins bruts, séparés par NUL (accents, espaces, tabulations conservés tels quels).
+        $tokens = explode("\0", rtrim(self::git($repo, $args), "\0"));
+        $changes = [];
+        for ($i = 0; $i < count($tokens); $i++) {
+            $code = $tokens[$i];
+            if ($code === '') {
+                continue;
+            }
+            $status = $code[0];
+            if ($status === 'R' || $status === 'C') {
+                $old = $tokens[++$i] ?? '';
+                $new = $tokens[++$i] ?? '';
+                $changes[] = ['status' => $status === 'R' ? 'R' : 'A', 'path' => $new, 'oldPath' => $old];
+            } else {
+                $path = $tokens[++$i] ?? '';
+                $changes[] = ['status' => in_array($status, ['A', 'D'], true) ? $status : 'M', 'path' => $path, 'oldPath' => $path];
+            }
+        }
+
+        return $changes;
+    }
+
     public static function assertRevision(string $revision): void
     {
-        if (!preg_match('/^[0-9a-f]{7,40}$/i', $revision)) {
+        if (!preg_match('/^[0-9a-f]{7,64}$/i', $revision)) {
             throw new \InvalidArgumentException('Identifiant de commit invalide.');
         }
     }

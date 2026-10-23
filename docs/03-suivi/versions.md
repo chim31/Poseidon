@@ -1,5 +1,25 @@
 # Journal des versions
 
+## 1.1.0 — 2026-10-23
+
+**Comparaison façon GitHub**
+- Deux dossiers : fichiers ajoutés, modifiés, supprimés, inchangés ; une carte par fichier, filtres, navigation, patch unifié copiable.
+- Dépôt Git : diff complet entre deux références (`HEAD~1`, branche, tag, hash) ou avec le dossier de travail ; renommages et noms accentués.
+- Liens symboliques jamais suivis, limites de taille et de nombre signalées.
+
+**Lancement sans terminal**
+- `index.php` à la racine : déposer le dossier sous IIS, Apache ou WAMP et ouvrir `http://serveur/poseidon/`, sans module de réécriture.
+- `web.config` et `.htaccess` fournis : dossiers internes jamais servis.
+
+**Réseau et recherche**
+- Chemins UNC `\\serveur\partage` mieux reconnus (racine de partage, anti-slashs).
+- Annuler puis relancer une recherche (même mot, autre dossier) fonctionne ; caches écrits de façon atomique.
+
+**Sécurité**
+- `safe.directory=*` retiré à nouveau ; toutes les commandes Git durcies ; références Git commençant par « - » refusées.
+
+- 148 tests (Linux). Anomalies BUG-035 à BUG-049.
+
 ## 1.0.0 — 2026-10-17
 
 Toutes les phases de la roadmap (P0 à P9) sont livrées.

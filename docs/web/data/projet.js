@@ -2,8 +2,8 @@
 window.POSEIDON_PROJET = {
     "meta": {
         "projet": "Poseidon",
-        "version": "1.0.0",
-        "miseAJour": "2026-10-17",
+        "version": "1.1.0",
+        "miseAJour": "2026-10-23",
         "porteur": "chim31",
         "resume": "Recherche et extraction dans les fichiers : la combinaison ls -R, grep -R -i, pipes et cat, en PHP, avec PDF, Word, Excel, OpenDocument et ZIP imbriqués."
     },
@@ -62,6 +62,16 @@ window.POSEIDON_PROJET = {
                     "responsable": "chim31",
                     "date": "2026-10-16",
                     "ref": "feat/moteur-recherche (fusionnée)"
+                },
+                {
+                    "id": "L1-06",
+                    "titre": "Accès réseau UNC fluide",
+                    "description": "\\\\serveur\\partage et racine de partage reconnus sous Windows ; correspondances network_mounts appliquées partout.",
+                    "statut": "Terminé",
+                    "priorite": "Moyenne",
+                    "responsable": "chim31",
+                    "date": "2026-10-23",
+                    "ref": "fix/verification-diff-reseau"
                 }
             ]
         },
@@ -641,6 +651,26 @@ window.POSEIDON_PROJET = {
                     "responsable": "chim31",
                     "date": "2026-10-17",
                     "ref": "feat/comparaison-avancee"
+                },
+                {
+                    "id": "L8-06",
+                    "titre": "Comparaison de deux dossiers",
+                    "description": "Ajoutés, modifiés, supprimés, inchangés ; une carte par fichier, filtres, patch unifié ; liens symboliques jamais suivis.",
+                    "statut": "Terminé",
+                    "priorite": "Haute",
+                    "responsable": "chim31",
+                    "date": "2026-10-23",
+                    "ref": "fix/verification-diff-reseau"
+                },
+                {
+                    "id": "L8-07",
+                    "titre": "Git diff complet d'un dépôt",
+                    "description": "Entre deux références (HEAD~1, branche, tag, hash) ou avec le dossier de travail ; renommages, noms accentués, dépôts partagés via git_trusted_repos.",
+                    "statut": "Terminé",
+                    "priorite": "Haute",
+                    "responsable": "chim31",
+                    "date": "2026-10-23",
+                    "ref": "fix/verification-diff-reseau"
                 }
             ]
         },
@@ -718,6 +748,16 @@ window.POSEIDON_PROJET = {
                     "responsable": "chim31",
                     "date": "2026-10-17",
                     "ref": "feat/index-plein-texte"
+                },
+                {
+                    "id": "L9-08",
+                    "titre": "Lancement sans terminal",
+                    "description": "index.php à la racine : IIS, Apache, WAMP sans module de réécriture ; web.config et .htaccess protègent les dossiers internes.",
+                    "statut": "Terminé",
+                    "priorite": "Haute",
+                    "responsable": "chim31",
+                    "date": "2026-10-23",
+                    "ref": "fix/verification-diff-reseau"
                 }
             ]
         }
@@ -848,6 +888,19 @@ window.POSEIDON_PROJET = {
                 "Diff entre deux recherches",
                 "Historique Git (fichier, diff sur texte extrait, recherche dans les commits)",
                 "Version 1.0"
+            ]
+        },
+        {
+            "id": "P10",
+            "titre": "Comparaison façon GitHub, lancement web → v1.1",
+            "debut": "2026-10-22",
+            "fin": "2026-10-23",
+            "statut": "Terminé",
+            "livrables": [
+                "Comparaison de dossiers et Git diff complet",
+                "Lancement par index.php sans terminal",
+                "Accès UNC, annulation de recherche corrigée",
+                "Version 1.1"
             ]
         }
     ],

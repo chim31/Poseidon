@@ -102,7 +102,11 @@ final class ExtractorRegistry
         $document = $extractor->extract($source);
 
         if ($cacheFile !== null) {
-            @file_put_contents($cacheFile, gzencode(serialize($document), 3), LOCK_EX);
+            // Écriture atomique : une recherche relancée en parallèle ne lit jamais un cache à moitié écrit.
+            $tmp = $cacheFile . '.' . bin2hex(random_bytes(4)) . '.tmp';
+            if (@file_put_contents($tmp, gzencode(serialize($document), 3)) === false || !@rename($tmp, $cacheFile)) {
+                @unlink($tmp);
+            }
         }
 
         return $document;

@@ -27,6 +27,8 @@ use Poseidon\Support\Path;
  *   GET  /api/file?id=&inline=1        Fichier d'origine (téléchargement)
  *   GET  /api/text?id=                 Texte extrait en .txt
  *   GET  /api/diff?a=&b=               Comparaison façon git diff
+ *   GET  /api/diff/folders?a=&b=       Comparaison de deux dossiers (ajoutés, modifiés, supprimés)
+ *   GET  /api/git/diff-tree?repo=&from=&to=  Git diff complet entre deux références (to vide : dossier de travail)
  *   POST /api/extract                  Extraction vers CSV/JSON/TXT/MD/XLSX
  *   POST /api/login, /api/logout       Authentification (si POSEIDON_PASSWORD)
  */
@@ -39,6 +41,9 @@ final class Kernel
     private \Poseidon\Auth\UserStore $users;
 
     private \Poseidon\Auth\AuditLog $audit;
+
+    /** Sous-dossier d'installation sur le serveur web (« /poseidon »), vide à la racine du site. */
+    private string $base = '';
 
     /** @var array{login: string, role: string, roots: list<string>}|null */
     private ?array $user = null;
@@ -54,12 +59,13 @@ final class Kernel
     public function handle(string $method, string $uri): void
     {
         $path = '/' . trim((string) parse_url($uri, PHP_URL_PATH), '/');
-        $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
-        $scriptDir = rtrim(str_replace(DIRECTORY_SEPARATOR, '/', dirname($scriptName)), '/');
-        if ($scriptDir !== '' && $scriptDir !== '/' && str_starts_with($path, $scriptDir)) {
+        // Installé dans un sous-dossier du serveur web (http://serveur/poseidon/…) : préfixe retiré.
+        $scriptDir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? ''))), '/');
+        if ($scriptDir !== '' && $scriptDir !== '.' && ($path === $scriptDir || str_starts_with($path, $scriptDir . '/'))) {
             $path = '/' . ltrim(substr($path, strlen($scriptDir)), '/');
+            $this->base = $scriptDir;
         }
-        if (str_starts_with($path, '/index.php')) {
+        if ($path === '/index.php' || str_starts_with($path, '/index.php/')) {
             $path = '/' . ltrim(substr($path, strlen('/index.php')), '/');
         }
         $this->securityHeaders();
@@ -80,6 +86,13 @@ final class Kernel
             return;
         }
         if (!str_starts_with($path, '/api/')) {
+            // http://serveur/poseidon sans « / » final : les ressources relatives (assets/…) partiraient à la racine du site.
+            $raw = (string) parse_url($uri, PHP_URL_PATH);
+            if ($path === '/' && $this->base !== '' && !str_ends_with($raw, '/') && !str_ends_with($raw, '/index.php')) {
+                header('Location: ' . $this->base . '/', true, 301);
+
+                return;
+            }
             $this->page();
 
             return;
@@ -525,135 +538,102 @@ final class Kernel
         echo $out;
     }
 
+    /** Comparaison intégrale de deux dossiers (ajoutés, modifiés, supprimés), façon GitHub. */
     private function diffFolders(): void
     {
-        $dirA = $this->required('a');
-        $dirB = $this->required('b');
-        $context = max(0, min(20, (int) ($_GET['context'] ?? 3)));
+        // resolveRoot : correspondances réseau, chemin réel et racines autorisées du compte.
         $guard = $this->engine->guard();
-        $guard->assertAllowed($dirA);
-        $guard->assertAllowed($dirB);
+        $dirA = $guard->resolveRoot($this->required('a'));
+        $dirB = $guard->resolveRoot($this->required('b'));
         $this->audit->log('comparaison dossiers', $this->currentUser()['login'], ['a' => $dirA, 'b' => $dirB]);
+        set_time_limit(600);
 
-        $res = Diff::compareDirectories($dirA, $dirB, $this->engine->extractors(), $context);
-        $this->json($res);
+        $this->json(Diff::compareDirectories(
+            $dirA,
+            $dirB,
+            $this->engine->extractors(),
+            $this->diffContext(),
+            (int) $this->config->get('max_file_size'),
+            (int) $this->config->get('diff_max_files', 2000),
+        ));
     }
 
+    /**
+     * Git diff complet entre deux références (HEAD~1, main, tag, hash) ou entre une référence et le dossier de travail.
+     * Toutes les commandes passent par GitHistory (configuration du dépôt neutralisée, safe.directory respecté).
+     */
     private function gitDiffTree(): void
     {
-        $repoInput = trim((string) ($_GET['repo'] ?? ''));
-        if ($repoInput === '') {
-            $path = trim((string) ($_GET['path'] ?? ''));
-            $repo = \Poseidon\Git\GitHistory::repository($path !== '' ? $path : POSEIDON_ROOT);
-        } else {
-            $repo = \Poseidon\Git\GitHistory::repository($repoInput);
+        if (\Poseidon\Git\GitHistory::binary() === null) {
+            throw new HttpError(422, 'Git n\'est pas installé sur ce serveur.');
         }
-        if ($repo === null) {
-            throw new HttpError(404, 'Dépôt Git introuvable.');
-        }
-        $guard = $this->engine->guard();
-        $guard->assertAllowed($repo);
+        $root = $this->engine->guard()->resolveRoot($this->required('repo'));
+        $repo = \Poseidon\Git\GitHistory::repository($root) ?? throw new HttpError(404, 'Ce dossier n\'est pas dans un dépôt Git.');
+        // Le dépôt peut englober la racine autorisée : le diff reste limité au dossier saisi.
+        $pathspec = (string) Path::relativeTo($root, $repo);
 
-        $from = trim((string) ($_GET['from'] ?? 'HEAD~1'));
-        $to = trim((string) ($_GET['to'] ?? 'HEAD'));
-        $this->audit->log('git diff', $this->currentUser()['login'], ['repo' => $repo, 'from' => $from, 'to' => $to]);
+        $fromInput = trim((string) ($_GET['from'] ?? '')) ?: 'HEAD~1';
+        $toInput = trim((string) ($_GET['to'] ?? ''));
+        $from = \Poseidon\Git\GitHistory::resolve($repo, $fromInput);
+        $to = $toInput === '' ? '' : \Poseidon\Git\GitHistory::resolve($repo, $toInput);
+        $this->audit->log('git diff', $this->currentUser()['login'], ['depot' => $repo, 'de' => $fromInput, 'a' => $toInput === '' ? 'dossier de travail' : $toInput]);
+        set_time_limit(600);
 
-        if ($from !== '' && !preg_match('/^[a-zA-Z0-9_\-\.\^\~\/]+$/', $from)) {
-            throw new \InvalidArgumentException('Référence Git "from" invalide.');
-        }
-        if ($to !== '' && !preg_match('/^[a-zA-Z0-9_\-\.\^\~\/]+$/', $to)) {
-            throw new \InvalidArgumentException('Référence Git "to" invalide.');
-        }
-
-        $res = $this->gitDiffFull($repo, $from, $to, (string) ($_GET['pathspec'] ?? ''));
-        $this->json($res);
-    }
-
-    private function gitDiffFull(string $repo, string $from, string $to, string $pathspec): array
-    {
-        $args = ['diff', '--name-status', '--no-color', '--no-ext-diff'];
-        if ($from !== '' && $to !== '') {
-            $args[] = $from;
-            $args[] = $to;
-        } elseif ($from !== '') {
-            $args[] = $from;
-        }
-        $args[] = '--';
-        if ($pathspec !== '') {
-            $args[] = $pathspec;
-        }
-
-        $bin = \Poseidon\Git\GitHistory::binary() ?? throw new HttpError(500, 'Git est introuvable.');
-        $result = \Poseidon\Support\Process::run([$bin, '-c', 'safe.directory=*', '-C', \Poseidon\Support\Path::toNative($repo), ...$args], 30);
-        $lines = array_filter(explode("\n", trim($result['stdout'])));
-        $files = [];
-        $totalAdd = 0;
-        $totalDel = 0;
-        $countAdded = 0;
-        $countModified = 0;
-        $countDeleted = 0;
         $max = (int) $this->config->get('max_file_size');
-        $context = max(0, min(20, (int) ($_GET['context'] ?? 3)));
-
-        foreach ($lines as $line) {
-            $parts = explode("\t", trim($line));
-            if (count($parts) < 2) {
-                continue;
-            }
-            $statusCode = substr($parts[0], 0, 1);
-            $rel = $parts[1];
-            $status = in_array($statusCode, ['A', 'D', 'M', 'R'], true) ? $statusCode : 'M';
-            $statusLabel = match ($status) {
-                'A' => 'Nouveau',
-                'D' => 'Supprimé',
-                'R' => 'Renommé',
-                default => 'Modifié',
-            };
-            if ($status === 'A') $countAdded++;
-            elseif ($status === 'D') $countDeleted++;
-            else $countModified++;
-
-            $before = ($status === 'A') ? '' : \Poseidon\Git\GitHistory::show($repo, $from !== '' ? $from : 'HEAD', $rel, $max);
-            $after = ($status === 'D') ? '' : ($to !== '' ? \Poseidon\Git\GitHistory::show($repo, $to, $rel, $max) : (string) @file_get_contents(\Poseidon\Support\Path::toNative($repo . '/' . $rel)));
-
-            $source = new \Poseidon\Filesystem\Source($repo . '/' . $rel, [], $repo, strlen($after), 0);
-            $linesA = $this->versionLines($source, $before);
-            $linesB = $this->versionLines($source, $after);
-            $ops = Diff::lines($linesA, $linesB);
-            $hunks = Diff::hunks($ops, $context);
-            $added = count(array_filter($ops, static fn (array $o): bool => $o[0] === '+'));
-            $removed = count(array_filter($ops, static fn (array $o): bool => $o[0] === '-'));
-            $totalAdd += $added;
-            $totalDel += $removed;
-            $fileUnified = Diff::unified("a/{$rel}", "b/{$rel}", $hunks);
-
-            $files[] = [
-                'path' => $rel,
-                'status' => $status,
-                'statusLabel' => $statusLabel,
-                'added' => $added,
-                'removed' => $removed,
-                'hunks' => $hunks,
-                'unified' => $fileUnified,
-            ];
+        $limit = (int) $this->config->get('diff_max_files', 2000);
+        $context = $this->diffContext();
+        $changes = \Poseidon\Git\GitHistory::changes($repo, $from, $to, $pathspec);
+        $truncated = count($changes) > $limit;
+        $files = [];
+        foreach (array_slice($changes, 0, $limit) as $change) {
+            $before = $change['status'] === 'A' ? '' : $this->gitVersion($repo, $from, $change['oldPath'], $max);
+            $after = $change['status'] === 'D' ? '' : ($to !== '' ? $this->gitVersion($repo, $to, $change['path'], $max) : $this->workingCopy($repo, $change['path'], $max));
+            $source = new \Poseidon\Filesystem\Source($repo . '/' . $change['path'], [], $repo, strlen($after), 0);
+            $files[] = Diff::fileEntry($change['path'], $change['status'], $this->versionLines($source, $before), $this->versionLines($source, $after), $context, $change['oldPath']);
         }
 
-        return [
-            'stats' => [
-                'totalFiles' => count($files),
-                'added' => $countAdded,
-                'modified' => $countModified,
-                'deleted' => $countDeleted,
-                'unchanged' => 0,
-                'additions' => $totalAdd,
-                'deletions' => $totalDel,
-            ],
-            'repo' => \Poseidon\Support\Path::display($repo),
-            'from' => $from,
-            'to' => $to,
+        $this->json([
+            'stats' => Diff::stats($files),
+            'repo' => Path::display($repo),
+            'from' => $fromInput . ' (' . substr($from, 0, 8) . ')',
+            'to' => $to === '' ? 'dossier de travail' : $toInput . ' (' . substr($to, 0, 8) . ')',
             'files' => $files,
             'unified' => implode("\n", array_column($files, 'unified')),
-        ];
+            'truncated' => $truncated,
+            'skipped' => [],
+        ]);
+    }
+
+    private function diffContext(): int
+    {
+        return max(0, min(20, (int) ($_GET['context'] ?? 3)));
+    }
+
+    /** Contenu d'un fichier à un commit ; une version illisible devient une ligne explicative. */
+    private function gitVersion(string $repo, string $commit, string $rel, int $max): string
+    {
+        try {
+            return \Poseidon\Git\GitHistory::show($repo, $commit, $rel, $max);
+        } catch (UnreadableFileException $e) {
+            return '(' . $e->getMessage() . ')';
+        }
+    }
+
+    /** Contenu d'un fichier du dossier de travail ; un lien symbolique n'est jamais suivi (Git stocke sa cible). */
+    private function workingCopy(string $repo, string $rel, int $max): string
+    {
+        $native = Path::toNative($repo . '/' . $rel);
+        if (is_link($native)) {
+            return (string) @readlink($native);
+        }
+        if (!is_file($native)) {
+            return '';
+        }
+        if ($max > 0 && (int) @filesize($native) > $max) {
+            return '(fichier trop volumineux pour être affiché)';
+        }
+
+        return (string) @file_get_contents($native);
     }
 
     private function diff(): void
@@ -800,7 +780,18 @@ final class Kernel
     private function page(): void
     {
         header('Content-Type: text/html; charset=utf-8');
-        readfile(POSEIDON_ROOT . '/public/app.html');
+        $html = (string) file_get_contents(POSEIDON_ROOT . '/public/app.html');
+        // Point d'entrée réel (« /poseidon/index.php ») : l'interface appelle l'API à travers lui,
+        // ce qui fonctionne sans module de réécriture (IIS, WAMP, Apache, Nginx, serveur intégré).
+        $entry = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        $meta = '<meta name="poseidon-entry" content="' . htmlspecialchars(str_ends_with($entry, '.php') ? $entry : '', ENT_QUOTES) . '">';
+        $html = preg_replace('/<head>/i', "<head>\n  {$meta}", $html, 1) ?? $html;
+        // Lancé depuis l'index.php à la racine du projet : les ressources statiques sont dans public/.
+        $script = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+        if ($script !== false && $script === realpath(POSEIDON_ROOT . '/index.php')) {
+            $html = str_replace(['href="assets/', 'src="assets/'], ['href="public/assets/', 'src="public/assets/'], $html);
+        }
+        echo $html;
     }
 
     /** Cahier des charges et roadmap (docs/web), servis en lecture seule. */
@@ -808,7 +799,7 @@ final class Kernel
     {
         $relative = ltrim($relative, '/');
         if ($relative === '') {
-            header('Location: /projet/cahier-des-charges.html', true, 302);
+            header('Location: ' . $this->base . '/projet/cahier-des-charges.html', true, 302);
 
             return;
         }

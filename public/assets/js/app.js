@@ -276,8 +276,13 @@ async function deleteTemplate() {
 
 /* ------------------------------------------------------------------ API */
 
+/* Point d'entrée PHP fourni par le serveur (« /poseidon/index.php ») : l'API passe par lui,
+   y compris dans un sous-dossier et sans module de réécriture d'URL. */
+const ENTRY = document.querySelector('meta[name="poseidon-entry"]')?.content ?? '';
+const withBase = (path) => (path.startsWith('/') ? ENTRY + path : path);
+
 async function api(path, options = {}) {
-  const res = await fetch(path, { ...options, headers: { 'X-Poseidon': '1', ...(options.headers || {}) } });
+  const res = await fetch(withBase(path), { ...options, headers: { 'X-Poseidon': '1', ...(options.headers || {}) } });
   if (res.status === 401 && state.info?.authRequired) { showLogin(); throw new Error('Authentification requise.'); }
   if (res.status === 421) throw new Error('Hôte non autorisé : ouvre Poseidon via 127.0.0.1 ou localhost.');
   if (!res.ok) {
@@ -335,13 +340,15 @@ async function runSearch() {
     requestAnimationFrame(() => { pending = false; renderSummary(); renderTable(); });
   };
 
+  // Le flux de la recherche précédente est libéré avant d'en ouvrir un nouveau (annuler puis relancer).
   if (state.activeReader) {
-    try { await state.activeReader.cancel(); } catch { /* ignore */ }
+    try { await state.activeReader.cancel(); } catch { /* déjà fermé */ }
     state.activeReader = null;
   }
+  let reader = null;
   try {
     const res = await api('/api/search?' + new URLSearchParams(params), { signal: controller.signal });
-    const reader = res.body.getReader();
+    reader = res.body.getReader();
     state.activeReader = reader;
     const decoder = new TextDecoder();
     let buffer = '';
@@ -361,7 +368,7 @@ async function runSearch() {
     if (err.name !== 'AbortError') toast('error', 'Recherche impossible', err.message);
     else toast('warn', 'Recherche annulée', `${nf.format(state.results.length)} fichier(s) trouvé(s) avant l'arrêt.`);
   } finally {
-    if (state.activeReader === reader) state.activeReader = null;
+    if (reader && state.activeReader === reader) state.activeReader = null;
     if (state.controller === controller) {
       state.controller = null;
       $('progress').hidden = true;
@@ -597,11 +604,11 @@ async function openPreview(r) {
     ...state.terms.map((t, i) => h('span', { class: 'term-total', title: t }, flagSvg(i, { title: t }), nf.format(r.counts[i] || 0))),
   );
   const id = encodeURIComponent(f.id);
-  $('pv-download').href = '/api/file?id=' + id;
+  $('pv-download').href = withBase('/api/file?id=' + id);
   $('pv-download').setAttribute('download', f.name);
-  $('pv-open').href = '/api/file?inline=1&id=' + id;
+  $('pv-open').href = withBase('/api/file?inline=1&id=' + id);
   $('pv-open').hidden = !['pdf', 'txt', 'md', 'log', 'csv', 'png', 'jpg', 'jpeg'].includes(f.extension);
-  $('pv-text').href = '/api/text?id=' + id;
+  $('pv-text').href = withBase('/api/text?id=' + id);
   $('pv-lines').replaceChildren();
   $('pv-table').replaceChildren();
   $('pv-loading').hidden = false;
@@ -832,6 +839,7 @@ async function runDiff() {
   if (!a || !b) return;
   $('table-wrap').hidden = true;
   $('diff').hidden = false;
+  resetMultiDiff();
   $('diff-body').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
   try {
     const data = await (await api('/api/diff?' + new URLSearchParams({ a, b }))).json();
@@ -843,6 +851,7 @@ async function runDiff() {
 }
 
 function renderDiffData(data, labelA, labelB) {
+  resetMultiDiff();
   $('diff-stats').replaceChildren(h('span', { class: 'add', text: `+${nf.format(data.added)}` }), ' ', h('span', { class: 'del', text: `−${nf.format(data.removed)}` }));
   $('diff-files').replaceChildren(h('span', { class: 'del', text: labelA }), h('span', { class: 'add', text: labelB }));
   $('diff-copy').onclick = () => copy(data.unified, 'Diff copié au format unifié.');
@@ -868,50 +877,75 @@ function renderDiffData(data, labelA, labelB) {
 
 /* ------------------------------------------------------------------ Git Diff façon GitHub */
 
+/** Vide le résultat multi-fichiers (dossiers / dépôt Git). */
+function resetMultiDiff() {
+  $('diff-gh-summary').hidden = true;
+  $('diff-files-nav').hidden = true;
+  $('diff-files-nav').replaceChildren();
+  $('diff-cards-container').replaceChildren();
+}
+
+/** Vide le résultat d'une comparaison de deux fichiers. */
+function resetSingleDiff() {
+  $('diff-files').replaceChildren();
+  $('diff-body').replaceChildren();
+}
+
 function openDiffView() {
   $('table-wrap').hidden = true;
   $('changes').hidden = true;
+  $('empty-start').hidden = true;
+  $('empty-none').hidden = true;
   $('diff').hidden = false;
   closeRail();
+  if (!$('diff-cards-container').childElementCount) {
+    resetSingleDiff();
+    $('diff-title').textContent = 'Comparer des dossiers ou un dépôt Git';
+    $('diff-stats').replaceChildren();
+  }
   if (!$('diff-dir-a').value) $('diff-dir-a').value = $('root').value.trim();
   if (!$('diff-git-repo').value) $('diff-git-repo').value = $('root').value.trim();
 }
 
-async function runFoldersDiff(e) {
-  if (e) e.preventDefault();
-  const a = $('diff-dir-a').value.trim();
-  const b = $('diff-dir-b').value.trim();
-  if (!a || !b) { toast('error', 'Dossiers requis', 'Indique le dossier A et le dossier B à comparer.'); return; }
+/** Retour aux résultats ; sans recherche lancée, l'écran d'accueil revient. */
+function closeDiffView() {
+  $('diff').hidden = true;
+  $('empty-start').hidden = Boolean(state.lastParams);
+  $('empty-none').hidden = !(state.lastParams && state.summary && state.results.length === 0);
+  renderTable();
+}
+
+async function runMultiDiff(path, params, title) {
+  resetSingleDiff();
+  resetMultiDiff();
   $('diff-cards-container').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
-  $('diff-gh-summary').hidden = true;
-  $('diff-files-nav').hidden = true;
-  $('diff-files').textContent = '';
-  $('diff-body').textContent = '';
   try {
-    const data = await (await api('/api/diff/folders?' + new URLSearchParams({ a, b }))).json();
-    renderGitHubMultiDiff(data, `Comparaison : ${data.dirA} ↔ ${data.dirB}`);
+    const data = await (await api(path + '?' + new URLSearchParams(params))).json();
+    renderGitHubMultiDiff(data, title(data));
   } catch (err) {
     $('diff-cards-container').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
   }
 }
 
-async function runGitFullDiff(e) {
-  if (e) e.preventDefault();
+function runFoldersDiff(e) {
+  e?.preventDefault();
+  const a = $('diff-dir-a').value.trim();
+  const b = $('diff-dir-b').value.trim();
+  if (!a || !b) { toast('error', 'Dossiers requis', 'Indique le dossier A et le dossier B à comparer.'); return; }
+  runMultiDiff('/api/diff/folders', { a, b }, (data) => `${data.dirA} ↔ ${data.dirB}`);
+}
+
+function runGitFullDiff(e) {
+  e?.preventDefault();
   const repo = $('diff-git-repo').value.trim();
+  if (!repo) { toast('error', 'Dépôt requis', 'Indique un dossier du dépôt Git.'); return; }
   const from = $('diff-git-from').value.trim();
   const to = $('diff-git-to').value.trim();
-  $('diff-cards-container').replaceChildren(h('div', { class: 'skeleton' }, h('span'), h('span'), h('span')));
-  $('diff-gh-summary').hidden = true;
-  $('diff-files-nav').hidden = true;
-  $('diff-files').textContent = '';
-  $('diff-body').textContent = '';
-  try {
-    const data = await (await api('/api/git/diff-tree?' + new URLSearchParams({ repo, from, to }))).json();
-    renderGitHubMultiDiff(data, `Git diff : ${data.repo} (${data.from} .. ${data.to})`);
-  } catch (err) {
-    $('diff-cards-container').replaceChildren(h('p', { class: 'diff-same', text: err.message }));
-  }
+  runMultiDiff('/api/git/diff-tree', { repo, from, to }, (data) => `Git diff : ${data.from} → ${data.to}`);
 }
+
+const BADGES = { A: 'diff-badge-new', D: 'diff-badge-del', R: 'diff-badge-ren', M: 'diff-badge-mod' };
+const fileLabel = (f) => (f.status === 'R' && f.oldPath !== f.path ? `${f.oldPath} → ${f.path}` : f.path);
 
 function renderGitHubMultiDiff(data, title) {
   $('diff-title').textContent = title;
@@ -927,56 +961,68 @@ function renderGitHubMultiDiff(data, title) {
   $('diff-gh-stats').replaceChildren(
     h('span', { class: 'add', text: `+${nf.format(st.additions)} lignes` }), ' · ',
     h('span', { class: 'del', text: `−${nf.format(st.deletions)} lignes` }),
+    st.renamed ? ` · ${nf.format(st.renamed)} renommé(s)` : '',
     st.unchanged ? ` · ${nf.format(st.unchanged)} inchangé(s)` : ''
   );
 
+  // Filtre remis sur « Tous » à chaque nouveau résultat.
   const pills = $('diff-filter-pills');
   pills.querySelectorAll('.diff-pill').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
     btn.onclick = () => {
-      pills.querySelectorAll('.diff-pill').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
+      pills.querySelectorAll('.diff-pill').forEach((b) => b.classList.toggle('active', b === btn));
       filterDiffCards(btn.dataset.filter);
     };
   });
 
   const nav = $('diff-files-nav');
   nav.hidden = data.files.length === 0;
-  nav.replaceChildren(...data.files.map((f, idx) => {
-    const badgeClass = f.status === 'A' ? 'diff-badge-new' : f.status === 'D' ? 'diff-badge-del' : 'diff-badge-mod';
-    return h('a', { class: 'diff-nav-item', href: '#diff-card-' + idx, onclick: (e) => { e.preventDefault(); $('diff-card-' + idx)?.scrollIntoView({ behavior: 'smooth' }); } },
-      h('span', { class: 'diff-nav-badge ' + badgeClass, text: f.status }),
-      h('span', { text: f.path }),
-      h('span', { class: 'mono', text: `+${f.added}/−${f.removed}` })
-    );
-  }));
+  nav.replaceChildren(...data.files.map((f, idx) => h('a', {
+    class: 'diff-nav-item', href: '#diff-card-' + idx,
+    onclick: (e) => { e.preventDefault(); $('diff-card-' + idx)?.scrollIntoView({ behavior: 'smooth' }); },
+  },
+  h('span', { class: 'diff-nav-badge ' + BADGES[f.status], text: f.status }),
+  h('span', { text: fileLabel(f) }),
+  h('span', { class: 'mono', text: `+${f.added}/−${f.removed}` }))));
+
+  const notices = [];
+  if (data.truncated) notices.push(h('p', { class: 'diff-notice', text: 'Comparaison tronquée : trop de fichiers. Réduis le périmètre (sous-dossier) pour tout voir.' }));
+  if (data.skipped?.length) {
+    notices.push(h('details', { class: 'diff-notice' },
+      h('summary', { text: `${nf.format(data.skipped.length)} élément(s) ignoré(s) (liens symboliques, dossiers illisibles)` }),
+      h('ul', {}, ...data.skipped.map((s) => h('li', { text: s })))));
+  }
 
   const container = $('diff-cards-container');
   if (data.files.length === 0) {
-    container.replaceChildren(h('p', { class: 'diff-same', text: 'Aucune différence trouvée entre les deux versions.' }));
+    container.replaceChildren(...notices, h('p', { class: 'diff-same', text: 'Aucune différence trouvée entre les deux versions.' }));
     return;
   }
 
-  container.replaceChildren(...data.files.map((f, idx) => {
-    const badgeClass = f.status === 'A' ? 'diff-badge-new' : f.status === 'D' ? 'diff-badge-del' : 'diff-badge-mod';
-    const card = h('article', { class: 'diff-card', id: 'diff-card-' + idx, 'data-status': f.status });
-
-    let cardBody;
+  container.replaceChildren(...notices, ...data.files.map((f, idx) => {
+    const cardBody = h('div', { class: 'diff-card-body mono' });
+    const toggle = h('button', { class: 'btn btn-outline btn-sm', type: 'button', 'aria-expanded': 'true' }, 'Replier');
+    toggle.onclick = () => {
+      cardBody.hidden = !cardBody.hidden;
+      toggle.textContent = cardBody.hidden ? 'Déplier' : 'Replier';
+      toggle.setAttribute('aria-expanded', String(!cardBody.hidden));
+    };
     const cardHead = h('header', { class: 'diff-card-head' },
-      h('span', { class: 'diff-nav-badge ' + badgeClass, text: f.statusLabel }),
-      h('span', { class: 'diff-card-title mono', text: f.path }),
+      h('span', { class: 'diff-nav-badge ' + BADGES[f.status], text: f.statusLabel }),
+      h('span', { class: 'diff-card-title mono', text: fileLabel(f) }),
       h('span', { class: 'mono diff-stats' },
         h('span', { class: 'add', text: `+${f.added}` }), ' ',
         h('span', { class: 'del', text: `−${f.removed}` })
       ),
       h('div', { class: 'diff-card-actions' },
         h('button', { class: 'btn btn-outline btn-sm', type: 'button', onclick: () => copy(f.path, 'Chemin copié.') }, 'Chemin'),
-        h('button', { class: 'btn btn-outline btn-sm', type: 'button', onclick: () => cardBody.hidden = !cardBody.hidden }, 'Replier')
+        toggle
       )
     );
 
-    cardBody = h('div', { class: 'diff-card-body mono' });
     if (f.hunks.length === 0) {
-      cardBody.append(h('p', { class: 'diff-same', text: f.status === 'A' ? 'Nouveau fichier vide' : 'Fichier identique ou vide' }));
+      const empty = f.status === 'A' ? 'Nouveau fichier vide' : f.status === 'R' ? 'Renommé sans modification du contenu' : 'Contenu texte identique (seuls les octets diffèrent)';
+      cardBody.append(h('p', { class: 'diff-same', text: empty }));
     } else {
       for (const hunk of f.hunks) {
         cardBody.append(h('div', { class: 'hunk-head', text: hunk.header }));
@@ -995,8 +1041,7 @@ function renderGitHubMultiDiff(data, title) {
       }
     }
 
-    card.append(cardHead, cardBody);
-    return card;
+    return h('article', { class: 'diff-card', id: 'diff-card-' + idx, 'data-status': f.status }, cardHead, cardBody);
   }));
 }
 
@@ -1149,6 +1194,7 @@ function renderRecent() {
 }
 
 let browserPath = '';
+let browserTarget = null; // champ à remplir (comparaison de dossiers), sinon la racine de recherche
 async function browse(path) {
   try {
     const data = await (await api('/api/browse?' + new URLSearchParams({ path }))).json();
@@ -1165,11 +1211,18 @@ async function browse(path) {
   }
 }
 
-function toggleBrowser(force) {
+function toggleBrowser(force, target = null, start = null) {
   const open = force ?? $('browser').hidden;
+  browserTarget = open ? target : null;
   $('browser').hidden = !open;
   $('browse').setAttribute('aria-expanded', String(open));
-  if (open) browse($('root').value.trim());
+  if (open) browse(start ?? $('root').value.trim());
+}
+
+/** Choix d'un dossier A ou B de la comparaison avec le sélecteur du panneau latéral. */
+function pickDiffDir(field) {
+  $('rail').classList.add('open');
+  toggleBrowser(true, field, $(field).value.trim() || $('root').value.trim());
 }
 
 /* ------------------------------------------------------------------ Divers */
@@ -1238,7 +1291,7 @@ function applyTheme(theme) {
 
 async function init() {
   try {
-    state.info = await (await fetch('/api/info', { headers: { 'X-Poseidon': '1' } })).json();
+    state.info = await (await fetch(withBase('/api/info'), { headers: { 'X-Poseidon': '1' } })).json();
   } catch {
     toast('error', 'Serveur injoignable', 'Lance Poseidon avec « poseidon serve » ou poseidon.bat.');
     return;
@@ -1289,7 +1342,7 @@ async function init() {
   $('report-btn').addEventListener('click', () => {
     const p = state.lastParams || searchParams();
     if (!p.root || !p.q) { toast('error', 'Rien à rapporter', 'Lance d\'abord une recherche.'); return; }
-    window.open('/api/report?' + new URLSearchParams({ ...p, inline: '1' }), '_blank', 'noopener');
+    window.open(withBase('/api/report?' + new URLSearchParams({ ...p, inline: '1' })), '_blank', 'noopener');
   });
   $('template-select').addEventListener('change', (e) => applyTemplate(e.target.value));
   $('template-save').addEventListener('click', saveTemplate);
@@ -1317,7 +1370,22 @@ async function init() {
   });
 
   $('browse').addEventListener('click', () => toggleBrowser());
-  $('browser-pick').addEventListener('click', () => { $('root').value = browserPath; store.set('root', browserPath); toggleBrowser(false); renderRecent(); scheduleIndexStatus(); $('q').focus(); });
+  $('browser-pick').addEventListener('click', () => {
+    if (browserTarget) {
+      const field = browserTarget;
+      $(field).value = browserPath;
+      toggleBrowser(false);
+      closeRail();
+      $(field).focus();
+      return;
+    }
+    $('root').value = browserPath;
+    store.set('root', browserPath);
+    toggleBrowser(false);
+    renderRecent();
+    scheduleIndexStatus();
+    $('q').focus();
+  });
   $('try-demo').addEventListener('click', () => {
     $('root').value = state.info.demo;
     scheduleIndexStatus();
@@ -1355,18 +1423,10 @@ async function init() {
   }));
   $('diff-folders-form')?.addEventListener('submit', runFoldersDiff);
   $('diff-git-form')?.addEventListener('submit', runGitFullDiff);
-  $('diff-browse-a')?.addEventListener('click', () => {
-    browserPath = $('diff-dir-a').value.trim() || $('root').value.trim();
-    toggleBrowser(true);
-    $('browser-pick').onclick = () => { $('diff-dir-a').value = browserPath; toggleBrowser(false); };
-  });
-  $('diff-browse-b')?.addEventListener('click', () => {
-    browserPath = $('diff-dir-b').value.trim() || $('root').value.trim();
-    toggleBrowser(true);
-    $('browser-pick').onclick = () => { $('diff-dir-b').value = browserPath; toggleBrowser(false); };
-  });
+  $('diff-browse-a').addEventListener('click', () => pickDiffDir('diff-dir-a'));
+  $('diff-browse-b').addEventListener('click', () => pickDiffDir('diff-dir-b'));
 
-  $('diff-back').addEventListener('click', () => { $('diff').hidden = true; renderTable(); });
+  $('diff-back').addEventListener('click', closeDiffView);
 
   $('menu').addEventListener('click', () => $('rail').classList.add('open'));
   $('theme-switch').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) applyTheme(b.dataset.theme); });

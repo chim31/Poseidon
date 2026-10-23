@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Poseidon\Search;
 
+use Poseidon\Support\Path;
+use Poseidon\Support\Text;
+
 /**
  * Comparaison ligne à ligne façon « git diff » (algorithme de Myers, sortie unifiée).
  * Fonctionne sur le texte extrait : on peut comparer deux PDF, deux DOCX, un XLSX et un CSV...
@@ -103,7 +106,8 @@ final class Diff
     /** @param list<array{header: string, lines: list<array{0: string, 1: string}>}> $hunks */
     public static function unified(string $nameA, string $nameB, array $hunks): string
     {
-        $out = "--- a/{$nameA}\n+++ b/{$nameB}\n";
+        // /dev/null : fichier absent d'un côté (ajout ou suppression), comme dans un patch Git.
+        $out = '--- ' . ($nameA === '/dev/null' ? $nameA : "a/{$nameA}") . "\n+++ " . ($nameB === '/dev/null' ? $nameB : "b/{$nameB}") . "\n";
         foreach ($hunks as $hunk) {
             $out .= $hunk['header'] . "\n";
             foreach ($hunk['lines'] as [$type, $line]) {
@@ -194,163 +198,194 @@ final class Diff
         return array_reverse($ops);
     }
 
+    /** Nombre maximal de blocs renvoyés par fichier (borne la réponse). */
+    public const MAX_HUNKS = 500;
+
+    /** Entrées parcourues au plus dans chaque dossier comparé. */
+    public const MAX_SCANNED = 100000;
+
+    /**
+     * Carte d'un fichier dans une comparaison multi-fichiers (dossiers ou Git), façon GitHub.
+     *
+     * @param list<string> $linesA
+     * @param list<string> $linesB
+     * @return array{path: string, oldPath: string, status: string, statusLabel: string, added: int, removed: int, hunks: list<array{header: string, lines: list<array{0: string, 1: string}>}>, unified: string}
+     */
+    public static function fileEntry(string $path, string $status, array $linesA, array $linesB, int $context = 3, string $oldPath = ''): array
+    {
+        $oldPath = $oldPath === '' ? $path : $oldPath;
+        $ops = self::lines($linesA, $linesB);
+        $hunks = self::hunks($ops, $context);
+        $added = 0;
+        $removed = 0;
+        foreach ($ops as [$op]) {
+            $added += $op === '+' ? 1 : 0;
+            $removed += $op === '-' ? 1 : 0;
+        }
+
+        return [
+            'path' => $path,
+            'oldPath' => $oldPath,
+            'status' => $status,
+            'statusLabel' => match ($status) {
+                'A' => 'Nouveau',
+                'D' => 'Supprimé',
+                'R' => 'Renommé',
+                default => 'Modifié',
+            },
+            'added' => $added,
+            'removed' => $removed,
+            'hunks' => array_slice($hunks, 0, self::MAX_HUNKS),
+            'unified' => self::unified($status === 'A' ? '/dev/null' : $oldPath, $status === 'D' ? '/dev/null' : $path, $hunks),
+        ];
+    }
+
+    /**
+     * Totaux d'une comparaison multi-fichiers.
+     *
+     * @param list<array{status: string, added: int, removed: int}> $files
+     * @return array{totalFiles: int, added: int, modified: int, deleted: int, renamed: int, unchanged: int, additions: int, deletions: int}
+     */
+    public static function stats(array $files, int $unchanged = 0): array
+    {
+        $count = static fn (string $s): int => count(array_filter($files, static fn (array $f): bool => $f['status'] === $s));
+
+        return [
+            'totalFiles' => count($files),
+            'added' => $count('A'),
+            'modified' => $count('M'),
+            'deleted' => $count('D'),
+            'renamed' => $count('R'),
+            'unchanged' => $unchanged,
+            'additions' => array_sum(array_column($files, 'added')),
+            'deletions' => array_sum(array_column($files, 'removed')),
+        ];
+    }
+
     /**
      * Compare deux répertoires de manière intégrale (façon GitHub diff) :
      * fichiers modifiés (M), nouveaux/générés (A), supprimés (D).
      *
-     * @return array{
-     *   stats: array{totalFiles: int, added: int, modified: int, deleted: int, unchanged: int, additions: int, deletions: int},
-     *   dirA: string,
-     *   dirB: string,
-     *   files: list<array{path: string, status: string, statusLabel: string, added: int, removed: int, hunks: list<mixed>, unified: string}>,
-     *   unified: string
-     * }
+     * Les liens symboliques et jonctions ne sont jamais suivis (ni boucle, ni sortie du dossier comparé) :
+     * ils sont signalés dans « skipped ». Les fichiers plus gros que $maxFileSize sont comparés par empreinte seulement.
+     *
+     * @return array{stats: array<string, int>, dirA: string, dirB: string, files: list<array<string, mixed>>, unified: string, truncated: bool, skipped: list<string>}
      */
-    public static function compareDirectories(string $dirA, string $dirB, ?\Poseidon\Extractor\ExtractorRegistry $extractors = null, int $context = 3): array
+    public static function compareDirectories(string $dirA, string $dirB, ?\Poseidon\Extractor\ExtractorRegistry $extractors = null, int $context = 3, int $maxFileSize = 0, int $maxFiles = 2000): array
     {
-        $dirA = \Poseidon\Support\Path::normalize($dirA);
-        $dirB = \Poseidon\Support\Path::normalize($dirB);
-        if (!\Poseidon\Support\Path::isDir($dirA)) {
-            throw new \InvalidArgumentException('Le premier dossier est introuvable ou inaccessible : ' . \Poseidon\Support\Path::display($dirA));
+        $dirA = Path::normalize($dirA);
+        $dirB = Path::normalize($dirB);
+        if (!Path::isDir($dirA)) {
+            throw new \InvalidArgumentException('Le premier dossier est introuvable ou inaccessible : ' . Path::display($dirA));
         }
-        if (!\Poseidon\Support\Path::isDir($dirB)) {
-            throw new \InvalidArgumentException('Le second dossier est introuvable ou inaccessible : ' . \Poseidon\Support\Path::display($dirB));
+        if (!Path::isDir($dirB)) {
+            throw new \InvalidArgumentException('Le second dossier est introuvable ou inaccessible : ' . Path::display($dirB));
         }
 
-        $scan = static function (string $dir): array {
+        $skipped = [];
+        $truncated = false;
+        $scan = static function (string $dir, string $side) use (&$skipped, &$truncated): array {
             $files = [];
+            $seen = 0;
             $stack = [''];
             while ($stack !== []) {
                 $sub = array_pop($stack);
-                $fullDir = $sub === '' ? $dir : $dir . '/' . $sub;
-                $entries = @scandir(\Poseidon\Support\Path::toNative($fullDir, true));
+                $entries = @scandir(Path::toNative($sub === '' ? $dir : $dir . '/' . $sub, true));
                 if ($entries === false) {
+                    $skipped[] = $side . ' : ' . ($sub === '' ? '.' : $sub) . ' (dossier illisible)';
                     continue;
                 }
                 foreach ($entries as $entry) {
-                    if ($entry === '.' || $entry === '..' || $entry === '.git' || $entry === '.impeccable') {
+                    if ($entry === '.' || $entry === '..' || $entry === '.git') {
                         continue;
                     }
+                    if (++$seen > self::MAX_SCANNED) {
+                        $truncated = true;
+
+                        return $files;
+                    }
                     $rel = $sub === '' ? $entry : $sub . '/' . $entry;
-                    $itemPath = $dir . '/' . $rel;
-                    $native = \Poseidon\Support\Path::toNative($itemPath, true);
-                    if (is_dir($native)) {
+                    $native = Path::toNative($dir . '/' . $rel);
+                    if (is_link($native)) {
+                        $skipped[] = $side . ' : ' . $rel . ' (lien symbolique non suivi)';
+                    } elseif (is_dir($native)) {
                         $stack[] = $rel;
-                    } elseif (is_file(\Poseidon\Support\Path::toNative($itemPath))) {
-                        $files[$rel] = $itemPath;
+                    } elseif (is_file($native)) {
+                        $files[$rel] = $dir . '/' . $rel;
                     }
                 }
             }
-            ksort($files);
 
             return $files;
         };
 
-        $filesA = $scan($dirA);
-        $filesB = $scan($dirB);
+        $filesA = $scan($dirA, 'A');
+        $filesB = $scan($dirB, 'B');
         $allKeys = array_unique([...array_keys($filesA), ...array_keys($filesB)]);
-        sort($allKeys);
+        sort($allKeys, SORT_STRING);
 
-        $getLines = static function (string $diskPath, string $root) use ($extractors): array {
-            $native = \Poseidon\Support\Path::toNative($diskPath);
-            if (!is_file($native)) {
-                return [];
-            }
+        $getLines = static function (string $diskPath, string $root) use ($extractors, $maxFileSize): array {
+            $native = Path::toNative($diskPath);
             $size = (int) @filesize($native);
-            $mtime = (int) @filemtime($native);
-            $source = new \Poseidon\Filesystem\Source($diskPath, [], $root, $size, $mtime);
+            if ($maxFileSize > 0 && $size > $maxFileSize) {
+                return ['(fichier trop volumineux pour être affiché : ' . $size . ' octets)'];
+            }
             if ($extractors !== null) {
                 try {
-                    $doc = $extractors->extract($source);
+                    $doc = $extractors->extract(new \Poseidon\Filesystem\Source($diskPath, [], $root, $size, (int) @filemtime($native)));
                     if ($doc !== null) {
                         return array_column($doc->lines, 1);
                     }
                 } catch (\Throwable) {
+                    // illisible pour l'extracteur : lecture brute ci-dessous
                 }
             }
             $content = @file_get_contents($native);
             if ($content === false) {
-                return [];
+                return ['(fichier illisible)'];
             }
-            if (\Poseidon\Support\Text::looksBinary($content)) {
+            if (Text::looksBinary($content)) {
                 return ['(fichier binaire : ' . $size . ' octets)'];
             }
 
             return explode("\n", str_replace(["\r\n", "\r"], "\n", $content));
         };
 
-        $diffFiles = [];
-        $totalAdditions = 0;
-        $totalDeletions = 0;
-        $countAdded = 0;
-        $countModified = 0;
-        $countDeleted = 0;
-        $countUnchanged = 0;
-        $unifiedAll = [];
-
+        $files = [];
+        $unchanged = 0;
         foreach ($allKeys as $rel) {
             $inA = isset($filesA[$rel]);
             $inB = isset($filesB[$rel]);
             if ($inA && $inB) {
-                $pathA = $filesA[$rel];
-                $pathB = $filesB[$rel];
-                if (filesize(\Poseidon\Support\Path::toNative($pathA)) === filesize(\Poseidon\Support\Path::toNative($pathB)) && sha1_file(\Poseidon\Support\Path::toNative($pathA)) === sha1_file(\Poseidon\Support\Path::toNative($pathB))) {
-                    $countUnchanged++;
+                $nativeA = Path::toNative($filesA[$rel]);
+                $nativeB = Path::toNative($filesB[$rel]);
+                if (@filesize($nativeA) === @filesize($nativeB) && @sha1_file($nativeA) === @sha1_file($nativeB)) {
+                    $unchanged++;
                     continue;
                 }
-                $linesA = $getLines($pathA, $dirA);
-                $linesB = $getLines($pathB, $dirB);
-                $status = 'M';
-                $statusLabel = 'Modifié';
-                $countModified++;
-            } elseif ($inB) {
-                $linesA = [];
-                $linesB = $getLines($filesB[$rel], $dirB);
-                $status = 'A';
-                $statusLabel = 'Nouveau';
-                $countAdded++;
-            } else {
-                $linesA = $getLines($filesA[$rel], $dirA);
-                $linesB = [];
-                $status = 'D';
-                $statusLabel = 'Supprimé';
-                $countDeleted++;
             }
-
-            $ops = self::lines($linesA, $linesB);
-            $hunks = self::hunks($ops, $context);
-            $added = count(array_filter($ops, static fn (array $o): bool => $o[0] === '+'));
-            $removed = count(array_filter($ops, static fn (array $o): bool => $o[0] === '-'));
-            $totalAdditions += $added;
-            $totalDeletions += $removed;
-            $fileUnified = self::unified("a/{$rel}", "b/{$rel}", $hunks);
-            $unifiedAll[] = $fileUnified;
-
-            $diffFiles[] = [
-                'path' => $rel,
-                'status' => $status,
-                'statusLabel' => $statusLabel,
-                'added' => $added,
-                'removed' => $removed,
-                'hunks' => $hunks,
-                'unified' => $fileUnified,
-            ];
+            if (count($files) >= $maxFiles) {
+                $truncated = true;
+                break;
+            }
+            $status = $inA && $inB ? 'M' : ($inB ? 'A' : 'D');
+            $files[] = self::fileEntry(
+                $rel,
+                $status,
+                $inA ? $getLines($filesA[$rel], $dirA) : [],
+                $inB ? $getLines($filesB[$rel], $dirB) : [],
+                $context,
+            );
         }
 
         return [
-            'stats' => [
-                'totalFiles' => count($diffFiles),
-                'added' => $countAdded,
-                'modified' => $countModified,
-                'deleted' => $countDeleted,
-                'unchanged' => $countUnchanged,
-                'additions' => $totalAdditions,
-                'deletions' => $totalDeletions,
-            ],
-            'dirA' => \Poseidon\Support\Path::display($dirA),
-            'dirB' => \Poseidon\Support\Path::display($dirB),
-            'files' => $diffFiles,
-            'unified' => implode("\n", $unifiedAll),
+            'stats' => self::stats($files, $unchanged),
+            'dirA' => Path::display($dirA),
+            'dirB' => Path::display($dirB),
+            'files' => $files,
+            'unified' => implode("\n", array_column($files, 'unified')),
+            'truncated' => $truncated,
+            'skipped' => array_slice($skipped, 0, 200),
         ];
     }
 }

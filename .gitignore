@@ -1,5 +1,6 @@
 # Données locales et générées (comptes, journal d'audit, index, cache, modèles, clé)
 /var/*
+!/var/.htaccess
 !/var/cache/
 /var/cache/*
 !/var/cache/.gitkeep

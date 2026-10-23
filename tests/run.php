@@ -386,6 +386,19 @@ ligne2
     check('comparaison dossiers : statut M pour commun.txt', in_array('commun.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'M'), 'path'), true));
     check('comparaison dossiers : statut A pour nouveau.txt', in_array('nouveau.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'A'), 'path'), true));
     check('comparaison dossiers : statut D pour supprime.txt', in_array('supprime.txt', array_column(array_filter($folderDiff['files'], fn($f) => $f['status'] === 'D'), 'path'), true));
+    same('comparaison dossiers : en-tête unifié d\'un nouveau fichier', true, str_contains(array_values(array_filter($folderDiff['files'], fn ($f) => $f['status'] === 'A'))[0]['unified'], '--- /dev/null'));
+    same('comparaison dossiers : limite du nombre de fichiers', [1, true], (static function () use ($cmpA, $cmpB): array {
+        $r = Diff::compareDirectories($cmpA, $cmpB, maxFiles: 1);
+
+        return [count($r['files']), $r['truncated']];
+    })());
+    if (DIRECTORY_SEPARATOR === '/') {
+        // Lien vers le parent : ni boucle, ni lecture hors du dossier comparé.
+        symlink('..', $cmpA . '/boucle');
+        $linked = Diff::compareDirectories($cmpA, $cmpB);
+        same('comparaison dossiers : lien symbolique non suivi', [3, 1], [$linked['stats']['totalFiles'], count($linked['skipped'])]);
+        unlink($cmpA . '/boucle');
+    }
     Fixtures::rmdir($cmpA);
     Fixtures::rmdir($cmpB);
 
@@ -529,6 +542,34 @@ ligne2
         check('fichier texte trouvé par git log -S', in_array('Note texte', array_column((new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken')), 'subject'), true));
         $before = Poseidon\Git\GitHistory::show($repo, $log[1]['hash'], 'contrat.docx', 10_000_000);
         check('version passée relue (DOCX valide)', str_starts_with($before, 'PK'));
+
+        // Git diff complet : références symboliques, renommage, noms accentués, dossier de travail.
+        file_put_contents($repo . '/ancien.txt', "contenu stable\n");
+        $git('add', '.'); $git('commit', '-q', '-m', 'Avant renommage');
+        $git('mv', 'ancien.txt', 'nouveau.txt');
+        file_put_contents($repo . '/résumé.txt', "accents\n");
+        $git('add', '.'); $git('commit', '-q', '-m', 'Renommage et accents');
+        $from = Poseidon\Git\GitHistory::resolve($repo, 'HEAD~1');
+        $to = Poseidon\Git\GitHistory::resolve($repo, 'HEAD');
+        check('git diff : HEAD~1 et HEAD résolus en identifiants', strlen($from) >= 40 && $from !== $to);
+        $changes = Poseidon\Git\GitHistory::changes($repo, $from, $to);
+        same('git diff : renommage détecté (ancien → nouveau)', [['status' => 'R', 'path' => 'nouveau.txt', 'oldPath' => 'ancien.txt']], array_values(array_filter($changes, fn ($c) => $c['status'] === 'R')));
+        check('git diff : nom accentué conservé tel quel', in_array('résumé.txt', array_column($changes, 'path'), true));
+        same('git diff : contenu renommé relu à l\'ancien chemin', "contenu stable\n", Poseidon\Git\GitHistory::show($repo, $from, 'ancien.txt', 1000));
+        file_put_contents($repo . '/résumé.txt', "accents modifiés\n");
+        same('git diff : dossier de travail comparé au dernier commit', [['status' => 'M', 'path' => 'résumé.txt', 'oldPath' => 'résumé.txt']], Poseidon\Git\GitHistory::changes($repo, $to, ''));
+        $git('checkout', '-q', '--', 'résumé.txt');
+        foreach (['-O/etc/passwd', '--output=/tmp/x', 'HEAD..main', 'a b'] as $bad) {
+            check('git diff : référence refusée « ' . $bad . ' »', (static function () use ($repo, $bad): bool {
+                try {
+                    Poseidon\Git\GitHistory::resolve($repo, $bad);
+                } catch (InvalidArgumentException) {
+                    return true;
+                }
+
+                return false;
+            })());
+        }
         // Dépôt piégé : commandes déclarées dans sa configuration locale → ne doivent jamais s'exécuter.
         $marker = $repo . '/PIEGE-EXECUTE';
         $git('config', 'core.fsmonitor', 'touch ' . $marker);
@@ -550,6 +591,7 @@ ligne2
         (new Poseidon\Git\HistorySearch($engine->extractors()))->search($repo, '', new Query('kraken'));
         Poseidon\Git\GitHistory::log($repo, 'contrat.docx');
         Poseidon\Git\GitHistory::show($repo, $log[0]['hash'], 'contrat.docx', 10_000_000);
+        Poseidon\Git\GitHistory::changes($repo, Poseidon\Git\GitHistory::resolve($repo, 'HEAD~1'), '');
         check('dépôt piégé : aucune commande de sa configuration n\'est exécutée', !file_exists($marker));
         check('identifiant de commit invalide refusé', (static function (): bool {
             try {

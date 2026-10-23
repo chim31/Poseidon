@@ -6,7 +6,7 @@ L'interface web consomme cette API ; elle est aussi utilisable par un script (`c
 
 | Sujet | Règle |
 | --- | --- |
-| Base URL | `http://127.0.0.1:8080` (lanceurs) ou l'URL du serveur |
+| Base URL | `http://127.0.0.1:8080` (lanceurs) ou l'URL du serveur ; l'interface passe par son point d'entrée (`/poseidon/index.php/api/…`), ce qui marche sans réécriture d'URL |
 | Versionnement | aucun préfixe pour la v0.x ; `/api/v1` sera introduit avant la v1.0 |
 | Format | JSON UTF-8, sauf `/api/search` (NDJSON) et les téléchargements |
 | Authentification | comptes (`var/users.json`) ou mot de passe partagé (`POSEIDON_PASSWORD`) : `POST /api/login`, puis cookie de session `poseidon` ; sans les deux : accès local |
@@ -119,6 +119,23 @@ Texte extrait au format `.txt` (téléchargement).
   "hunks": [ { "header": "@@ -1,7 +1,3 @@", "lines": [["-", "Contrat-cadre…"], ["+", "Conditions générales…"], [" ", "…"]] } ],
   "unified": "--- a/A.docx\n+++ b/B.pdf\n@@ -1,7 +1,3 @@\n…" }
 ```
+
+### `GET /api/diff/folders?a=&b=&context=3`
+
+Comparaison intégrale de deux dossiers (racines autorisées du compte et `network_mounts` appliquées). Les liens symboliques ne sont jamais suivis ; au-delà de `diff_max_files` fichiers différents (2 000 par défaut), `truncated` vaut `true`.
+
+```json
+{ "stats": { "totalFiles": 3, "added": 1, "modified": 1, "deleted": 1, "renamed": 0, "unchanged": 12, "additions": 4, "deletions": 2 },
+  "dirA": "\\\\srv\\v1", "dirB": "\\\\srv\\v2",
+  "files": [ { "path": "contrat.docx", "oldPath": "contrat.docx", "status": "M", "statusLabel": "Modifié", "added": 1, "removed": 1, "hunks": [ … ], "unified": "--- a/contrat.docx\n+++ b/contrat.docx\n…" } ],
+  "unified": "…", "truncated": false, "skipped": ["A : raccourci (lien symbolique non suivi)"] }
+```
+
+Statuts : `A` nouveau, `M` modifié, `D` supprimé (`R` renommé pour Git).
+
+### `GET /api/git/diff-tree?repo=&from=HEAD~1&to=HEAD`
+
+Git diff complet du dépôt qui contient `repo`, limité à ce dossier. `from` / `to` : référence Git (branche, tag, `HEAD~1`, hash) ; `to` vide compare au dossier de travail. Une référence commençant par `-` est refusée (400). Même format que ci-dessus, plus `repo`, `from`, `to`. Un dépôt appartenant à un autre compte doit figurer dans `git_trusted_repos`.
 
 ### `POST /api/extract`
 

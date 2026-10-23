@@ -52,7 +52,12 @@ final class SnapshotStore
         ];
         // Horodatage à la microseconde : l'ordre des noms est l'ordre chronologique, même pour deux recherches dans la même seconde.
         $file = $dir . '/' . (new \DateTimeImmutable())->format('Ymd-His-u') . '.json';
-        file_put_contents($file, json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        // Écrit à côté puis renommé : une comparaison lancée en même temps ne lit jamais un instantané incomplet.
+        $tmp = $file . '.tmp';
+        file_put_contents($tmp, json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        if (!@rename($tmp, $file)) {
+            @unlink($tmp);
+        }
 
         $all = $this->files($dir);
         foreach (array_slice($all, self::KEEP) as $old) {

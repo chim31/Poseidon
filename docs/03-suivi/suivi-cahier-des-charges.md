@@ -3,23 +3,23 @@
 > Généré par `php docs/tools/sync.php` depuis [`docs/web/data/projet.json`](../web/data/projet.json) — modifier le JSON, pas ce fichier.
 > Version web : [cahier-des-charges.html](../web/cahier-des-charges.html) · [roadmap.html](../web/roadmap.html)
 
-**Mise à jour :** 2026-10-17 · **Version :** 1.0.0
+**Mise à jour :** 2026-10-23 · **Version :** 1.1.0
 
 ## Tableau de bord
 
-Avancement global : **98 %** `███████████████████░` — 65 exigences : 64 terminées, 0 en cours, 0 à faire, 1 bloquées.
+Avancement global : **99 %** `███████████████████░` — 69 exigences : 68 terminées, 0 en cours, 0 à faire, 1 bloquées.
 
 | Lot | Intitulé | Terminé | En cours | À faire | Avancement |
 | --- | --- | ---: | ---: | ---: | --- |
-| L1 | Socle et parcours | 5 | 0 | 0 | 100 % |
+| L1 | Socle et parcours | 6 | 0 | 0 | 100 % |
 | L2 | Formats de fichiers | 11 | 0 | 0 | 100 % |
 | L3 | Archives ZIP | 5 | 0 | 0 | 100 % |
 | L4 | Recherche | 9 | 0 | 0 | 100 % |
 | L5 | Extraction de données | 7 | 0 | 0 | 100 % |
 | L6 | Interface web | 8 | 0 | 0 | 100 % |
 | L7 | Robustesse et sécurité | 8 | 0 | 0 | 100 % |
-| L8 | Comparaison (git diff) | 5 | 0 | 0 | 100 % |
-| L9 | Exploitation et documentation | 6 | 0 | 0 | 86 % |
+| L8 | Comparaison (git diff) | 7 | 0 | 0 | 100 % |
+| L9 | Exploitation et documentation | 7 | 0 | 0 | 88 % |
 
 ## L1 — Socle et parcours
 
@@ -32,6 +32,7 @@ _Poser une racine (locale, Windows, réseau) et parcourir toute l'arborescence c
 | L1-03 | **Dossiers exclus** — .git, node_modules, vendor… configurables. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L1-04 | **Racines autorisées** — Liste blanche (POSEIDON_ROOTS) contrôlée sur les chemins réels : aucun accès hors périmètre, ni par « .. », ni par lien symbolique. | Terminé | Haute | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L1-05 | **Partages réseau sous Linux** — Correspondance \\serveur\partage → point de montage (network_mounts), message explicite si non monté. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
+| L1-06 | **Accès réseau UNC fluide** — \\serveur\partage et racine de partage reconnus sous Windows ; correspondances network_mounts appliquées partout. | Terminé | Moyenne | chim31 | 2026-10-23 | fix/verification-diff-reseau |
 
 ## L2 — Formats de fichiers
 
@@ -134,6 +135,8 @@ _Comparer deux fichiers trouvés, quel que soit leur format._
 | L8-03 | **poseidon diff en CLI** — Sortie colorée façon git diff, code retour 1 si différent. | Terminé | Moyenne | chim31 | 2026-10-16 | feat/moteur-recherche (fusionnée) |
 | L8-04 | **Diff entre deux recherches** — Instantanés par compte et par recherche : fichiers apparus, disparus, compteurs en hausse ou en baisse (interface, CLI --changes, API). | Terminé | Moyenne | chim31 | 2026-10-17 | feat/comparaison-avancee |
 | L8-05 | **Historique Git** — Historique d'un fichier, diff d'un commit sur le texte extrait (DOCX, PDF…), recherche des commits où un filtre a changé. | Terminé | Basse | chim31 | 2026-10-17 | feat/comparaison-avancee |
+| L8-06 | **Comparaison de deux dossiers** — Ajoutés, modifiés, supprimés, inchangés ; une carte par fichier, filtres, patch unifié ; liens symboliques jamais suivis. | Terminé | Haute | chim31 | 2026-10-23 | fix/verification-diff-reseau |
+| L8-07 | **Git diff complet d'un dépôt** — Entre deux références (HEAD~1, branche, tag, hash) ou avec le dossier de travail ; renommages, noms accentués, dépôts partagés via git_trusted_repos. | Terminé | Haute | chim31 | 2026-10-23 | fix/verification-diff-reseau |
 
 ## L9 — Exploitation et documentation
 
@@ -148,3 +151,4 @@ _Installer, lancer et faire évoluer Poseidon sans aide._
 | L9-05 | **Validation et fusion** — Relecture des PR par le porteur, fusion dans main (PR #1 et #4). | Terminé | Haute | chim31 | 2026-10-17 | PR #1, #4 |
 | L9-06 | **Image Docker et guide HTTPS** — Image Docker (Debian 13, OCR, 7z, index) + Caddy HTTPS ; guides Nginx, Apache, Windows Server. | Terminé | Moyenne | chim31 | 2026-10-17 | feat/equipe-deploiement |
 | L9-07 | **Intégration continue** — Workflow GitHub Actions prêt (Linux + Windows, PHP 8.2/8.4) ; ne démarre pas tant que le compte GitHub est bloqué pour facturation. Vérifié à la main : Linux PHP 8.4 (69 tests) et Windows PHP 8.3 (66 tests). | Bloqué | Moyenne | chim31 | 2026-10-17 | feat/index-plein-texte |
+| L9-08 | **Lancement sans terminal** — index.php à la racine : IIS, Apache, WAMP sans module de réécriture ; web.config et .htaccess protègent les dossiers internes. | Terminé | Haute | chim31 | 2026-10-23 | fix/verification-diff-reseau |

@@ -72,6 +72,19 @@ git clone git@github.com:chim31/Poseidon.git && cd Poseidon
 | Windows, autre port | `poseidon.bat 9000` | Port 9000 |
 | Linux / macOS / WSL | `./poseidon.sh` | Serveur sur le port 8080, navigateur ouvert |
 | Partout | `php bin/poseidon serve --port=8080` | Serveur seul |
+| **Serveur web (sans terminal)** | déposer le dossier sous IIS, Apache ou WAMP, ouvrir `http://serveur/poseidon/` | Voir ci-dessous |
+
+### Lancement sans terminal (environnement protégé)
+
+Pour les postes où ouvrir un terminal n'est pas souhaitable, Poseidon se lance comme un site PHP classique :
+
+1. Copier le dossier `Poseidon` dans le dossier web (`C:\inetpub\wwwroot\poseidon` pour IIS, `C:\wamp64\www\poseidon` pour WAMP, `/var/www/poseidon` pour Apache).
+2. Ouvrir `http://serveur/poseidon/` dans le navigateur. C'est tout : aucun module de réécriture d'URL n'est nécessaire, l'interface appelle l'API via `index.php/…`.
+3. Si Poseidon est ouvert à d'autres postes que le serveur lui-même, créer d'abord un compte administrateur ou définir `POSEIDON_PASSWORD` (sinon seul le serveur local est servi).
+
+Protections fournies : `web.config` (IIS, filtrage de requêtes intégré) et `.htaccess` (Apache, dans la racine et dans chaque dossier interne) interdisent l'accès direct à `var/` (clé de signature, comptes, cache), `config/`, `src/`, `.git`… Sous Nginx, utiliser la configuration de [deploiement.md](deploiement.md) (racine web sur `public/`).
+
+Le compte du service web (IIS : identité du pool d'applications) doit pouvoir lire les dossiers et partages à fouiller et écrire dans `var/`.
 
 Puis dans l'interface :
 
@@ -112,6 +125,7 @@ return [
 | `POSEIDON_TESSERACT` | détecté dans le `PATH` | Chemin explicite de Tesseract |
 | `POSEIDON_OCR` | activé si Tesseract est présent | `0` pour désactiver l'OCR |
 | `POSEIDON_OCR_LANG` | `fra+eng` | Langues Tesseract |
+| `POSEIDON_DIFF_MAX_FILES` | 2 000 | Comparaison de dossiers / Git diff : fichiers différents affichés au plus |
 | `POSEIDON_GIT_TRUSTED` | vide | Dépôts Git d'un autre compte système à lire quand même (séparateur `;`) |
 | `POSEIDON_PHP` | `php` | PHP utilisé par les lanceurs `.bat` / `.sh` |
 
@@ -188,6 +202,10 @@ sudo mount -t cifs //srv-archives/juridique /mnt/juridique -o username=moi,uid=$
 Puis dans `config/poseidon.local.php` : `'network_mounts' => ['\\\\srv-archives\\juridique' => '/mnt/juridique']`.
 
 Sous WSL, un lecteur Windows réseau `Z:` est aussi accessible via `/mnt/z` après `sudo mount -t drvfs Z: /mnt/z`.
+
+Saisies acceptées pour un partage : `\\serveur\partage`, `\\serveur\partage\dossier`, `//serveur/partage`, `smb://serveur/partage`, `file://serveur/partage`, avec ou sans guillemets autour (copie depuis l'explorateur). La racine d'un partage (`\\serveur\partage`, sans sous-dossier) est lue correctement sous Windows.
+
+**Dépôt Git sur un partage** : si Git signale un dépôt « appartenant à un autre compte » (cas courant d'un dépôt partagé), Poseidon refuse de le lire par sécurité tant qu'il n'est pas déclaré dans `POSEIDON_GIT_TRUSTED` (ou `git_trusted_repos`), par exemple `\\srv\depots\contrats`. Même déclaré, aucune commande de sa configuration n'est exécutée.
 
 ## 7. Tests
 

@@ -13,14 +13,16 @@
 | **Comment** | Un mot, une phrase, plusieurs mots (tous / un des), à proximité les uns des autres, avec fautes de frappe, ou une regex |
 | **Résultat** | Fichiers, chemins absolu et relatif, occurrences par terme, lignes-preuves surlignées ; aperçu, téléchargement |
 | **Données** | Extraction d'occurrences, de lignes ou de colonnes vers CSV, XLSX, JSON, TXT, MD ; groupes nommés → colonnes ; modèles rejouables ; rapport HTML/PDF |
-| **Comparer** | Deux fichiers (`git diff`), deux recherches (ce qui a changé), l'historique Git d'un document (même DOCX ou PDF) |
+| **Comparer** | Deux fichiers (`git diff`), deux dossiers ou un dépôt Git entier (façon GitHub), deux recherches (ce qui a changé), l'historique Git d'un document (même DOCX ou PDF) |
 | **Vitesse** | Index plein texte : 10 000 fichiers relus en 5 s, puis 0,5 s indexés |
 | **Équipe** | Comptes et rôles, racines par compte, journal d'audit, Docker + HTTPS |
 | **Robuste** | Fichiers protégés, illisibles ou piégés signalés, jamais bloquants ; aucun CDN ; PHP seul |
 
 ## Démarrer
 
-**Version 1.0.0.** Captures : [bureau](docs/assets/interface-bureau.png) · [mobile](docs/assets/interface-mobile.png) · [comparaison](docs/assets/interface-comparaison.png) · [tableur](docs/assets/interface-tableur.png) · [thème sombre](docs/assets/interface-sombre.png).
+**Version 1.1.0.** Captures : [bureau](docs/assets/interface-bureau.png) · [mobile](docs/assets/interface-mobile.png) · [comparaison](docs/assets/interface-comparaison.png) · [tableur](docs/assets/interface-tableur.png) · [thème sombre](docs/assets/interface-sombre.png).
+
+**Sans terminal (serveur web)** : copier le dossier sous IIS, Apache ou WAMP et ouvrir `http://serveur/poseidon/` — voir [le guide](docs/01-general/demarrage.md#lancement-sans-terminal-environnement-protégé).
 
 **Windows** : double-clic sur `poseidon.bat` (le navigateur s'ouvre sur <http://127.0.0.1:8080>).
 

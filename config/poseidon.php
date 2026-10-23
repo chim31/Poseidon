@@ -32,6 +32,9 @@ return [
     // Taille maximale d'un fichier analysé (octets).
     'max_file_size' => (int) (getenv('POSEIDON_MAX_FILE_SIZE') ?: 200 * 1024 * 1024),
 
+    // Comparaison de dossiers et Git diff : nombre maximal de fichiers différents affichés.
+    'diff_max_files' => (int) (getenv('POSEIDON_DIFF_MAX_FILES') ?: 2000),
+
     // Archives ZIP : profondeur d'imbrication, taille d'une entrée, volume total décompressé, ratio max.
     'zip' => [
         'max_depth' => 5,

@@ -1,0 +1,22 @@
+# Poseidon sous Apache (WAMP, XAMPP, serveur d'entreprise) : déposer le dossier et ouvrir http://serveur/poseidon/
+# Aucun module optionnel requis : l'interface appelle l'API via index.php/… (PATH_INFO).
+Options -Indexes
+DirectoryIndex index.php
+
+# Fichiers cachés (.git, .env, .htaccess…) jamais servis.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Les dossiers internes (var, config, src…) ont chacun leur .htaccess « refusé ».
+# Si mod_rewrite est actif, on bloque aussi par l'URL (défense en profondeur).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)(\.git|var|config|src|bin|tests|docs|samples)(/|$) - [F,L]
+</IfModule>
